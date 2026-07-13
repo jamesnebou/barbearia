@@ -1,6 +1,6 @@
 ﻿import { KpiCard, PageHero, formatMoney, getOverviewStats, loadDashboardAdminData, metricCards } from "../admin-core";
 
-export const metadata = { title: "Métricas admin | NexaWi Clínicas" };
+export const metadata = { title: "Métricas admin | NexaWi Barbearias" };
 
 function MetricRow({ label, value, detail }) {
   return (
@@ -21,10 +21,10 @@ export default async function DashboardAdminMetricasPage() {
 
   return (
     <div className="space-y-6">
-      <PageHero eyebrow="Métricas" title="Indicadores financeiros e operacionais" description="Acompanhe receita, sinais pagos, agenda, acessos e movimentação comercial das clínicas." />
+      <PageHero eyebrow="Métricas" title="Indicadores financeiros e operacionais" description="Acompanhe receita, sinais pagos, agenda, acessos e movimentação comercial das barbearias." />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="MRR cobrável" value={formatMoney(stats.mrrCobravel)} helper="Base de clínicas ativas e não isentas." icon={metricCards.mrr} tone="dark" />
+        <KpiCard label="MRR cobrável" value={formatMoney(stats.mrrCobravel)} helper="Base de barbearias ativas e não isentas." icon={metricCards.mrr} tone="dark" />
         <KpiCard label="Faturamento previsto" value={formatMoney(stats.monthExpected)} helper="Agenda faturável do mês." icon={metricCards.plan} />
         <KpiCard label="Recebido no mês" value={formatMoney(stats.monthReceived)} helper="Pagamentos registrados." icon={metricCards.revenue} />
         <KpiCard label="Cobranças abertas" value={stats.openCharges.length} helper="Asaas nos últimos 30 dias." icon={metricCards.debt} />
@@ -32,7 +32,7 @@ export default async function DashboardAdminMetricasPage() {
 
       <section className="grid gap-6 xl:grid-cols-2">
         <article className="rounded-[1.75rem] border border-neutral-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-black">Receita por clínica</h2>
+          <h2 className="text-xl font-black">Receita por barbearia</h2>
           <div className="mt-5 space-y-3">
             {topClinics.map((clinic) => (
               <MetricRow

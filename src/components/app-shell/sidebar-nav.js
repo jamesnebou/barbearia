@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CalendarDays, CreditCard, KanbanSquare, LayoutDashboard, Menu, ReceiptText, Scissors, Settings, Stethoscope, UserCog, UsersRound, X } from "lucide-react";
+import { Bell, CalendarDays, CreditCard, KanbanSquare, LayoutDashboard, Menu, ReceiptText, Scissors, Settings, UserRound, UserCog, UsersRound, X } from "lucide-react";
 import { useState } from "react";
 
 const iconMap = {
@@ -11,7 +11,7 @@ const iconMap = {
   notificacoes: Bell,
   clientes: UsersRound,
   crm: KanbanSquare,
-  profissionais: Stethoscope,
+  profissionais: UserRound,
   procedimentos: Scissors,
   usuarios: UserCog,
   configuracoes: Settings,
@@ -23,7 +23,7 @@ export function SidebarNav({ items }) {
   const pathname = usePathname();
 
   return (
-    <nav className="relative mt-5 flex gap-2 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
+    <nav className="dashboard-sidebar-nav relative mt-5 flex gap-2 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
       {items.map((item) => {
         const Icon = iconMap[item.icon] || LayoutDashboard;
         const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -33,9 +33,9 @@ export function SidebarNav({ items }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={[
-              "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition",
+              "dashboard-nav-item inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition",
               active
-                ? "bg-[linear-gradient(135deg,color-mix(in_srgb,var(--clinic-accent)_20%,white),rgba(255,255,255,0.82))] text-[var(--clinic-primary)] shadow-[0_12px_26px_color-mix(in_srgb,var(--clinic-primary)_14%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--clinic-primary)_16%,transparent)]"
+                ? "is-active bg-[linear-gradient(135deg,color-mix(in_srgb,var(--clinic-accent)_20%,white),rgba(255,255,255,0.82))] text-[var(--clinic-primary)] shadow-[0_12px_26px_color-mix(in_srgb,var(--clinic-primary)_14%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--clinic-primary)_16%,transparent)]"
                 : "text-neutral-600 hover:bg-white/75 hover:text-[var(--clinic-primary)] hover:shadow-sm",
             ].join(" ")}
           >
@@ -59,7 +59,7 @@ export function MobileSidebarMenu({ items, brandName, logoUrl }) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur-xl md:hidden">
+      <header className="dashboard-mobile-header sticky top-0 z-40 border-b border-neutral-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur-xl md:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             {logoUrl ? (
@@ -84,7 +84,7 @@ export function MobileSidebarMenu({ items, brandName, logoUrl }) {
 
       {open ? (
         <div className="fixed inset-0 z-50 bg-neutral-950/35 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)}>
-          <nav className="premium-panel h-full w-[min(340px,86vw)] rounded-none border-y-0 border-l-0 p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
+          <nav className="premium-panel dashboard-mobile-panel h-full w-[min(340px,86vw)] rounded-none border-y-0 border-l-0 p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-5 flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 text-center">
                 {logoUrl ? (
@@ -110,9 +110,9 @@ export function MobileSidebarMenu({ items, brandName, logoUrl }) {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={[
-                      "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition",
+                      "dashboard-nav-item flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition",
                       active
-                        ? "bg-[linear-gradient(135deg,color-mix(in_srgb,var(--clinic-accent)_20%,white),rgba(255,255,255,0.82))] text-[var(--clinic-primary)] shadow-sm"
+                        ? "is-active bg-[linear-gradient(135deg,color-mix(in_srgb,var(--clinic-accent)_20%,white),rgba(255,255,255,0.82))] text-[var(--clinic-primary)] shadow-sm"
                         : "text-neutral-600 hover:bg-white/75",
                     ].join(" ")}
                   >

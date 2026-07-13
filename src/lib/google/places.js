@@ -10,7 +10,7 @@ function mapReview(review) {
   const text = review?.text?.text || review?.originalText?.text || "";
 
   return {
-    nome: normalizedText(author.displayName) || "Paciente",
+    nome: normalizedText(author.displayName) || "Cliente",
     procedimento: review?.relativePublishTimeDescription ? `Google - ${review.relativePublishTimeDescription}` : "Avaliacao Google",
     texto: normalizedText(text),
     rating: Number(review?.rating || 5),

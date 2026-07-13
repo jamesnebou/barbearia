@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { paidAmount } from "@/lib/barbearia/finance";
 import { CalendarDays, CreditCard, Scissors, ShieldCheck, TrendingUp, UsersRound, Wallet } from "lucide-react";
 import { requireClinic } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +7,7 @@ import { Card, EmptyClinicState, EmptyState, Notice, PageHeader } from "@/compon
 import { getClinicBillingState, getClinicPlan } from "@/lib/saas/plans";
 
 async function countRows(supabase, table, clinicaId) {
-  const { count, error } = await supabase.from(table).select("id", { count: "exact", head: true }).eq("clinica_id", clinicaId);
+  const { count, error } = await supabase.from(table).select("id", { count: "exact", head: true }).eq("barbearia_id", clinicaId);
   if (error) {
     console.error(`Erro ao contar ${table}:`, error);
     return 0;
@@ -77,14 +78,14 @@ export default async function DashboardPage({ searchParams }) {
   const chartEnd = days[days.length - 1].end;
 
   const [clientes, profissionais, procedimentos, agendamentos, hojeResult, periodoResult, proximosResult, siteBookingsResult] = await Promise.all([
-    countRows(supabase, "clientes", activeClinic.id),
-    countRows(supabase, "profissionais", activeClinic.id),
-    countRows(supabase, "procedimentos", activeClinic.id),
-    countRows(supabase, "agendamentos", activeClinic.id),
-    supabase.from("agendamentos").select("id, valor, valor_pago, status").eq("clinica_id", activeClinic.id).gte("inicio", dayStart).lt("inicio", dayEnd),
-    supabase.from("agendamentos").select("id, inicio, valor, valor_pago, pagamento_status, status").eq("clinica_id", activeClinic.id).gte("inicio", chartStart).lt("inicio", chartEnd),
-    supabase.from("agendamentos").select("id, inicio, status, valor, clientes(nome), profissionais(nome), procedimentos(nome)").eq("clinica_id", activeClinic.id).gte("inicio", new Date().toISOString()).order("inicio", { ascending: true }).limit(5),
-    supabase.from("site_agendamentos_publicos").select("id, nome, telefone, data_hora, valor_sinal, pagamento_status, invoice_url").eq("clinica_id", activeClinic.id).gte("created_at", chartStart).order("created_at", { ascending: false }).limit(8),
+    countRows(supabase, "barbearia_clientes", activeClinic.id),
+    countRows(supabase, "barbearia_barbeiros", activeClinic.id),
+    countRows(supabase, "barbearia_servicos", activeClinic.id),
+    countRows(supabase, "barbearia_agendamentos", activeClinic.id),
+    supabase.from("barbearia_agendamentos").select("id, valor:valor_final, status, pagamentos:barbearia_pagamentos(valor, status)").eq("barbearia_id", activeClinic.id).gte("inicio", dayStart).lt("inicio", dayEnd),
+    supabase.from("barbearia_agendamentos").select("id, inicio, valor:valor_final, pagamento_status, status, pagamentos:barbearia_pagamentos(valor, status)").eq("barbearia_id", activeClinic.id).gte("inicio", chartStart).lt("inicio", chartEnd),
+    supabase.from("barbearia_agendamentos").select("id, inicio, status, valor:valor_final, clientes:barbearia_clientes(nome), profissionais:barbearia_barbeiros(nome), procedimentos:barbearia_servicos(nome), pagamentos:barbearia_pagamentos(valor, status)").eq("barbearia_id", activeClinic.id).gte("inicio", new Date().toISOString()).order("inicio", { ascending: true }).limit(5),
+    supabase.from("barbearia_site_agendamentos_publicos").select("id, nome, telefone, data_hora, valor_sinal, pagamento_status, invoice_url").eq("barbearia_id", activeClinic.id).gte("created_at", chartStart).order("created_at", { ascending: false }).limit(8),
   ]);
 
   const hoje = hojeResult.data || [];
@@ -103,17 +104,17 @@ export default async function DashboardPage({ searchParams }) {
     if (!row) continue;
     if (isFaturavel(item)) {
       row.previsto += Number(item.valor || 0);
-      row.recebido += Number(item.valor_pago || 0);
+      row.recebido += paidAmount(item);
     }
     row.atendimentos += 1;
   }
 
   const maxChart = Math.max(1, ...days.map((item) => Math.max(item.previsto, item.recebido)));
   const faturamentoHoje = hojeFaturavel.reduce((acc, item) => acc + Number(item.valor || 0), 0);
-  const recebidoHoje = hojeFaturavel.reduce((acc, item) => acc + Number(item.valor_pago || 0), 0);
+  const recebidoHoje = hojeFaturavel.reduce((acc, item) => acc + paidAmount(item), 0);
   const pendenteHoje = Math.max(0, faturamentoHoje - recebidoHoje);
   const faltasHoje = hoje.filter((item) => item.status === "faltou").length;
-  const recebidoPeriodo = periodoFaturavel.reduce((acc, item) => acc + Number(item.valor_pago || 0), 0);
+  const recebidoPeriodo = periodoFaturavel.reduce((acc, item) => acc + paidAmount(item), 0);
   const previstoPeriodo = periodoFaturavel.reduce((acc, item) => acc + Number(item.valor || 0), 0);
   const pendentePeriodo = Math.max(0, previstoPeriodo - recebidoPeriodo);
   const statusCounts = periodo.reduce((acc, item) => {
@@ -125,8 +126,8 @@ export default async function DashboardPage({ searchParams }) {
 
   const cards = [
     { label: "Clientes", value: clientes, detail: `${plan.limite_clientes || "-"} no plano`, icon: UsersRound },
-    { label: "Profissionais", value: profissionais, detail: `${plan.limite_profissionais || "-"} no plano`, icon: UsersRound },
-    { label: "Procedimentos", value: procedimentos, detail: "serviços ativos e pacotes", icon: Scissors },
+    { label: "Barbeiros", value: profissionais, detail: `${plan.limite_barbeiros || "-"} no plano`, icon: UsersRound },
+    { label: "Serviços", value: procedimentos, detail: "serviços ativos e pacotes", icon: Scissors },
     { label: "Agendamentos", value: agendamentos, detail: "histórico total", icon: CalendarDays },
   ];
 
@@ -139,7 +140,7 @@ export default async function DashboardPage({ searchParams }) {
   return (
     <main className="min-w-0 overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
       <section className="mx-auto max-w-7xl min-w-0">
-        <PageHeader eyebrow="Dashboard" title="Operação da clínica" description={`Visão executiva de ${brandName}: faturamento, agenda, clientes, equipe e status comercial.`} />
+        <PageHeader eyebrow="Dashboard" title="Operação da barbearia" description={`Visão executiva de ${brandName}: faturamento, agenda, clientes, equipe e status comercial.`} />
         {params?.erro === "permissao" ? (
           <div className="mt-6">
             <Notice type="warning" title="Acesso restrito">Seu papel atual nao tem permissao para abrir essa area. O menu mostra apenas os modulos liberados para o seu acesso.</Notice>
@@ -273,11 +274,11 @@ export default async function DashboardPage({ searchParams }) {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-lg font-semibold">Próximos agendamentos</h2><Link href="/dashboard/agenda" className="text-sm font-semibold text-[var(--clinic-primary)]">Abrir agenda</Link></div>
             <div className="mt-4 space-y-3">
               {proximos.length === 0 ? (
-                <EmptyState title="Agenda livre nos próximos horários" description="Cadastre um atendimento para demonstrar status, WhatsApp rápido, faturamento previsto e filtro por profissional." action={<Link href="/dashboard/agenda" className="inline-flex h-10 items-center rounded-lg bg-[var(--clinic-primary)] px-4 text-sm font-semibold text-white">Criar agendamento</Link>} />
+                <EmptyState title="Agenda livre nos próximos horários" description="Cadastre um atendimento para demonstrar status, WhatsApp rápido, faturamento previsto e filtro por barbeiro." action={<Link href="/dashboard/agenda" className="inline-flex h-10 items-center rounded-lg bg-[var(--clinic-primary)] px-4 text-sm font-semibold text-white">Criar agendamento</Link>} />
               ) : proximos.map((item) => (
                 <div key={item.id} className="rounded-lg border border-neutral-200 p-4">
-                  <div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{item.clientes?.nome || "Cliente não informado"}</p><p className="mt-1 text-sm text-neutral-600">{item.procedimentos?.nome || "Procedimento não informado"}</p></div><span className="rounded-full bg-[color-mix(in_srgb,var(--clinic-accent)_10%,white)] px-3 py-1 text-xs font-bold uppercase text-[var(--clinic-primary)]">{item.status}</span></div>
-                  <p className="mt-3 text-sm text-neutral-500">{new Date(item.inicio).toLocaleString("pt-BR")} com {item.profissionais?.nome || "profissional não informado"}</p>
+                  <div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{item.clientes?.nome || "Cliente não informado"}</p><p className="mt-1 text-sm text-neutral-600">{item.procedimentos?.nome || "Serviço não informado"}</p></div><span className="rounded-full bg-[color-mix(in_srgb,var(--clinic-accent)_10%,white)] px-3 py-1 text-xs font-bold uppercase text-[var(--clinic-primary)]">{item.status}</span></div>
+                  <p className="mt-3 text-sm text-neutral-500">{new Date(item.inicio).toLocaleString("pt-BR")} com {item.profissionais?.nome || "barbeiro não informado"}</p>
                 </div>
               ))}
             </div>

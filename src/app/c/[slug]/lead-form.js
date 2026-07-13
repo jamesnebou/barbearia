@@ -68,11 +68,11 @@ export function PublicLeadForm({ slug, query }) {
               <div className="pr-12">
                 <p className="text-xs font-black uppercase tracking-[0.32em] text-[var(--clinic-accent)]">Atendimento</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight sm:mt-3 sm:text-5xl">Quero saber mais</h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-white/68 sm:mt-4 sm:leading-7">Envie seus dados e conte o que você procura. A equipe da clínica entra em contato para orientar o melhor próximo passo.</p>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/68 sm:mt-4 sm:leading-7">Envie seus dados e conte o que você procura. A equipe da barbearia entra em contato para orientar o melhor próximo passo.</p>
               </div>
 
               {query?.lead === "ok" ? (
-                <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">Recebemos sua solicitação. A clínica entrará em contato em breve.</div>
+                <div className="mt-6 rounded-2xl border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">Recebemos sua solicitação. A barbearia entrará em contato em breve.</div>
               ) : null}
               {query?.lead_erro ? (
                 <div className="mt-6 rounded-2xl border border-red-300/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">{query?.mensagem || "Não foi possível enviar sua solicitação agora."}</div>
@@ -86,7 +86,7 @@ export function PublicLeadForm({ slug, query }) {
                   <input name="email" type="email" aria-label="E-mail" placeholder="E-mail" className="h-12 w-full rounded-2xl border border-white/10 bg-white/10 px-4 text-sm text-white outline-none transition placeholder:text-white/42 focus:border-[var(--clinic-accent)] focus:bg-white/[0.14]" />
                 </div>
                 <textarea name="mensagem" rows={4} aria-label="Mensagem" placeholder="Mensagem" className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/42 focus:border-[var(--clinic-accent)] focus:bg-white/[0.14]" />
-                <p className="text-xs leading-5 text-white/45">Ao enviar, você autoriza o contato da clínica pelos dados informados.</p>
+                <p className="text-xs leading-5 text-white/45">Ao enviar, você autoriza o contato da barbearia pelos dados informados.</p>
                 <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--clinic-accent)] px-6 py-3.5 text-sm font-black text-[#17130f] shadow-[0_18px_48px_color-mix(in_srgb,var(--clinic-accent)_28%,transparent)] sm:py-4">
                   <MessageCircle size={18} /> Quero saber mais
                 </button>

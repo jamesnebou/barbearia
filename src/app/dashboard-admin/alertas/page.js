@@ -1,6 +1,6 @@
 ﻿import { PageHero, StatusPill, formatDate, getRecentActivity, getRisks, loadDashboardAdminData } from "../admin-core";
 
-export const metadata = { title: "Alertas admin | NexaWi Clínicas" };
+export const metadata = { title: "Alertas admin | NexaWi Barbearias" };
 
 export default async function DashboardAdminAlertasPage() {
   const { analytics, enrichedClinics } = await loadDashboardAdminData();
@@ -24,7 +24,7 @@ export default async function DashboardAdminAlertasPage() {
                   </div>
                   <p className="mt-2 text-xs leading-5 text-neutral-500">
                     {clinic.status === "trial" ? `Trial até ${formatDate(clinic.trial_ends_at)}.` : null}
-                    {clinic.status === "inadimplente" ? " Clínica inadimplente." : null}
+                    {clinic.status === "inadimplente" ? " Barbearia inadimplente." : null}
                     {clinic.insights.asaasOpen ? ` ${clinic.insights.asaasOpen} cobrança(s) aberta(s).` : null}
                     {clinic.insights.usersPending ? ` ${clinic.insights.usersPending} usuário(s) sem acesso confirmado.` : null}
                   </p>

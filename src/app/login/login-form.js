@@ -21,7 +21,7 @@ function SubmitButton({ label = "Entrar", pendingLabel = "Entrando..." }) {
   );
 }
 
-export default function LoginForm({ mode = "cliente", next = "/dashboard", emailPlaceholder = "voce@clinica.com", submitLabel = "Entrar" }) {
+export default function LoginForm({ mode = "cliente", next = "/dashboard", emailPlaceholder = "voce@barbearia.com", submitLabel = "Entrar" }) {
   const [state, formAction] = useActionState(signInAction, initialState);
 
   return (
@@ -42,7 +42,7 @@ export default function LoginForm({ mode = "cliente", next = "/dashboard", email
       <label className="block">
         <span className="flex items-center justify-between gap-3 text-sm font-medium text-neutral-700">
           Senha
-          {mode === "admin" ? (
+          {mode === "gerente" ? (
             <Link href="/login/recuperar-senha" className="text-xs font-bold text-[#ed7009] hover:text-[#cf5f07]">
               Esqueci minha senha
             </Link>

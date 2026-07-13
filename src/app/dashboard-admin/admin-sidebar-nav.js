@@ -20,9 +20,9 @@ export const adminNavItems = [
   { href: "/dashboard-admin", label: "Visão geral", icon: LineChart },
   { href: "/dashboard-admin/metricas", label: "Métricas", icon: BarChart3 },
   { href: "/dashboard-admin/funil", label: "Funil comercial", icon: MousePointerClick },
-  { href: "/dashboard-admin/clinicas", label: "Clínicas", icon: Building2 },
+  { href: "/dashboard-admin/clinicas", label: "Barbearias", icon: Building2 },
   { href: "/dashboard-admin/alertas", label: "Alertas", icon: AlertTriangle },
-  { href: "/dashboard-admin/nova-alerta", label: "Nova clínica", icon: UserCheck },
+  { href: "/dashboard-admin/nova-alerta", label: "Nova barbearia", icon: UserCheck },
   { href: "/dashboard-admin/planos", label: "Planos", icon: CreditCard },
   { href: "/dashboard-admin/configuracoes", label: "Configurações", icon: Settings },
 ];

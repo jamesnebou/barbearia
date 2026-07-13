@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Demo NexaWi Clínicas",
-  description: "Acesse a demonstração real do dashboard NexaWi Clínicas.",
+  title: "Demo NexaWi Barbearias",
+  description: "Acesse a demonstração real do dashboard NexaWi Barbearias.",
 };
 
 export default function DemoPage() {

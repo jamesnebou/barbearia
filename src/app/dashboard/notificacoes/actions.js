@@ -15,10 +15,10 @@ export async function markNotificationViewedAction(formData) {
   if (!activeClinic?.id || !id) return;
 
   const { error } = await supabaseAdmin
-    .from("site_agendamentos_publicos")
+    .from("barbearia_site_agendamentos_publicos")
     .update({ visualizado_em: new Date().toISOString() })
     .eq("id", id)
-    .eq("clinica_id", activeClinic.id);
+    .eq("barbearia_id", activeClinic.id);
 
   if (error) return;
   revalidatePath("/dashboard");
@@ -31,9 +31,9 @@ export async function markAllNotificationsViewedAction() {
   if (!activeClinic?.id) return;
 
   const { error } = await supabaseAdmin
-    .from("site_agendamentos_publicos")
+    .from("barbearia_site_agendamentos_publicos")
     .update({ visualizado_em: new Date().toISOString() })
-    .eq("clinica_id", activeClinic.id)
+    .eq("barbearia_id", activeClinic.id)
     .is("visualizado_em", null);
 
   if (error) return;

@@ -7,8 +7,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeSchedule } from "@/lib/clinic/schedule";
 import { ACCESS_SECTION_LABELS, ROLE_ACCESS } from "@/lib/auth/permissions";
 import { BioEditor } from "./bio-editor";
+import { decryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 
-export const metadata = { title: "Configurações | Clínica SaaS" };
+export const metadata = { title: "Configurações | Barbearia SaaS" };
 export const dynamic = "force-dynamic";
 
 const weekDays = [
@@ -23,10 +24,10 @@ const weekDays = [
 
 const clinicRoles = [
   ["owner", "Owner"],
-  ["admin", "Admin"],
+  ["gerente", "Admin"],
   ["recepcao", "Recepção"],
   ["financeiro", "Financeiro"],
-  ["profissional", "Profissional"],
+  ["barbeiro", "Barbeiro"],
 ];
 
 function userSelectedSections(usuario) {
@@ -70,7 +71,7 @@ function DomainStatusCard({ domain }) {
         </span>
       </div>
       <p className="mt-2 text-xs leading-5 text-neutral-600">
-        {ready ? "Domínio pronto para abrir o site público da clínica." : notes?.message || "Aguardando verificação do domínio na Vercel."}
+        {ready ? "Domínio pronto para abrir o site público da barbearia." : notes?.message || "Aguardando verificação do domínio na Vercel."}
       </p>
       {!ready ? <p className="mt-2 rounded-md bg-white px-3 py-2 text-xs leading-5 text-neutral-600">{dnsHint(domain.dominio)}</p> : null}
       {Array.isArray(notes?.verification) && notes.verification.length ? (
@@ -120,36 +121,43 @@ export default async function ConfiguracoesPage({ searchParams }) {
   }
 
   const { data: freshClinic } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .select("id, nome, slug, documento, telefone, email, endereco, cidade, estado, metadata")
     .eq("id", initialClinic.id)
     .maybeSingle();
 
   const activeClinic = freshClinic || initialClinic;
-  const membership = context.memberships?.find((item) => item.clinica_id === activeClinic.id) || context.memberships?.[0] || null;
+  const membership = context.memberships?.find((item) => item.barbearia_id === activeClinic.id) || context.memberships?.[0] || null;
   const meta = activeClinic.metadata || {};
   const site = meta.site_publico || {};
   const schedule = normalizeSchedule(meta.horario_funcionamento || {});
   const { data: domains = [] } = await supabaseAdmin
-    .from("clinica_dominios")
+    .from("barbearia_dominios")
     .select("dominio, status, observacoes")
-    .eq("clinica_id", activeClinic.id)
+    .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: false });
-  const { data: integration } = await supabaseAdmin
-    .from("clinica_integracoes")
-    .select("asaas_ativo, asaas_base_url, asaas_api_key, asaas_webhook_token, email_ativo, email_destino, email_remetente, whatsapp_ativo, whatsapp_provider, whatsapp_numero_destino, whatsapp_webhook_url, whatsapp_token")
-    .eq("clinica_id", activeClinic.id)
-    .maybeSingle();
+  const { data: integrationRows = [] } = await supabaseAdmin
+    .from("barbearia_integracoes")
+    .select("provedor, nome, ativo, configuracao_publica, webhook_url, segredos_criptografados")
+    .eq("barbearia_id", activeClinic.id);
+  const integration = integrationRows.reduce((result, item) => {
+    const config = item.configuracao_publica || {};
+    const secrets = decryptBarbeariaSecrets(item.segredos_criptografados);
+    if (item.provedor === "asaas") return { ...result, asaas_ativo: item.ativo, asaas_base_url: config.baseUrl, asaas_api_key: secrets.apiKey, asaas_webhook_token: secrets.webhookToken };
+    if (item.provedor === "resend") return { ...result, email_ativo: item.ativo, email_destino: config.email_destino, email_remetente: config.email_remetente };
+    if (item.provedor === "whatsapp") return { ...result, whatsapp_ativo: item.ativo, whatsapp_provider: config.provider || item.nome, whatsapp_numero_destino: config.numero_destino, whatsapp_webhook_url: item.webhook_url, whatsapp_token: secrets.token };
+    return result;
+  }, {});
   const { data: usuarios = [] } = await supabaseAdmin
-    .from("usuarios_clinica")
-    .select("id, nome, email, papel, ativo, permissoes, accepted_at, created_at")
-    .eq("clinica_id", activeClinic.id)
+    .from("barbearia_usuarios")
+    .select("id, nome, email, papel, ativo, permissoes, aceito_em, created_at")
+    .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: true });
 
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <PageHeader eyebrow="Clínica" title="Configurações da clínica" description="Ajuste dados comerciais, identidade visual, expediente, política de cancelamento e WhatsApp padrão." />
+        <PageHeader eyebrow="Barbearia" title="Configurações da barbearia" description="Ajuste dados comerciais, identidade visual, expediente, política de cancelamento e WhatsApp padrão." />
 
         {params?.ok === "configuracoes" ? <Notice>Configurações atualizadas com sucesso.</Notice> : null}
         {params?.ok === "whatsapp" ? <Notice>Mensagem de teste enviada pelo WhatsApp.</Notice> : null}
@@ -159,9 +167,9 @@ export default async function ConfiguracoesPage({ searchParams }) {
         <form action={updateClinicSettingsAction} className="mt-8 space-y-6">
           <ConfigTabs>
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2"><Settings size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Dados da clínica</h2></div>
+            <div className="flex items-center gap-2"><Settings size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Dados da barbearia</h2></div>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="Nome da clínica" name="nome" defaultValue={activeClinic.nome || ""} required />
+              <Field label="Nome da barbearia" name="nome" defaultValue={activeClinic.nome || ""} required />
               <Field label="CNPJ/CPF" name="documento" defaultValue={activeClinic.documento || ""} />
               <Field label="Telefone" name="telefone" defaultValue={activeClinic.telefone || ""} />
               <Field label="E-mail" name="email" type="email" defaultValue={activeClinic.email || ""} />
@@ -173,7 +181,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
             </div>
             <div className="mt-6 rounded-lg border border-[color-mix(in_srgb,var(--clinic-primary)_20%,#e5e5e5)] bg-[color-mix(in_srgb,var(--clinic-accent)_7%,white)] p-4">
               <h3 className="text-base font-black tracking-tight text-neutral-950">Dados de acesso do usuário logado</h3>
-              <p className="mt-2 text-sm leading-6 text-neutral-600">Altere o nome, e-mail de login ou senha da sua própria conta. Estes dados ficam salvos no Supabase Auth e no vínculo de usuários da clínica.</p>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">Altere o nome, e-mail de login ou senha da sua própria conta. Estes dados ficam salvos no Supabase Auth e no vínculo de usuários da barbearia.</p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <Field label="Nome do usuário" name="usuario_nome" defaultValue={membership?.nome || context.user?.user_metadata?.nome || ""} />
                 <Field label="E-mail de login" name="usuario_email" type="email" defaultValue={context.user?.email || membership?.email || ""} />
@@ -198,7 +206,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Nome da marca" name="brand_name" defaultValue={meta.brand_name || activeClinic.nome || ""} />
                 <label className="block">
-                  <span className="text-sm font-medium text-neutral-700">Logo da clínica</span>
+                  <span className="text-sm font-medium text-neutral-700">Logo da barbearia</span>
                   <input name="logo_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-[var(--clinic-primary)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--clinic-primary)_18%,transparent)]" />
                   <span className="mt-2 block text-xs leading-5 text-neutral-500">PNG, JPG, WEBP ou SVG. Limite de 30 MB. Ao enviar, a logo atual será substituída.</span>
                 </label>
@@ -238,16 +246,16 @@ export default async function ConfiguracoesPage({ searchParams }) {
                 <input type="checkbox" name="site_publicado" defaultChecked={site.publicado !== false} />
                 Publicar site e agendamento online
               </label>
-              <Field label="Domínio próprio desejado" name="site_dominio" placeholder="www.suaclinica.com.br" defaultValue={domains[0]?.dominio || ""} />
-              <Field label="Texto pequeno acima do título" name="site_eyebrow" defaultValue={site.eyebrow || ""} placeholder="Estética premium e atendimento personalizado" />
+              <Field label="Domínio próprio desejado" name="site_dominio" placeholder="www.suabarbearia.com.br" defaultValue={domains[0]?.dominio || ""} />
+              <Field label="Texto pequeno acima do título" name="site_eyebrow" defaultValue={site.eyebrow || ""} placeholder="Barbearia premium e atendimento personalizado" />
               <Field label="Título principal" name="site_titulo_hero" defaultValue={site.titulo_hero || ""} placeholder="Realce sua beleza com naturalidade" />
               <div className="lg:col-span-2">
-                <TextArea label="Subtítulo da página" name="site_subtitulo_hero" defaultValue={site.subtitulo_hero || ""} placeholder="Apresente a clínica, diferenciais e convite para agendamento." />
+                <TextArea label="Subtítulo da página" name="site_subtitulo_hero" defaultValue={site.subtitulo_hero || ""} placeholder="Apresente a barbearia, diferenciais e convite para agendamento." />
               </div>
-              <Field label="Nome da profissional em destaque" name="site_nome_profissional" defaultValue={site.nome_profissional || ""} />
-              <Field label="Credencial 1" name="site_credencial_1" defaultValue={site.credencial_1 || ""} placeholder="Protocolos personalizados" />
+              <Field label="Nome do barbeiro em destaque" name="site_nome_profissional" defaultValue={site.nome_profissional || ""} />
+              <Field label="Credencial 1" name="site_credencial_1" defaultValue={site.credencial_1 || ""} placeholder="Atendimento personalizado" />
               <Field label="Credencial 2" name="site_credencial_2" defaultValue={site.credencial_2 || ""} placeholder="Ambiente reservado" />
-              <Field label="Credencial 3" name="site_credencial_3" defaultValue={site.credencial_3 || ""} placeholder="Acompanhamento pos-procedimento" />
+              <Field label="Credencial 3" name="site_credencial_3" defaultValue={site.credencial_3 || ""} placeholder="Orientações após o serviço" />
               <label className="block">
                 <span className="text-sm font-medium text-neutral-700">Foto principal do site</span>
                 <input name="site_hero_image_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
@@ -255,25 +263,25 @@ export default async function ConfiguracoesPage({ searchParams }) {
                 {site.hero_image_url ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem salva.</span> : null}
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Foto da profissional</span>
+                <span className="text-sm font-medium text-neutral-700">Foto do barbeiro ou da equipe</span>
                 <input name="site_profissional_image_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
-                <span className="mt-2 block text-xs leading-5 text-neutral-500">Sobre/profissional. Recomendado: 1200x1500 px, vertical. Limite 50 MB.</span>
+                <span className="mt-2 block text-xs leading-5 text-neutral-500">Sobre/barbeiro. Recomendado: 1200x1500 px, vertical. Limite 50 MB.</span>
                 {site.profissional_image_url ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem salva.</span> : null}
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Foto da clínica 1</span>
+                <span className="text-sm font-medium text-neutral-700">Foto da barbearia 1</span>
                 <input name="site_clinica_foto_1_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
                 <span className="mt-2 block text-xs leading-5 text-neutral-500">Galeria principal. Recomendado: 1600x1000 px, horizontal. Limite 50 MB.</span>
                 {site.clinica_foto_1 ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem salva.</span> : null}
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Foto da clínica 2</span>
+                <span className="text-sm font-medium text-neutral-700">Foto da barbearia 2</span>
                 <input name="site_clinica_foto_2_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
                 <span className="mt-2 block text-xs leading-5 text-neutral-500">Galeria lateral. Recomendado: 1200x800 px. Limite 50 MB.</span>
                 {site.clinica_foto_2 ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem salva.</span> : null}
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Foto da clínica 3</span>
+                <span className="text-sm font-medium text-neutral-700">Foto da barbearia 3</span>
                 <input name="site_clinica_foto_3_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
                 <span className="mt-2 block text-xs leading-5 text-neutral-500">Detalhe/ambiente. Recomendado: 1200x800 px. Limite 50 MB.</span>
                 {site.clinica_foto_3 ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem salva.</span> : null}
@@ -288,7 +296,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
               <Field label="Google Maps URL" name="site_google_maps_url" defaultValue={site.google_maps_url || ""} placeholder="https://maps.google.com/..." />
               <Field label="Avaliações Google URL" name="site_google_reviews_url" defaultValue={site.google_reviews_url || ""} placeholder="https://g.page/r/..." />
               <div className="lg:col-span-2">
-                <BioEditor label="Bio/apresentação da profissional" name="site_bio_profissional" defaultValue={site.bio_profissional || ""} placeholder="Conte a história, especialidade, abordagem e autoridade da profissional." />
+                <BioEditor label="Bio/apresentação do barbeiro" name="site_bio_profissional" defaultValue={site.bio_profissional || ""} placeholder="Conte a história, especialidades, abordagem e experiência do barbeiro." />
               </div>
             </div>
             {domains.length ? (
@@ -309,7 +317,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
                 Buscar avaliações reais via Google Places API
               </label>
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                <Field label="Google Place ID da clínica" name="site_google_place_id" defaultValue={site.google_place_id || ""} placeholder="ChIJ..." />
+                <Field label="Google Place ID da barbearia" name="site_google_place_id" defaultValue={site.google_place_id || ""} placeholder="ChIJ..." />
                 <div className="rounded-lg border border-white/70 bg-white/70 px-4 py-3 text-xs leading-5 text-neutral-600">
                   Configure <strong>GOOGLE_MAPS_API_KEY</strong> no ambiente do SaaS. A busca é feita no servidor com cache de 6 horas para reduzir chamadas.
                 </div>
@@ -323,7 +331,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--clinic-primary)]">Depoimento {index}</p>
                     <div className="mt-4 grid gap-4 lg:grid-cols-2">
                       <Field label="Nome" name={`depoimento_${index}_nome`} defaultValue={depoimento.nome || ""} placeholder="Mariana S." />
-                      <Field label="Procedimento" name={`depoimento_${index}_procedimento`} defaultValue={depoimento.procedimento || ""} placeholder="Tratamento facial" />
+                      <Field label="Serviço" name={`depoimento_${index}_procedimento`} defaultValue={depoimento.procedimento || ""} placeholder="Corte e acabamento" />
                       <div className="lg:col-span-2">
                         <TextArea label="Texto do depoimento" name={`depoimento_${index}_texto`} defaultValue={depoimento.texto || ""} placeholder="Escreva uma avaliação curta, natural e confiável." />
                       </div>
@@ -341,9 +349,9 @@ export default async function ConfiguracoesPage({ searchParams }) {
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <label className="inline-flex items-center gap-2 text-sm font-bold text-neutral-800"><input type="checkbox" name="site_campanha_ativa" defaultChecked={Boolean(site.campanha_ativa)} />Mostrar campanha em destaque no site</label>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <Field label="Título da campanha" name="site_campanha_titulo" defaultValue={site.campanha_titulo || ""} placeholder="Protocolo premium em destaque" />
-                  <Field label="Subtítulo da campanha" name="site_campanha_subtitulo" defaultValue={site.campanha_subtitulo || ""} placeholder="Oferta, lançamento ou protocolo principal" />
-                  <div className="lg:col-span-2"><TextArea label="Texto da campanha" name="site_campanha_texto" defaultValue={site.campanha_texto || ""} placeholder="Explique o produto ou serviço que a clínica quer vender mais." /></div>
+                  <Field label="Título da campanha" name="site_campanha_titulo" defaultValue={site.campanha_titulo || ""} placeholder="Combo premium em destaque" />
+                  <Field label="Subtítulo da campanha" name="site_campanha_subtitulo" defaultValue={site.campanha_subtitulo || ""} placeholder="Oferta, lançamento ou serviço principal" />
+                  <div className="lg:col-span-2"><TextArea label="Texto da campanha" name="site_campanha_texto" defaultValue={site.campanha_texto || ""} placeholder="Explique o produto ou serviço que a barbearia quer vender mais." /></div>
                   <Field label="Texto do botão" name="site_campanha_cta_label" defaultValue={site.campanha_cta_label || ""} placeholder="Quero saber mais" />
                   <Field label="Link do botão" name="site_campanha_cta_url" defaultValue={site.campanha_cta_url || ""} placeholder="#agendar ou https://..." />
                   <Field label="URL de vídeo ou mídia" name="site_campanha_media_url" defaultValue={site.campanha_media_url || ""} placeholder="YouTube, Vimeo, Instagram ou arquivo externo" />
@@ -353,10 +361,10 @@ export default async function ConfiguracoesPage({ searchParams }) {
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <label className="inline-flex items-center gap-2 text-sm font-bold text-neutral-800"><input type="checkbox" name="site_video_ativo" defaultChecked={Boolean(site.video_ativo)} />Mostrar seção de vídeo institucional</label>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <Field label="Título do vídeo" name="site_video_titulo" defaultValue={site.video_titulo || ""} placeholder="Conheça a clínica por dentro" />
-                  <Field label="Subtítulo do vídeo" name="site_video_subtitulo" defaultValue={site.video_subtitulo || ""} placeholder="Uma mensagem da profissional para novos pacientes" />
+                  <Field label="Título do vídeo" name="site_video_titulo" defaultValue={site.video_titulo || ""} placeholder="Conheça a barbearia por dentro" />
+                  <Field label="Subtítulo do vídeo" name="site_video_subtitulo" defaultValue={site.video_subtitulo || ""} placeholder="Uma mensagem da barbearia para novos clientes" />
                   <Field label="URL do vídeo" name="site_video_url" defaultValue={site.video_url || ""} placeholder="https://www.youtube.com/embed/..." />
-                  <Field label="Texto do CTA" name="site_video_cta_label" defaultValue={site.video_cta_label || ""} placeholder="Agendar avaliação" />
+                  <Field label="Texto do CTA" name="site_video_cta_label" defaultValue={site.video_cta_label || ""} placeholder="Agendar agora" />
                   <Field label="Link do CTA" name="site_video_cta_url" defaultValue={site.video_cta_url || ""} placeholder="#agendar" />
                 </div>
               </div>
@@ -365,7 +373,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
 
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2"><Clock size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Horário de funcionamento</h2></div>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">Configure cada dia separadamente. Use o segundo período apenas quando a clínica realmente fechar no meio do dia.</p>
+            <p className="mt-2 text-sm leading-6 text-neutral-600">Configure cada dia separadamente. Use o segundo período apenas quando a barbearia realmente fechar no meio do dia.</p>
             <div className="mt-5 grid gap-3">
               {weekDays.map(([value, label]) => {
                 const day = schedule.dias_config?.[value] || { ativo: false, periodos: [] };
@@ -400,18 +408,18 @@ export default async function ConfiguracoesPage({ searchParams }) {
           </section>
 
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2"><CreditCard size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Integrações da clínica</h2></div>
-            <p className="mt-2 text-sm text-neutral-600">Estas credenciais pertencem somente a esta clínica. Deixe campos sensíveis em branco para manter o valor já salvo.</p>
+            <div className="flex items-center gap-2"><CreditCard size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Integrações da barbearia</h2></div>
+            <p className="mt-2 text-sm text-neutral-600">Estas credenciais pertencem somente a esta barbearia. Deixe campos sensíveis em branco para manter o valor já salvo.</p>
             <div className="mt-5 grid gap-5">
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <label className="inline-flex items-center gap-2 text-sm font-bold text-neutral-800">
                   <input type="checkbox" name="asaas_ativo" defaultChecked={Boolean(integration?.asaas_ativo)} />
-                  Ativar checkout Asaas desta clínica
+                  Ativar checkout Asaas desta barbearia
                 </label>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   <Field label="Asaas API URL" name="asaas_base_url" defaultValue={integration?.asaas_base_url || "https://sandbox.asaas.com/api/v3"} />
-                  <Field label="Asaas API Key" name="asaas_api_key" type="password" placeholder={integration?.asaas_api_key ? "Chave salva. Preencha apenas para trocar." : "Cole a API key da clínica"} />
-                  <Field label="Token do webhook Asaas" name="asaas_webhook_token" type="password" placeholder={integration?.asaas_webhook_token ? "Token salvo. Preencha apenas para trocar." : "Token configurado no webhook da clínica"} />
+                  <Field label="Asaas API Key" name="asaas_api_key" type="password" placeholder={integration?.asaas_api_key ? "Chave salva. Preencha apenas para trocar." : "Cole a API key da barbearia"} />
+                  <Field label="Token do webhook Asaas" name="asaas_webhook_token" type="password" placeholder={integration?.asaas_webhook_token ? "Token salvo. Preencha apenas para trocar." : "Token configurado no webhook da barbearia"} />
                 </div>
               </div>
 
@@ -423,7 +431,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
                 </label>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   <Field label="E-mail que recebe os avisos" name="email_destino" type="email" defaultValue={integration?.email_destino || activeClinic.email || ""} />
-                  <Field label="Remetente" name="email_remetente" defaultValue={integration?.email_remetente || ""} placeholder="Clínica <avisos@seudominio.com.br>" />
+                  <Field label="Remetente" name="email_remetente" defaultValue={integration?.email_remetente || ""} placeholder="Barbearia <avisos@seudominio.com.br>" />
                 </div>
               </div>
 
@@ -459,13 +467,13 @@ export default async function ConfiguracoesPage({ searchParams }) {
               <h2 className="text-lg font-semibold">Gestão de acessos</h2>
             </div>
             <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Defina a função de cada usuário e quais abas ele pode acessar dentro da dashboard da clínica.
+              Defina a função de cada usuário e quais abas ele pode acessar dentro da dashboard da barbearia.
             </p>
 
             <div className="mt-5 space-y-4">
               {usuarios.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-6 text-sm text-neutral-600">
-                  Nenhum usuário cadastrado para esta clínica.
+                  Nenhum usuário cadastrado para esta barbearia.
                 </div>
               ) : usuarios.map((usuario) => {
                 const formId = `access-user-${usuario.id}`;
@@ -541,7 +549,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs text-neutral-500">{usuario.accepted_at ? "Acesso ativo no Auth." : "Vínculo criado, aguardando primeiro login."}</p>
+                      <p className="text-xs text-neutral-500">{usuario.aceito_em ? "Acesso ativo no Auth." : "Vínculo criado, aguardando primeiro login."}</p>
                       <button
                         form={formId}
                         formAction={updateClinicUserAction}

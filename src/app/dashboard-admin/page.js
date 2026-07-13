@@ -1,6 +1,6 @@
 ﻿import { KpiCard, PageHero, formatMoney, getOverviewStats, loadDashboardAdminData, metricCards } from "./admin-core";
 
-export const metadata = { title: "Visão geral admin | NexaWi Clínicas" };
+export const metadata = { title: "Visão geral admin | NexaWi Barbearias" };
 
 function ProgressBar({ label, value, max, helper }) {
   const percent = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
@@ -28,11 +28,11 @@ export default async function DashboardAdminOverviewPage() {
       <PageHero
         eyebrow="Visão geral"
         title="Centro de comando do SaaS"
-        description="Resumo executivo para acompanhar receita, clínicas, leads, funil comercial e riscos operacionais."
+        description="Resumo executivo para acompanhar receita, barbearias, leads, funil comercial e riscos operacionais."
       />
 
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Clínicas totais" value={clinics.length} helper={`${stats.totalAtivas} ativas ou em trial`} icon={metricCards.clinics} />
+        <KpiCard label="Barbearias totais" value={clinics.length} helper={`${stats.totalAtivas} ativas ou em trial`} icon={metricCards.clinics} />
         <KpiCard label="MRR cobrável" value={formatMoney(stats.mrrCobravel)} helper={`${formatMoney(stats.mrrPotencial)} de MRR potencial`} icon={metricCards.mrr} tone="dark" />
         <KpiCard label="Leads do site" value={stats.siteLeads} helper={`${stats.sitePaidSignals} sinais pagos nos últimos 30 dias`} icon={metricCards.site} />
         <KpiCard label="Inadimplentes" value={stats.inadimplentes} helper={`${stats.openCharges.length} cobranças abertas`} icon={metricCards.debt} />

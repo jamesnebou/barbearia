@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, EmptyClinicState, EmptyState, PageHeader } from "@/components/app-shell/ui";
 import { markAllNotificationsViewedAction, markNotificationViewedAction } from "./actions";
 
-export const metadata = { title: "Notificações | Clínica SaaS" };
+export const metadata = { title: "Notificações | Barbearia SaaS" };
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -35,11 +35,11 @@ function NotificationStatus({ status }) {
 }
 
 async function loadSiteBookings(supabase, clinicId, since) {
-  const baseColumns = "id, nome, telefone, email, data_hora, valor_total, valor_sinal, pagamento_status, invoice_url, created_at, procedimentos(nome), profissionais(nome)";
+  const baseColumns = "id, nome, telefone, email, data_hora, valor_total, valor_sinal, pagamento_status, invoice_url, created_at, procedimentos:barbearia_servicos(nome), profissionais:barbearia_barbeiros(nome)";
   const query = supabase
-    .from("site_agendamentos_publicos")
+    .from("barbearia_site_agendamentos_publicos")
     .select(`${baseColumns}, visualizado_em`)
-    .eq("clinica_id", clinicId)
+    .eq("barbearia_id", clinicId)
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false })
     .limit(50);
@@ -48,9 +48,9 @@ async function loadSiteBookings(supabase, clinicId, since) {
   if (!error) return data || [];
 
   const fallback = await supabase
-    .from("site_agendamentos_publicos")
+    .from("barbearia_site_agendamentos_publicos")
     .select(baseColumns)
-    .eq("clinica_id", clinicId)
+    .eq("barbearia_id", clinicId)
     .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false })
     .limit(50);
@@ -141,7 +141,7 @@ export default async function NotificacoesPage() {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-neutral-600">
-                      {item.procedimentos?.nome || "Procedimento"} com {item.profissionais?.nome || "profissional"}
+                      {item.procedimentos?.nome || "Serviço"} com {item.profissionais?.nome || "barbeiro"}
                     </p>
                     <p className="mt-1 text-xs text-neutral-500">
                       Agendado para {formatDateTime(item.data_hora)} · recebido em {formatDateTime(item.created_at)}

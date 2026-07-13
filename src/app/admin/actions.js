@@ -87,16 +87,16 @@ async function upsertAuthUserWithPassword({ email, password, nome }) {
 export async function createClinicWithOwnerAction(formData) {
   await requireInternalAdmin();
 
-  const nome = requireValue(text(formData, "nome"), "Informe o nome da clínica.");
+  const nome = requireValue(text(formData, "nome"), "Informe o nome da barbearia.");
   const ownerEmail = normalizeEmail(requireValue(text(formData, "owner_email"), "Informe o e-mail do owner."));
   const ownerPassword = requireValue(text(formData, "owner_password"), "Informe uma senha temporária para o owner.");
   const ownerName = nullableText(formData, "owner_nome") || ownerEmail;
-  const slug = slugify(text(formData, "slug") || nome) || `clinica-${Date.now()}`;
+  const slug = slugify(text(formData, "slug") || nome) || `barbearia-${Date.now()}`;
 
   const user = await upsertAuthUserWithPassword({ email: ownerEmail, password: ownerPassword, nome: ownerName });
 
-  const { data: clinica, error: clinicaError } = await supabaseAdmin
-    .from("clinicas")
+  const { data: barbearia, error: clinicaError } = await supabaseAdmin
+    .from("barbearias")
     .insert({
       nome,
       slug,
@@ -122,16 +122,16 @@ export async function createClinicWithOwnerAction(formData) {
 
   if (clinicaError) throw clinicaError;
 
-  const { error: membershipError } = await supabaseAdmin.from("usuarios_clinica").upsert({
-    clinica_id: clinica.id,
+  const { error: membershipError } = await supabaseAdmin.from("barbearia_usuarios").upsert({
+    barbearia_id: barbearia.id,
     user_id: user?.id || null,
     nome: ownerName,
     email: ownerEmail,
     papel: "owner",
     ativo: true,
-    invited_at: new Date().toISOString(),
-    accepted_at: new Date().toISOString(),
-  }, { onConflict: "clinica_id,email" });
+    convidado_em: new Date().toISOString(),
+    aceito_em: new Date().toISOString(),
+  }, { onConflict: "barbearia_id,email" });
 
   if (membershipError) throw membershipError;
 
@@ -139,12 +139,12 @@ export async function createClinicWithOwnerAction(formData) {
   revalidatePath("/dashboard-admin");
   revalidatePath("/dashboard-admin/clinicas");
   revalidatePath("/dashboard-admin/nova-alerta");
-  redirect("/dashboard-admin/clinicas?ok=clinica");
+  redirect("/dashboard-admin/clinicas?ok=barbearia");
 }
 
 export async function updateClinicCommercialAction(formData) {
   await requireInternalAdmin();
-  const id = requireValue(text(formData, "clinica_id"), "Clínica não informada.");
+  const id = requireValue(text(formData, "barbearia_id"), "Barbearia não informada.");
   const status = requireValue(text(formData, "status"), "Status não informado.");
   const plano = requireValue(text(formData, "plano"), "Plano não informado.");
   const trialEndsAt = nullableText(formData, "trial_ends_at");
@@ -166,7 +166,7 @@ export async function updateClinicCommercialAction(formData) {
           : "ativa";
 
   const { error } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .update({
       status: statusFinal,
       plano,
@@ -199,14 +199,14 @@ export async function upsertSystemPlanAction(formData) {
     descricao: nullableText(formData, "descricao"),
     preco_mensal: numberValue(formData, "preco_mensal", 0),
     limite_usuarios: intValue(formData, "limite_usuarios", 1),
-    limite_profissionais: intValue(formData, "limite_profissionais", 1),
+    limite_barbeiros: intValue(formData, "limite_barbeiros", 1),
     limite_clientes: intValue(formData, "limite_clientes", 100),
     limite_agendamentos_mes: intValue(formData, "limite_agendamentos_mes", 100),
     ativo: formData.get("ativo") === "on",
     ordem: Math.max(0, Math.round(numberValue(formData, "ordem", 0))),
   };
 
-  const { error } = await supabaseAdmin.from("planos_sistema").upsert(payload, { onConflict: "slug" });
+  const { error } = await supabaseAdmin.from("barbearia_planos_sistema").upsert(payload, { onConflict: "slug" });
   if (error) throw error;
   revalidatePath("/admin");
   revalidatePath("/dashboard-admin");
@@ -298,7 +298,7 @@ export async function updateMarketingHomeHeroAction(formData) {
     },
   });
 
-  const { error } = await supabaseAdmin.from("app_configuracoes").upsert(
+  const { error } = await supabaseAdmin.from("barbearia_configuracoes_plataforma").upsert(
     {
       chave: MARKETING_HOME_CONFIG_KEY,
       valor: payload,

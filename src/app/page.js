@@ -23,12 +23,12 @@ import { getMarketingHomeConfig } from "@/lib/marketing/home-config";
 const modules = [
   {
     title: "Agenda inteligente",
-    description: "Horários disponíveis, status visual, conflito por profissional, sinal online e confirmação rápida.",
+    description: "Horários disponíveis, status visual, conflito por barbeiro, sinal online e confirmação rápida.",
     icon: CalendarDays,
   },
   {
-    title: "Clientes e prontuário",
-    description: "Ficha completa, anamnese, contraindicações, termos, fotos antes/depois e histórico de evolução.",
+    title: "Clientes e ficha do cliente",
+    description: "Ficha completa, preferências de corte e barba, consentimentos, fotos de referência e histórico de atendimentos.",
     icon: ClipboardCheck,
   },
   {
@@ -37,28 +37,28 @@ const modules = [
     icon: UsersRound,
   },
   {
-    title: "Financeiro da clínica",
+    title: "Financeiro da barbearia",
     description: "Pagamentos, pacotes, comissões, faturamento previsto, recebido e pendências por período.",
     icon: WalletCards,
   },
   {
     title: "Site de vendas incluso",
-    description: "Página premium para cada clínica com procedimentos, depoimentos, localização e agendamento online.",
+    description: "Página premium para cada barbearia com serviços, depoimentos, localização e agendamento online.",
     icon: Globe2,
   },
   {
     title: "Assinatura SaaS",
-    description: "Planos, limites, trial, inadimplência, Asaas e painel interno para gestão das clínicas.",
+    description: "Planos, limites, trial, inadimplência, Asaas e painel interno para gestão das barbearias.",
     icon: ShieldCheck,
   },
 ];
 
 const workflow = [
-  "A cliente entra no site da clínica",
-  "Escolhe procedimento e horário disponível",
+  "A cliente entra no site da barbearia",
+  "Escolhe o serviço e o horário disponível",
   "Paga o sinal pelo checkout",
   "Cai no CRM e na agenda automaticamente",
-  "A clínica acompanha financeiro, prontuário e retorno",
+  "A barbearia acompanha financeiro, ficha do cliente e retorno",
 ];
 
 
@@ -67,7 +67,7 @@ const plans = [
     name: "Starter",
     price: "R$ 97",
     badge: "Entrada",
-    description: "Para clínicas em validação comercial.",
+    description: "Para barbearias em validação comercial.",
     limits: "3 profissionais, 300 clientes e 500 agendamentos por mês.",
     differentiator: "Ideal para sair da agenda manual e começar com site, CRM e financeiro.",
   },
@@ -75,9 +75,9 @@ const plans = [
     name: "Growth",
     price: "R$ 197",
     badge: "Mais vendido",
-    description: "Para clínicas com equipe e rotina ativa.",
+    description: "Para barbearias com equipe e rotina ativa.",
     limits: "10 profissionais, 2.000 clientes e 3.000 agendamentos por mês.",
-    differentiator: "Melhor equilíbrio para clínica que já vende, agenda e precisa controlar equipe.",
+    differentiator: "Melhor equilíbrio para barbearia que já vende, agenda e precisa controlar equipe.",
     highlight: true,
   },
   {
@@ -86,20 +86,20 @@ const plans = [
     badge: "Escala",
     description: "Para operações maiores e redes locais.",
     limits: "50 profissionais, 10.000 clientes e alto volume comercial.",
-    differentiator: "Para clínicas com múltiplas agendas, alto volume e operação comercial madura.",
+    differentiator: "Para barbearias com múltiplas agendas, alto volume e operação comercial madura.",
   },
 ];
 
 const comparisonRows = [
   ["Usuários", "3", "8", "25"],
-  ["Profissionais", "3", "10", "50"],
+  ["Barbeiros", "3", "10", "50"],
   ["Clientes cadastrados", "300", "2.000", "10.000"],
   ["Agendamentos por mês", "500", "3.000", "15.000"],
-  ["Site premium da clínica", "Incluso", "Incluso", "Incluso"],
+  ["Site premium da barbearia", "Incluso", "Incluso", "Incluso"],
   ["CRM de leads e oportunidades", "Incluso", "Incluso", "Incluso"],
-  ["Prontuário, termos e fotos", "Incluso", "Incluso", "Incluso"],
+  ["Ficha do cliente, termos e fotos", "Incluso", "Incluso", "Incluso"],
   ["Financeiro e pacotes", "Básico", "Completo", "Avançado"],
-  ["Comissões por profissional", "Incluso", "Incluso", "Incluso"],
+  ["Comissões por barbeiro", "Incluso", "Incluso", "Incluso"],
   ["Domínio próprio do site", "Incluso", "Incluso", "Incluso"],
   ["Checkout de sinal", "Incluso", "Incluso", "Incluso"],
   ["Indicado para", "Começar", "Crescer", "Escalar"],
@@ -107,24 +107,24 @@ const comparisonRows = [
 
 const faqs = [
   {
-    question: "A NexaWi Clínicas substitui agenda, planilha e CRM separados?",
+    question: "A NexaWi Barbearias substitui agenda, planilha e CRM separados?",
     answer:
-      "Sim. A proposta é centralizar agenda, clientes, prontuário, financeiro, CRM, site público e checkout em um único fluxo operacional.",
+      "Sim. A proposta é centralizar agenda, clientes, ficha do cliente, financeiro, CRM, site público e checkout em um único fluxo operacional.",
   },
   {
-    question: "Cada clínica pode ter o próprio site?",
+    question: "Cada barbearia pode ter o próprio site?",
     answer:
-      "Sim. Cada clínica tem uma página pública editável, com identidade visual, procedimentos, depoimentos, localização, formulário e agendamento conectado à agenda real.",
+      "Sim. Cada barbearia tem uma página pública editável, com identidade visual, serviços, depoimentos, localização, formulário e agendamento conectado à agenda real.",
   },
   {
-    question: "O pagamento do sinal cai direto para a clínica?",
+    question: "O pagamento do sinal cai direto para a barbearia?",
     answer:
-      "Sim, quando a clínica configura sua própria integração Asaas. Assim cada cliente usa suas credenciais e recebe os pagamentos na própria conta.",
+      "Sim, quando a barbearia configura sua própria integração Asaas. Assim cada cliente usa suas credenciais e recebe os pagamentos na própria conta.",
   },
   {
-    question: "A clínica pode usar domínio próprio?",
+    question: "A barbearia pode usar domínio próprio?",
     answer:
-      "Sim. O domínio pode apontar para a Vercel e a plataforma direciona o visitante para o site correto da clínica.",
+      "Sim. O domínio pode apontar para a Vercel e a plataforma direciona o visitante para o site correto da barbearia.",
   },
   {
     question: "O sistema tem demonstração antes da contratação?",
@@ -134,13 +134,13 @@ const faqs = [
   {
     question: "Qual plano faz mais sentido para começar?",
     answer:
-      "Para uma clínica pequena, o Starter resolve o início. Para uma operação que já possui equipe, rotina ativa e volume comercial, o Growth costuma ser o melhor ponto de partida.",
+      "Para uma barbearia pequena, o Starter resolve o início. Para uma operação que já possui equipe, rotina ativa e volume comercial, o Growth costuma ser o melhor ponto de partida.",
   },
 ];
 
 function LogoMark() {
   return (
-    <Image src="/nexawi-clinicas.png" alt="NexaWi Clínicas" width={180} height={48} priority className="h-10 w-auto object-contain" />
+    <Image src="/nexawi-clinicas.png" alt="NexaWi Barbearias" width={180} height={48} priority className="h-10 w-auto object-contain" />
   );
 }
 
@@ -155,8 +155,8 @@ function SectionTitle({ eyebrow, title, description, align = "left" }) {
 }
 
 export const metadata = {
-  title: "NexaWi Clínicas | SaaS para clínicas de estética",
-  description: "Sistema SaaS para clínicas de estética com agenda, site de vendas, CRM, prontuário, financeiro e checkout online.",
+  title: "NexaWi Barbearias | SaaS para barbearias",
+  description: "Sistema SaaS para barbearias com agenda, site de vendas, CRM, ficha do cliente, financeiro e checkout online.",
 };
 
 export default async function Home() {
@@ -171,7 +171,7 @@ export default async function Home() {
           </Link>
           <nav className="hidden items-center gap-7 text-sm font-bold text-white/72 lg:flex">
             <a href="#produto">Produto</a>
-            <a href="#site">Site da clínica</a>
+            <a href="#site">Site da barbearia</a>
             <a href="#planos">Planos</a>
             <a href="#comparativo">Comparativo</a>
             <a href="#faq">FAQ</a>
@@ -239,8 +239,8 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <SectionTitle
             eyebrow="Produto"
-            title="Tudo que uma clínica precisa para operar com aparência de empresa grande."
-            description="A plataforma foi pensada para rotina real: recepção, profissional, financeiro, vendas, retorno, prontuário e site público trabalhando juntos."
+            title="Tudo que uma barbearia precisa para operar com aparência de empresa grande."
+            description="A plataforma foi pensada para rotina real: recepção, barbeiros, financeiro, vendas, retorno, ficha do cliente e site público trabalhando juntos."
             align="center"
           />
           <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -265,7 +265,7 @@ export default async function Home() {
         <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-xs font-black uppercase text-orange-300">Fluxo comercial</p>
-            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Da primeira visita no site ao retorno recomendado.</h2>
+            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Da primeira visita no site ao próximo contato.</h2>
             <p className="mt-5 text-base leading-8 text-white/68">
               O objetivo não é só cadastrar dados. É transformar interesse em agendamento, agendamento em pagamento, atendimento em histórico e histórico em retorno.
             </p>
@@ -288,13 +288,13 @@ export default async function Home() {
         <div>
           <SectionTitle
             eyebrow="Site de vendas"
-            title="Cada clínica ganha um site premium para gerar demanda, não só uma página bonita."
-            description="Procedimentos, fotos, depoimentos, localização, WhatsApp, agendamento e checkout de sinal conectados diretamente ao SaaS da clínica."
+            title="Cada barbearia ganha um site premium para gerar demanda, não só uma página bonita."
+            description="Serviços, fotos, depoimentos, localização, WhatsApp, agendamento e checkout de sinal conectados diretamente ao SaaS da barbearia."
           />
           <div className="mt-8 grid gap-4">
             {[
-              ["Domínio próprio", "A clínica pode usar o próprio domínio, com roteamento para o site certo dentro da plataforma."],
-              ["Agendamento online", "Horários disponíveis seguem a agenda real e evitam conflito com profissional."],
+              ["Domínio próprio", "A barbearia pode usar o próprio domínio, com roteamento para o site certo dentro da plataforma."],
+              ["Agendamento online", "Horários disponíveis seguem a agenda real e evitam conflito com barbeiro."],
               ["Pagamento de sinal", "Checkout Asaas para reduzir desistência e registrar status dentro do agendamento."],
             ].map(([title, description]) => (
               <div key={title} className="rounded-2xl border border-neutral-200 bg-white/70 p-5 shadow-sm">
@@ -309,7 +309,7 @@ export default async function Home() {
           <div className="relative">
             <Image
               src="/mockup-notebook.png"
-              alt="Site da clínica dentro de um notebook"
+              alt="Site da barbearia dentro de um notebook"
               width={1400}
               height={900}
               className="pointer-events-none relative z-20 h-auto w-full drop-shadow-[0_34px_70px_rgba(20,18,15,0.22)]"
@@ -318,7 +318,7 @@ export default async function Home() {
               <div className="h-full w-full overflow-auto">
                 <iframe
                   src="/c/studio-ingrid-silva#servicos"
-                  title="Site público demonstrativo da clínica"
+                  title="Site público demonstrativo da barbearia"
                   className="origin-top-left border-0"
                   style={{
                     width: "1280px",
@@ -338,7 +338,7 @@ export default async function Home() {
           <div className="grid gap-4 md:grid-cols-3">
             {[
               { label: "Recepção", value: "agenda, WhatsApp e status", icon: MessageCircle },
-              { label: "Profissional", value: "prontuário e comissão", icon: HeartPulse },
+              { label: "Barbeiro", value: "ficha do cliente e comissão", icon: HeartPulse },
               { label: "Gestor", value: "faturamento e indicadores", icon: BarChart3 },
             ].map((item) => {
               const Icon = item.icon;
@@ -355,7 +355,7 @@ export default async function Home() {
       </section>
 
       <section id="planos" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
-        <SectionTitle eyebrow="Planos" title="Planos simples para começar, vender e escalar." description="A clínica entra com uma estrutura pronta e você controla limites, trial, inadimplência e cobrança." align="center" />
+        <SectionTitle eyebrow="Planos" title="Planos simples para começar, vender e escalar." description="A barbearia entra com uma estrutura pronta e você controla limites, trial, inadimplência e cobrança." align="center" />
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
           {plans.map((plan) => (
             <article key={plan.name} className={`rounded-[1.75rem] border p-6 shadow-sm ${plan.highlight ? "border-[#ed7009]/60 bg-[#1c1c1c] text-white shadow-[0_30px_90px_rgba(237,112,9,0.20)]" : "border-neutral-200 bg-white"}`}>
@@ -381,7 +381,7 @@ export default async function Home() {
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <SectionTitle
             eyebrow="Comparativo"
-            title="Escolha pelo momento da clínica, não por tentativa e erro."
+            title="Escolha pelo momento da barbearia, não por tentativa e erro."
             description="O comparativo deixa claro o que muda de um plano para outro e ajuda a vender o upgrade com mais facilidade."
             align="center"
           />
@@ -415,7 +415,7 @@ export default async function Home() {
         <SectionTitle
           eyebrow="FAQ"
           title="Perguntas que aparecem antes da contratação."
-          description="Respostas diretas para reduzir objeções e deixar claro que o produto foi pensado como SaaS comercial para várias clínicas."
+          description="Respostas diretas para reduzir objeções e deixar claro que o produto foi pensado como SaaS comercial para várias barbearias."
           align="center"
         />
         <div className="mt-10 grid gap-4">
@@ -437,9 +437,9 @@ export default async function Home() {
         <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] bg-[#1c1c1c] p-7 text-white shadow-[0_34px_100px_rgba(28,28,28,0.24)] lg:grid-cols-[1fr_0.85fr] lg:p-10">
           <div>
             <p className="text-xs font-black uppercase text-orange-300">Demonstração</p>
-            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Pronto para vender para clínicas com uma apresentação profissional.</h2>
+            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Pronto para vender para barbearias com uma apresentação profissional.</h2>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/68">
-              Use a demo para mostrar agenda, cliente, prontuário, CRM, financeiro, assinatura e site público da clínica em um roteiro comercial claro.
+              Use a demo para mostrar agenda, cliente, ficha do cliente, CRM, financeiro, assinatura e site público da barbearia em um roteiro comercial claro.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/login-cliente" className="inline-flex h-13 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#1c1c1c]">
@@ -453,7 +453,7 @@ export default async function Home() {
           <div className="grid gap-3">
             {[
               ["Agenda", "Visão diária, semanal e status dos atendimentos."],
-              ["Prontuário", "Histórico, anamnese, termos e fotos de evolução."],
+              ["Ficha do cliente", "Histórico, preferências, consentimentos e fotos de referência."],
               ["Financeiro", "Sinal, pacotes, pagamentos e comissões."],
             ].map(([title, description]) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.06] p-5">

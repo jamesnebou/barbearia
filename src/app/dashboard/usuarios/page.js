@@ -6,14 +6,14 @@ import { getClinicPlan, getClinicUsage } from "@/lib/saas/plans";
 import { inviteClinicUserAction, updateClinicUserAction } from "../actions";
 import { ACCESS_SECTION_LABELS, ROLE_ACCESS } from "@/lib/auth/permissions";
 
-export const metadata = { title: "Usuários | Clínica SaaS" };
+export const metadata = { title: "Usuários | Barbearia SaaS" };
 
 const roles = [
   ["owner", "Owner"],
-  ["admin", "Admin"],
+  ["gerente", "Admin"],
   ["recepcao", "Recepção"],
   ["financeiro", "Financeiro"],
-  ["profissional", "Profissional"],
+  ["barbeiro", "Barbeiro"],
 ];
 
 function selectedSections(usuario) {
@@ -33,9 +33,9 @@ export default async function UsuariosPage({ searchParams }) {
   const supabase = await createClient();
   const [{ data: usuarios = [] }, plan, usage] = await Promise.all([
     supabase
-      .from("usuarios_clinica")
-      .select("id, nome, email, papel, ativo, permissoes, invited_at, accepted_at, created_at")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_usuarios")
+      .select("id, nome, email, papel, ativo, permissoes, convidado_em, aceito_em, created_at")
+      .eq("barbearia_id", activeClinic.id)
       .order("created_at", { ascending: true }),
     getClinicPlan(activeClinic),
     getClinicUsage(activeClinic.id),
@@ -46,11 +46,11 @@ export default async function UsuariosPage({ searchParams }) {
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <PageHeader eyebrow="Acesso" title="Usuários da clínica" description="Convide pessoas da equipe, defina papéis e controle usuários ativos dentro do limite do plano." />
+        <PageHeader eyebrow="Acesso" title="Usuários da barbearia" description="Convide pessoas da equipe, defina papéis e controle usuários ativos dentro do limite do plano." />
 
         <div className="mt-6 space-y-3">
-          {params?.ok === "convite" ? <Notice type="success">Usuário criado no Auth e vinculado à clínica. Envie manualmente o e-mail e a senha temporária para ele acessar em `/login-cliente`.</Notice> : null}
-          {params?.ok === "senha" ? <Notice type="success">O usuário já existia no Auth. A senha temporária foi atualizada e o vínculo com a clínica foi criado/reativado.</Notice> : null}
+          {params?.ok === "convite" ? <Notice type="success">Usuário criado no Auth e vinculado à barbearia. Envie manualmente o e-mail e a senha temporária para ele acessar em `/login-cliente`.</Notice> : null}
+          {params?.ok === "senha" ? <Notice type="success">O usuário já existia no Auth. A senha temporária foi atualizada e o vínculo com a barbearia foi criado/reativado.</Notice> : null}
           {params?.ok === "usuario" ? <Notice type="success">Usuário atualizado com sucesso.</Notice> : null}
           {params?.erro === "limite" ? <LimitNotice resource="usuarios" message={params?.mensagem} /> : null}
           {params?.erro && params?.erro !== "limite" ? <Notice type="warning">{params?.mensagem || "Não foi possível concluir esta ação."}</Notice> : null}
@@ -74,7 +74,7 @@ export default async function UsuariosPage({ searchParams }) {
             <SectionTitle icon={UsersRound} title="Equipe com acesso" />
             <div className="mt-4 space-y-3">
               {usuarios.length === 0 ? (
-                <EmptyState title="Nenhum usuário cadastrado" description="Convide os usuários que vão operar agenda, financeiro e cadastros da clínica." />
+                <EmptyState title="Nenhum usuário cadastrado" description="Convide os usuários que vão operar agenda, financeiro e cadastros da barbearia." />
               ) : usuarios.map((usuario) => (
                 <form key={usuario.id} action={updateClinicUserAction} className="rounded-lg border border-neutral-200 p-4">
                   <input type="hidden" name="id" value={usuario.id} />
@@ -110,7 +110,7 @@ export default async function UsuariosPage({ searchParams }) {
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <p className="inline-flex items-center gap-2 text-xs text-neutral-500"><ShieldCheck size={14} /> {usuario.accepted_at ? "Acesso criado no Auth" : "Vínculo pendente de login/Auth"}</p>
+                    <p className="inline-flex items-center gap-2 text-xs text-neutral-500"><ShieldCheck size={14} /> {usuario.aceito_em ? "Acesso criado no Auth" : "Vínculo pendente de login/Auth"}</p>
                     <SubmitButton>Salvar usuário</SubmitButton>
                   </div>
                 </form>

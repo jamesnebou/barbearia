@@ -4,7 +4,7 @@ import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, EmptyState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { createClienteAction, deleteClienteAction, updateClienteStatusAction } from "../actions";
 
-export const metadata = { title: "Clientes | Clínica SaaS" };
+export const metadata = { title: "Clientes | Barbearia SaaS" };
 
 export default async function ClientesPage() {
   const { activeClinic } = await requireClinicSection("clientes");
@@ -15,15 +15,15 @@ export default async function ClientesPage() {
 
   const supabase = await createClient();
   const { data: clientes = [] } = await supabase
-    .from("clientes")
-    .select("id, nome, telefone, email, cpf, status, origem, consentimento_lgpd, termo_consentimento_aceito, retorno_recomendado_em, created_at")
-    .eq("clinica_id", activeClinic.id)
+    .from("barbearia_clientes")
+    .select("id, nome, telefone, email, cpf, status, origem, consentimento_lgpd, termo_consentimento_aceito:consentimento_lgpd, created_at")
+    .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: false });
 
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <PageHeader eyebrow="Clientes" title="Clientes e leads" description="Cadastro inicial dos clientes da clínica, com consentimento LGPD e origem." />
+        <PageHeader eyebrow="Clientes" title="Clientes e leads" description="Cadastro inicial dos clientes da barbearia, com consentimento LGPD e origem." />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[420px_1fr]">
           <form action={createClienteAction} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -40,7 +40,7 @@ export default async function ClientesPage() {
               <TextArea label="Observações" name="observacoes" />
               <label className="flex items-start gap-3 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
                 <input className="mt-1" name="consentimento_lgpd" type="checkbox" />
-                Cliente autorizou o cadastro e tratamento dos dados pela clínica.
+                Cliente autorizou o cadastro e tratamento dos dados pela barbearia.
               </label>
               <SubmitButton>Cadastrar cliente</SubmitButton>
             </div>
@@ -50,7 +50,7 @@ export default async function ClientesPage() {
             <h2 className="text-lg font-semibold">Lista de clientes</h2>
             <div className="mt-4 space-y-3">
               {clientes.length === 0 ? (
-                <EmptyState title="Nenhum cliente cadastrado ainda" description="Cadastre o primeiro cliente para liberar ficha, anamnese, fotos de evolução, histórico de agenda e retorno recomendado." />
+                <EmptyState title="Nenhum cliente cadastrado ainda" description="Cadastre o primeiro cliente para liberar ficha, preferências, fotos de referência, histórico de agenda e consentimentos." />
               ) : clientes.map((cliente) => (
                 <article key={cliente.id} className="rounded-lg border border-neutral-200 p-4">
                   <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">

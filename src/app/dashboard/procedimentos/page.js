@@ -3,7 +3,7 @@ import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, EmptyState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { createProcedimentoAction, deleteProcedimentoAction, toggleProcedimentoAction, updateProcedimentoAction } from "../actions";
 
-export const metadata = { title: "Procedimentos | Clínica SaaS" };
+export const metadata = { title: "Serviços | Barbearia SaaS" };
 
 export default async function ProcedimentosPage() {
   const { activeClinic } = await requireClinicSection("procedimentos");
@@ -14,19 +14,19 @@ export default async function ProcedimentosPage() {
 
   const supabase = await createClient();
   const { data: procedimentos = [] } = await supabase
-    .from("procedimentos")
-    .select("id, nome, categoria, descricao, duracao_minutos, preco, ativo, publicado_site, destaque_site, sinal_percentual, sinal_valor, ordem_site, cuidados_antes, cuidados_depois, imagem_url, imagem_storage_path")
-    .eq("clinica_id", activeClinic.id)
+    .from("barbearia_servicos")
+    .select("id, nome, categoria, descricao, duracao_minutos, preco, ativo, publicado_site, destaque_site, sinal_percentual, sinal_valor, ordem_site, instrucoes_pre_atendimento, instrucoes_pos_atendimento, imagem_url, imagem_storage_path")
+    .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: false });
 
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <PageHeader eyebrow="Serviços" title="Procedimentos" description="Tabela de serviços, duração, preço e orientações." />
+        <PageHeader eyebrow="Serviços" title="Serviços" description="Tabela de serviços, duração, preço e orientações." />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[420px_1fr]">
           <form action={createProcedimentoAction} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">Novo procedimento</h2>
+            <h2 className="text-lg font-semibold">Novo serviço</h2>
             <div className="mt-4 space-y-4">
               <Field label="Nome" name="nome" required />
               <Field label="Categoria" name="categoria" placeholder="Facial, corporal, injetável..." />
@@ -50,10 +50,10 @@ export default async function ProcedimentosPage() {
                 </label>
               </div>
               <TextArea label="Descrição" name="descricao" />
-              <TextArea label="Cuidados antes" name="cuidados_antes" />
-              <TextArea label="Cuidados depois" name="cuidados_depois" />
+              <TextArea label="Cuidados antes" name="instrucoes_pre_atendimento" />
+              <TextArea label="Cuidados depois" name="instrucoes_pos_atendimento" />
               <label className="block">
-                <span className="text-sm font-medium text-neutral-700">Imagem do procedimento</span>
+                <span className="text-sm font-medium text-neutral-700">Imagem do serviço</span>
                 <input
                   name="imagem_file"
                   type="file"
@@ -62,15 +62,15 @@ export default async function ProcedimentosPage() {
                 />
                 <span className="mt-2 block text-xs leading-5 text-neutral-500">Opcional. Recomendado: 1200x900 px. Limite máximo de 10 MB.</span>
               </label>
-              <SubmitButton>Cadastrar procedimento</SubmitButton>
+              <SubmitButton>Cadastrar serviço</SubmitButton>
             </div>
           </form>
 
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">Procedimentos cadastrados</h2>
+            <h2 className="text-lg font-semibold">Serviços cadastrados</h2>
             <div className="mt-4 space-y-3">
               {procedimentos.length === 0 ? (
-                <EmptyState title="Nenhum procedimento criado" description="Cadastre serviços com duração e preço para acelerar agendamentos, pacotes e faturamento previsto." />
+                <EmptyState title="Nenhum serviço criado" description="Cadastre serviços com duração e preço para acelerar agendamentos, pacotes e faturamento previsto." />
               ) : procedimentos.map((item) => (
                 <article key={item.id} className="rounded-lg border border-neutral-200 p-4">
                   <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
@@ -100,7 +100,7 @@ export default async function ProcedimentosPage() {
                     </div>
                   </div>
                   <details id={`editar-${item.id}`} className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-                    <summary className="cursor-pointer text-sm font-bold text-neutral-800">Editar procedimento</summary>
+                    <summary className="cursor-pointer text-sm font-bold text-neutral-800">Editar serviço</summary>
                     <form action={updateProcedimentoAction} className="mt-4 grid gap-4">
                       <input type="hidden" name="id" value={item.id} />
                       <div className="grid gap-4 md:grid-cols-2">
@@ -127,8 +127,8 @@ export default async function ProcedimentosPage() {
                         </label>
                       </div>
                       <TextArea label="Descrição" name="descricao" defaultValue={item.descricao || ""} />
-                      <TextArea label="Cuidados antes" name="cuidados_antes" defaultValue={item.cuidados_antes || ""} />
-                      <TextArea label="Cuidados depois" name="cuidados_depois" defaultValue={item.cuidados_depois || ""} />
+                      <TextArea label="Cuidados antes" name="instrucoes_pre_atendimento" defaultValue={item.instrucoes_pre_atendimento || ""} />
+                      <TextArea label="Cuidados depois" name="instrucoes_pos_atendimento" defaultValue={item.instrucoes_pos_atendimento || ""} />
                       <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-start">
                         <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                           {item.imagem_url ? (
@@ -139,7 +139,7 @@ export default async function ProcedimentosPage() {
                           )}
                         </div>
                         <label className="block">
-                          <span className="text-sm font-medium text-neutral-700">Imagem do procedimento</span>
+                          <span className="text-sm font-medium text-neutral-700">Imagem do serviço</span>
                           <input
                             name="imagem_file"
                             type="file"

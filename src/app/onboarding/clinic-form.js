@@ -15,7 +15,7 @@ function SubmitButton() {
       type="submit"
       disabled={pending}
     >
-      {pending ? "Criando clínica..." : "Criar clínica"}
+      {pending ? "Criando barbearia..." : "Criar barbearia"}
     </button>
   );
 }
@@ -26,14 +26,14 @@ export default function ClinicForm({ userEmail }) {
   return (
     <form action={formAction} className="mt-6 grid gap-4 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
       <label className="block">
-        <span className="text-sm font-medium text-neutral-700">Nome da clínica</span>
-        <input className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-600" name="nome" required placeholder="Ex: Clínica Bella Skin" />
+        <span className="text-sm font-medium text-neutral-700">Nome da barbearia</span>
+        <input className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-600" name="nome" required placeholder="Ex: Barbearia Navalha Nobre" />
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-sm font-medium text-neutral-700">Identificador</span>
-          <input className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-600" name="slug" placeholder="clinica-bella-skin" />
+          <input className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-600" name="slug" placeholder="navalha-nobre" />
         </label>
         <label className="block">
           <span className="text-sm font-medium text-neutral-700">CNPJ/CPF</span>

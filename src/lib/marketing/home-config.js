@@ -5,16 +5,16 @@ export const MARKETING_HOME_CONFIG_KEY = "marketing_home";
 export const defaultMarketingHome = {
   hero: {
     eyebrow: "Gestão, vendas e atendimento para estética",
-    title: "A clínica organizada para vender antes, atender melhor e voltar a faturar depois.",
+    title: "A barbearia organizada para vender antes, atender melhor e voltar a faturar depois.",
     subtitle:
-      "NexaWi Clínicas reúne agenda, CRM, prontuário, financeiro, site premium e checkout de sinal em uma operação simples para clínicas de estética.",
+      "NexaWi Barbearias reúne agenda, CRM, ficha do cliente, financeiro, site premium e checkout de sinal em uma operação simples para barbearias.",
     primaryCtaLabel: "Solicitar demonstração",
     secondaryCtaLabel: "Ver como funciona",
     previewEyebrow: "Painel operacional",
-    previewTitle: "Clínica Bella Skin",
+    previewTitle: "Barbearia Navalha Nobre",
     previewStatus: "Ativa",
     previewImageUrl: "/clinic-dashboard-preview.png",
-    previewImageAlt: "Prévia do dashboard NexaWi Clínicas",
+    previewImageAlt: "Prévia do dashboard NexaWi Barbearias",
     metrics: [
       { label: "Confirmados", value: "18" },
       { label: "Receita prevista", value: "R$ 4.680" },
@@ -24,7 +24,7 @@ export const defaultMarketingHome = {
       "Menos planilhas e menos retrabalho na recepção",
       "Mais controle sobre agenda, faltas e retornos",
       "Venda de pacotes e sinal online no mesmo fluxo",
-      "Prontuário organizado para aumentar valor percebido",
+      "Ficha do cliente organizado para aumentar valor percebido",
     ],
   },
 };
@@ -79,7 +79,7 @@ export function normalizeMarketingHomeConfig(value = {}) {
 export async function getMarketingHomeConfig() {
   try {
     const { data, error } = await supabaseAdmin
-      .from("app_configuracoes")
+      .from("barbearia_configuracoes_plataforma")
       .select("valor")
       .eq("chave", MARKETING_HOME_CONFIG_KEY)
       .maybeSingle();

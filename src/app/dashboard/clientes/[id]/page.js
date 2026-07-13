@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { paidAmount } from "@/lib/barbearia/finance";
 import { ArrowLeft, CalendarDays, Camera, FileText, HeartPulse, MessageCircle, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -15,7 +16,7 @@ import {
 } from "../../actions";
 import { ConsentimentoForm } from "./consentimento-form";
 
-export const metadata = { title: "Ficha do cliente | Clínica SaaS" };
+export const metadata = { title: "Ficha do cliente | Barbearia SaaS" };
 
 function formatDate(value) {
   if (!value) return "-";
@@ -31,6 +32,16 @@ function formatMoney(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function parsePreferences(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return { observacoes: String(value) };
+  }
+}
+
 function onlyDigits(value = "") {
   return String(value || "").replace(/\D/g, "");
 }
@@ -39,16 +50,7 @@ function whatsappUrl(phone, name) {
   const digits = onlyDigits(phone);
   if (!digits) return "";
   const number = digits.startsWith("55") ? digits : `55${digits}`;
-  return `https://wa.me/${number}?text=${encodeURIComponent(`Olá, ${name || "tudo bem"}! Aqui é da clínica.`)}`;
-}
-
-function CheckboxField({ name, label, defaultChecked = false }) {
-  return (
-    <label className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700">
-      <input name={name} type="checkbox" defaultChecked={Boolean(defaultChecked)} />
-      {label}
-    </label>
-  );
+  return `https://wa.me/${number}?text=${encodeURIComponent(`Olá, ${name || "tudo bem"}! Aqui é da barbearia.`)}`;
 }
 
 function SelectField({ label, name, defaultValue = "", children }) {
@@ -70,16 +72,16 @@ export default async function ClienteDetalhePage({ params }) {
     return <main className="px-5 py-8 sm:px-8 lg:px-10"><EmptyClinicState /></main>;
   }
 
-  const membership = (memberships || []).find((item) => item.clinica_id === activeClinic.id) || memberships?.[0];
-  const canAccessProntuario = ["owner", "admin", "profissional"].includes(membership?.papel);
+  const membership = (memberships || []).find((item) => item.barbearia_id === activeClinic.id) || memberships?.[0];
+  const canAccessProntuario = ["owner", "gerente", "barbeiro"].includes(membership?.papel);
 
   if (!canAccessProntuario) {
     return (
       <main className="px-5 py-8 sm:px-8 lg:px-10">
         <section className="mx-auto max-w-3xl rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
           <Link href="/dashboard/clientes" className="inline-flex items-center gap-2 text-sm font-semibold"><ArrowLeft size={16} /> Voltar para clientes</Link>
-          <h1 className="mt-6 text-2xl font-semibold">Prontuário restrito</h1>
-          <p className="mt-3 text-sm leading-6">Dados sensíveis, anamnese, consentimentos e fotos antes/depois ficam disponíveis apenas para owner, admin e profissional da clínica.</p>
+          <h1 className="mt-6 text-2xl font-semibold">Ficha do cliente restrita</h1>
+          <p className="mt-3 text-sm leading-6">Preferências, consentimentos e fotos de referência ficam disponíveis apenas para proprietário, gerente e barbeiro autorizado.</p>
         </section>
       </main>
     );
@@ -87,30 +89,30 @@ export default async function ClienteDetalhePage({ params }) {
 
   const supabase = await createClient();
   const [{ data: cliente }, { data: agendamentos = [] }, { data: fotos = [] }, { data: pacotes = [] }, { data: consentimentos = [] }] = await Promise.all([
-    supabase.from("clientes").select("*").eq("clinica_id", activeClinic.id).eq("id", id).maybeSingle(),
+    supabase.from("barbearia_clientes").select("*").eq("barbearia_id", activeClinic.id).eq("id", id).maybeSingle(),
     supabase
-      .from("agendamentos")
-      .select("id, inicio, fim, status, valor, pagamento_status, valor_pago, observacoes, profissionais(nome), procedimentos(nome)")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_agendamentos")
+      .select("id, inicio, fim, status, valor:valor_final, pagamento_status, observacoes, profissionais:barbearia_barbeiros(nome), procedimentos:barbearia_servicos(nome), pagamentos:barbearia_pagamentos(valor, status)")
+      .eq("barbearia_id", activeClinic.id)
       .eq("cliente_id", id)
       .order("inicio", { ascending: false })
       .limit(30),
     supabase
-      .from("cliente_fotos")
+      .from("barbearia_cliente_fotos")
       .select("id, tipo, titulo, url, storage_path, observacoes, data_foto, autorizacao_uso_imagem, visibilidade, consentimento_id, created_at")
-      .eq("clinica_id", activeClinic.id)
+      .eq("barbearia_id", activeClinic.id)
       .eq("cliente_id", id)
       .order("data_foto", { ascending: false }),
     supabase
-      .from("cliente_pacotes")
-      .select("id, nome_pacote, sessoes_total, sessoes_utilizadas, valor_total, status, data_compra, validade_em")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_cliente_pacotes")
+      .select("id, sessoes_total:utilizacoes_total, sessoes_utilizadas:utilizacoes_consumidas, status, data_compra:adquirido_em, validade_em:valido_ate, pacote:barbearia_pacotes(nome, preco)")
+      .eq("barbearia_id", activeClinic.id)
       .eq("cliente_id", id)
       .order("created_at", { ascending: false }),
     supabase
-      .from("cliente_consentimentos")
+      .from("barbearia_cliente_consentimentos")
       .select("id, tipo, titulo, versao, texto, aceito, aceito_em, aceito_por_nome, observacoes")
-      .eq("clinica_id", activeClinic.id)
+      .eq("barbearia_id", activeClinic.id)
       .eq("cliente_id", id)
       .order("aceito_em", { ascending: false }),
   ]);
@@ -121,10 +123,8 @@ export default async function ClienteDetalhePage({ params }) {
     ...foto,
     displayUrl: foto.storage_path ? await createSignedPhotoUrl(foto.storage_path) : foto.url,
   })));
-  const anamnese = cliente.anamnese || {};
+  const preferences = parsePreferences(cliente.preferencias);
   const whats = whatsappUrl(cliente.telefone, cliente.nome);
-  const proximoRetorno = cliente.retorno_recomendado_em ? new Date(`${cliente.retorno_recomendado_em}T12:00:00`) : null;
-  const retornoAtrasado = proximoRetorno ? proximoRetorno < new Date() : false;
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
@@ -144,15 +144,15 @@ export default async function ClienteDetalhePage({ params }) {
         <div className="mt-6 grid gap-3 md:grid-cols-4">
           <div className="rounded-lg border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">Status</p><strong className="mt-2 block capitalize">{cliente.status}</strong></div>
           <div className="rounded-lg border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">Agendamentos</p><strong className="mt-2 block">{agendamentos.length}</strong></div>
-          <div className="rounded-lg border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">Retorno</p><strong className={`mt-2 block ${retornoAtrasado ? "text-red-700" : ""}`}>{formatDate(cliente.retorno_recomendado_em)}</strong></div>
-          <div className="rounded-lg border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">Consentimento</p><strong className="mt-2 block">{cliente.termo_consentimento_aceito ? "Aceito" : "Pendente"}</strong></div>
+          <div className="rounded-lg border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">Última visita</p><strong className="mt-2 block">{formatDate(cliente.ultima_visita_em)}</strong></div>
+          <div className="rounded-lg border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">Consentimento LGPD</p><strong className="mt-2 block">{cliente.consentimento_lgpd ? "Aceito" : "Pendente"}</strong></div>
         </div>
 
         <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_420px]">
           <div className="space-y-6">
             <form action={updateClienteFichaAction} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
               <input type="hidden" name="id" value={cliente.id} />
-              <div className="flex items-center gap-2"><FileText size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Ficha cadastral e clínica</h2></div>
+              <div className="flex items-center gap-2"><FileText size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Ficha cadastral</h2></div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <Field label="Nome" name="nome" defaultValue={cliente.nome || ""} required />
                 <Field label="Telefone" name="telefone" defaultValue={cliente.telefone || ""} />
@@ -161,6 +161,8 @@ export default async function ClienteDetalhePage({ params }) {
                 <Field label="Nascimento" name="data_nascimento" type="date" defaultValue={cliente.data_nascimento || ""} />
                 <Field label="Origem" name="origem" defaultValue={cliente.origem || ""} />
                 <Field label="Endereço" name="endereco" defaultValue={cliente.endereco || ""} />
+                <Field label="Bairro" name="bairro" defaultValue={cliente.bairro || ""} />
+                <Field label="Cidade" name="cidade" defaultValue={cliente.cidade || ""} />
                 <SelectField label="Status" name="status" defaultValue={cliente.status}>
                   <option value="lead">Lead</option>
                   <option value="ativo">Ativo</option>
@@ -170,50 +172,35 @@ export default async function ClienteDetalhePage({ params }) {
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <TextArea label="Observações gerais" name="observacoes" defaultValue={cliente.observacoes || ""} />
-                <TextArea label="Observações clínicas" name="observacoes_clinicas" defaultValue={cliente.observacoes_clinicas || ""} />
-                <TextArea label="Alergias" name="alergias" defaultValue={cliente.alergias || ""} />
-                <TextArea label="Contraindicações" name="contraindicacoes" defaultValue={cliente.contraindicacoes || ""} />
-                <TextArea label="Medicamentos em uso" name="medicamentos_uso" defaultValue={cliente.medicamentos_uso || ""} />
-                <TextArea label="Procedimentos prévios" name="procedimentos_previos" defaultValue={cliente.procedimentos_previos || ""} />
+                <TextArea label="Preferências gerais" name="observacoes_clinicas" defaultValue={preferences.observacoes || ""} />
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <Field label="Retorno recomendado" name="retorno_recomendado_em" type="date" defaultValue={cliente.retorno_recomendado_em || ""} />
-                <Field label="Data/hora aceite termo" name="termo_consentimento_aceito_em" type="datetime-local" defaultValue={cliente.termo_consentimento_aceito_em ? cliente.termo_consentimento_aceito_em.slice(0, 16) : ""} />
-                <Field label="Versão do termo" name="termo_consentimento_versao" defaultValue={cliente.termo_consentimento_versao || "v1"} />
+                <Field label="Última visita" name="ultima_visita_em" type="datetime-local" defaultValue={cliente.ultima_visita_em ? cliente.ultima_visita_em.slice(0, 16) : ""} />
+                <Field label="Data/hora do aceite LGPD" name="termo_consentimento_aceito_em" type="datetime-local" defaultValue={cliente.consentimento_lgpd_em ? cliente.consentimento_lgpd_em.slice(0, 16) : ""} />
+                <Field label="Versão do termo LGPD" name="termo_consentimento_versao" defaultValue={cliente.consentimento_lgpd_versao || "v1"} />
               </div>
               <div className="mt-4 space-y-4">
                 <label className="flex items-start gap-3 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
-                  <input className="mt-1" name="termo_consentimento_aceito" type="checkbox" defaultChecked={cliente.termo_consentimento_aceito} />
-                  Cliente assinou/aceitou o termo de consentimento para procedimentos e uso de imagens.
+                  <input className="mt-1" name="termo_consentimento_aceito" type="checkbox" defaultChecked={cliente.consentimento_lgpd} />
+                  Cliente aceitou o tratamento dos dados conforme a política de privacidade e LGPD.
                 </label>
-                <TextArea label="Observação do termo" name="termo_consentimento_observacao" defaultValue={cliente.termo_consentimento_observacao || ""} />
               </div>
               <div className="mt-5"><SubmitButton>Salvar ficha</SubmitButton></div>
             </form>
 
             <form action={updateClienteAnamneseAction} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
               <input type="hidden" name="id" value={cliente.id} />
-              <div className="flex items-center gap-2"><HeartPulse size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Anamnese estética</h2></div>
+              <div className="flex items-center gap-2"><HeartPulse size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Preferências do cliente</h2></div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <TextArea label="Objetivo principal" name="objetivo_principal" defaultValue={anamnese.objetivo_principal || ""} />
-                <TextArea label="Queixa principal" name="queixa_principal" defaultValue={anamnese.queixa_principal || ""} />
+                <TextArea label="Corte ou estilo preferido" name="corte_preferido" defaultValue={preferences.corte_preferido || ""} />
+                <TextArea label="Preferência para barba" name="barba_preferida" defaultValue={preferences.barba_preferida || ""} />
+                <TextArea label="Acabamento preferido" name="acabamento_preferido" defaultValue={preferences.acabamento_preferido || ""} />
+                <TextArea label="Frequência habitual de visitas" name="frequencia_visitas" defaultValue={preferences.frequencia_visitas || ""} />
+                <TextArea label="Produtos preferidos" name="produtos_preferidos" defaultValue={preferences.produtos_preferidos || ""} />
+                <TextArea label="Produtos ou fragrâncias a evitar" name="produtos_evitar" defaultValue={preferences.produtos_evitar || ""} />
+                <TextArea label="Observações para o atendimento" name="anamnese_observacoes" defaultValue={preferences.observacoes || ""} />
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                <CheckboxField name="gestante" label="Gestante" defaultChecked={anamnese.gestante} />
-                <CheckboxField name="lactante" label="Lactante" defaultChecked={anamnese.lactante} />
-                <CheckboxField name="diabetes" label="Diabetes" defaultChecked={anamnese.diabetes} />
-                <CheckboxField name="hipertensao" label="Hipertensão" defaultChecked={anamnese.hipertensao} />
-                <CheckboxField name="marcapasso" label="Marcapasso" defaultChecked={anamnese.marcapasso} />
-                <CheckboxField name="cancer_tratamento" label="Tratamento oncológico" defaultChecked={anamnese.cancer_tratamento} />
-                <CheckboxField name="tendencia_queloide" label="Tendência a queloide" defaultChecked={anamnese.tendencia_queloide} />
-                <CheckboxField name="usa_acidos" label="Usa ácidos" defaultChecked={anamnese.usa_acidos} />
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <TextArea label="Exposição solar" name="exposicao_solar" defaultValue={anamnese.exposicao_solar || ""} />
-                <TextArea label="Rotina de skincare" name="rotina_skincare" defaultValue={anamnese.rotina_skincare || ""} />
-                <TextArea label="Observações da anamnese" name="anamnese_observacoes" defaultValue={anamnese.observacoes || ""} />
-              </div>
-              <div className="mt-5"><SubmitButton>Salvar anamnese</SubmitButton></div>
+              <div className="mt-5"><SubmitButton>Salvar preferências</SubmitButton></div>
             </form>
           </div>
 
@@ -223,8 +210,8 @@ export default async function ClienteDetalhePage({ params }) {
               <div className="mt-4 space-y-3">
                 {agendamentos.length === 0 ? <p className="rounded-lg bg-neutral-50 px-4 py-3 text-sm text-neutral-600">Sem histórico.</p> : agendamentos.map((item) => (
                   <div key={item.id} className="rounded-lg border border-neutral-200 p-3">
-                    <p className="text-sm font-semibold">{item.procedimentos?.nome || "Procedimento"}</p>
-                    <p className="mt-1 text-xs text-neutral-500">{formatDateTime(item.inicio)} · {item.profissionais?.nome || "Profissional"}</p>
+                    <p className="text-sm font-semibold">{item.procedimentos?.nome || "Serviço"}</p>
+                    <p className="mt-1 text-xs text-neutral-500">{formatDateTime(item.inicio)} · {item.profissionais?.nome || "Barbeiro"}</p>
                     <p className="mt-1 text-xs text-neutral-500">{item.status} · {formatMoney(item.valor)} · Pagamento: {item.pagamento_status || "pendente"}</p>
                   </div>
                 ))}
@@ -232,18 +219,18 @@ export default async function ClienteDetalhePage({ params }) {
             </section>
 
             <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2"><Camera size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Fotos antes/depois</h2></div>
+              <div className="flex items-center gap-2"><Camera size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Fotos de referência e resultado</h2></div>
               <form action={createClienteFotoUploadAction} className="mt-4 space-y-3 rounded-lg bg-neutral-50 p-3">
                 <input type="hidden" name="cliente_id" value={cliente.id} />
-                <SelectField label="Tipo" name="tipo" defaultValue="evolucao">
-                  <option value="antes">Antes</option>
-                  <option value="depois">Depois</option>
-                  <option value="evolucao">Evolução</option>
+                <SelectField label="Tipo" name="tipo" defaultValue="referencia">
+                  <option value="referencia">Referência de corte ou barba</option>
+                  <option value="resultado">Resultado do atendimento</option>
+                  <option value="perfil">Foto de perfil</option>
                   <option value="documento">Documento</option>
                 </SelectField>
                 <SelectField label="Visibilidade" name="visibilidade" defaultValue="restrito">
-                  <option value="restrito">Restrito ao prontuário</option>
-                  <option value="interno">Uso interno da clínica</option>
+                  <option value="restrito">Restrito à ficha do cliente</option>
+                  <option value="interno">Uso interno da barbearia</option>
                   <option value="marketing">Marketing autorizado</option>
                 </SelectField>
                 <SelectField label="Termo vinculado" name="consentimento_id" defaultValue="">
@@ -268,15 +255,15 @@ export default async function ClienteDetalhePage({ params }) {
                 <summary className="cursor-pointer text-sm font-semibold text-neutral-700">Adicionar por URL externa</summary>
                 <form action={createClienteFotoAction} className="mt-3 space-y-3">
                   <input type="hidden" name="cliente_id" value={cliente.id} />
-                  <SelectField label="Tipo" name="tipo" defaultValue="evolucao">
-                    <option value="antes">Antes</option>
-                    <option value="depois">Depois</option>
-                    <option value="evolucao">Evolução</option>
+                  <SelectField label="Tipo" name="tipo" defaultValue="referencia">
+                    <option value="referencia">Referência de corte ou barba</option>
+                    <option value="resultado">Resultado do atendimento</option>
+                    <option value="perfil">Foto de perfil</option>
                     <option value="documento">Documento</option>
                   </SelectField>
                   <SelectField label="Visibilidade" name="visibilidade" defaultValue="restrito">
-                    <option value="restrito">Restrito ao prontuário</option>
-                    <option value="interno">Uso interno da clínica</option>
+                    <option value="restrito">Restrito à ficha do cliente</option>
+                    <option value="interno">Uso interno da barbearia</option>
                     <option value="marketing">Marketing autorizado</option>
                   </SelectField>
                   <SelectField label="Termo vinculado" name="consentimento_id" defaultValue="">
@@ -324,8 +311,8 @@ export default async function ClienteDetalhePage({ params }) {
               <div className="mt-4 space-y-3">
                 {pacotes.length === 0 ? <p className="rounded-lg bg-neutral-50 px-4 py-3 text-sm text-neutral-600">Nenhum pacote vendido.</p> : pacotes.map((pacote) => (
                   <div key={pacote.id} className="rounded-lg border border-neutral-200 p-3">
-                    <p className="text-sm font-semibold">{pacote.nome_pacote}</p>
-                    <p className="mt-1 text-xs text-neutral-500">Sessões: {pacote.sessoes_utilizadas}/{pacote.sessoes_total} · {formatMoney(pacote.valor_total)}</p>
+                    <p className="text-sm font-semibold">{pacote.pacote?.nome || "Pacote"}</p>
+                    <p className="mt-1 text-xs text-neutral-500">Sessões: {pacote.sessoes_utilizadas}/{pacote.sessoes_total} · {formatMoney(pacote.pacote?.preco)}</p>
                     <p className="mt-1 text-xs text-neutral-500">Status: {pacote.status} · Validade: {formatDate(pacote.validade_em)}</p>
                   </div>
                 ))}
@@ -334,7 +321,7 @@ export default async function ClienteDetalhePage({ params }) {
 
             <section className="rounded-lg border border-[color-mix(in_srgb,var(--clinic-primary)_24%,#e5e5e5)] bg-[color-mix(in_srgb,var(--clinic-accent)_10%,white)] p-5 text-neutral-950">
               <div className="flex items-center gap-2"><ShieldCheck size={20} /><h2 className="text-lg font-semibold">Termos e consentimentos</h2></div>
-              <p className="mt-3 text-sm leading-6">Registre aceite formal de procedimento, LGPD, anamnese e uso de imagem. Este registro complementa a ficha e cria histórico de versão/data.</p>
+              <p className="mt-3 text-sm leading-6">Registre o aceite de atendimento, LGPD, comunicação e uso de imagem. Cada registro mantém a versão e a data do consentimento.</p>
               <ConsentimentoForm action={createClienteConsentimentoAction} clienteId={cliente.id} clienteNome={cliente.nome} />
               <div className="mt-4 space-y-3">
                 {consentimentos.length === 0 ? <p className="rounded-lg bg-white/70 px-4 py-3 text-sm text-neutral-600">Nenhum consentimento formal registrado.</p> : consentimentos.map((termo) => (

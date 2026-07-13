@@ -13,7 +13,7 @@ export async function generateMetadata() {
     const { activeClinic } = await requireClinic();
     const metadata = activeClinic?.metadata || {};
     const site = metadata.site_publico || {};
-    const brandName = metadata.brand_name || activeClinic?.nome || "Cl\u00ednica SaaS";
+    const brandName = metadata.brand_name || activeClinic?.nome || "Barbearia SaaS";
     const faviconUrl = site.favicon_url || metadata.logo_url || "";
 
     return {
@@ -25,7 +25,7 @@ export async function generateMetadata() {
       } : undefined,
     };
   } catch {
-    return { title: "Dashboard | Cl\u00ednica SaaS" };
+    return { title: "Dashboard | Barbearia SaaS" };
   }
 }
 
@@ -35,8 +35,8 @@ const navItems = [
   { href: "/dashboard/notificacoes", label: "Notificações", icon: "notificacoes", section: "notificacoes" },
   { href: "/dashboard/clientes", label: "Clientes", icon: "clientes", section: "clientes" },
   { href: "/dashboard/crm", label: "CRM", icon: "crm", section: "crm" },
-  { href: "/dashboard/profissionais", label: "Profissionais", icon: "profissionais", section: "profissionais" },
-  { href: "/dashboard/procedimentos", label: "Procedimentos", icon: "procedimentos", section: "procedimentos" },
+  { href: "/dashboard/profissionais", label: "Barbeiros", icon: "profissionais", section: "profissionais" },
+  { href: "/dashboard/procedimentos", label: "Serviços", icon: "procedimentos", section: "procedimentos" },
   { href: "/dashboard/usuarios", label: "Usuários", icon: "usuarios", section: "usuarios" },
   { href: "/dashboard/configuracoes", label: "Configurações", icon: "configuracoes", section: "configuracoes" },
   { href: "/dashboard/financeiro", label: "Financeiro", icon: "financeiro", section: "financeiro" },
@@ -62,9 +62,9 @@ async function getOpenCharge(activeClinic) {
   if (["cancelada", "isenta"].includes(String(activeClinic?.assinatura_status || "").toLowerCase())) return null;
 
   const { data, error } = await supabaseAdmin
-    .from("asaas_cobrancas")
+    .from("barbearia_cobrancas_saas")
     .select("id, status, valor, vencimento, invoice_url")
-    .eq("clinica_id", activeClinic.id)
+    .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -82,9 +82,9 @@ async function getNotificationBadgeCount(activeClinic) {
   since.setDate(since.getDate() - 7);
 
   const query = supabaseAdmin
-    .from("site_agendamentos_publicos")
+    .from("barbearia_site_agendamentos_publicos")
     .select("id", { count: "exact", head: true })
-    .eq("clinica_id", activeClinic.id)
+    .eq("barbearia_id", activeClinic.id)
     .in("pagamento_status", ["pendente", "erro"])
     .gte("created_at", since.toISOString());
 
@@ -92,9 +92,9 @@ async function getNotificationBadgeCount(activeClinic) {
 
   if (error) {
     const { count: fallbackCount } = await supabaseAdmin
-      .from("site_agendamentos_publicos")
+      .from("barbearia_site_agendamentos_publicos")
       .select("id", { count: "exact", head: true })
-      .eq("clinica_id", activeClinic.id)
+      .eq("barbearia_id", activeClinic.id)
       .in("pagamento_status", ["pendente", "erro"])
       .gte("created_at", since.toISOString());
 
@@ -115,7 +115,7 @@ export default async function DashboardLayout({ children }) {
   const metadata = activeClinic.metadata || {};
   const primaryColor = safeColor(metadata.primary_color, "#047857");
   const accentColor = safeColor(metadata.accent_color, "#10b981");
-  const brandName = metadata.brand_name || activeClinic.nome || "Cl\u00ednica SaaS";
+  const brandName = metadata.brand_name || activeClinic.nome || "Barbearia SaaS";
   const logoUrl = metadata.logo_url || "";
   const billingState = getClinicBillingState(activeClinic);
   const membership = getCurrentMembership(context.memberships, activeClinic.id);
@@ -130,17 +130,16 @@ export default async function DashboardLayout({ children }) {
 
   return (
     <div
-      className="premium-shell min-h-screen text-neutral-950 md:pl-[260px]"
+      className="premium-shell dashboard-shell min-h-screen text-neutral-950 md:pl-[260px]"
       style={{
         "--clinic-primary": primaryColor,
         "--clinic-accent": accentColor,
         "--clinic-soft": "color-mix(in srgb, var(--clinic-accent) 10%, white)",
-        background: "radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--clinic-accent) 16%, transparent), transparent 30rem), radial-gradient(circle at 100% 10%, color-mix(in srgb, var(--clinic-primary) 13%, transparent), transparent 28rem), radial-gradient(circle at 82% 80%, rgba(18,18,16,0.055), transparent 30rem), linear-gradient(145deg, #f9f8f4 0%, #f1eee7 48%, #ebefeb 100%)",
       }}
     >
       <MobileSidebarMenu items={allowedNavItems} brandName={brandName} logoUrl={logoUrl} />
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] border-r border-neutral-200 bg-white/95 px-4 py-4 shadow-sm backdrop-blur-xl md:block">
+      <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-30 hidden w-[260px] border-r border-neutral-200 bg-white/95 px-4 py-4 shadow-sm backdrop-blur-xl md:block">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-[linear-gradient(180deg,transparent,var(--clinic-accent),transparent)] opacity-55" />
         <div className="pointer-events-none absolute left-0 top-0 h-48 w-full bg-[radial-gradient(circle_at_18%_0%,color-mix(in_srgb,var(--clinic-accent)_15%,transparent),transparent_70%)]" />
         <div className="flex items-center justify-between gap-3 md:block">
@@ -154,14 +153,14 @@ export default async function DashboardLayout({ children }) {
               </div>
             )}
             <div className="min-w-0 md:mt-2 md:w-full">
-              <p className="text-sm font-bold uppercase leading-5 tracking-[0.18em]" style={{ color: "var(--clinic-primary)" }}>{brandName}</p>
+              <p className="dashboard-brand text-sm font-bold uppercase leading-5 tracking-[0.18em]" style={{ color: "var(--clinic-primary)" }}>{brandName}</p>
               <p className="mt-2 truncate text-xs text-neutral-500" title={user?.email}>{user?.email}</p>
               <div className="mt-3 h-1.5 w-24 rounded-full md:mx-auto md:w-28" style={{ background: "linear-gradient(90deg, var(--clinic-primary), var(--clinic-accent))" }} />
             </div>
           </div>
           <form action={signOutAction} className="md:hidden">
             <input type="hidden" name="next" value="/login-cliente" />
-            <button className="rounded-lg border border-neutral-200 p-2 text-neutral-600 transition hover:border-[var(--clinic-primary)] hover:text-[var(--clinic-primary)]" type="submit" title="Sair">
+            <button className="dashboard-logout rounded-lg border border-neutral-200 p-2 text-neutral-600 transition hover:border-[var(--clinic-primary)] hover:text-[var(--clinic-primary)]" type="submit" title="Sair">
               <LogOut size={18} />
             </button>
           </form>
@@ -171,25 +170,25 @@ export default async function DashboardLayout({ children }) {
 
         <form action={signOutAction} className="mt-6 hidden md:block">
           <input type="hidden" name="next" value="/login-cliente" />
-          <button className="inline-flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500 transition hover:bg-red-50 hover:text-red-700" type="submit">
+          <button className="dashboard-logout inline-flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-500 transition hover:bg-red-50 hover:text-red-700" type="submit">
             <LogOut size={17} />
             Sair
           </button>
         </form>
       </aside>
-      <section className="min-w-0">
+      <section className="dashboard-main-content min-w-0">
         {billingState.level !== "ok" ? (
-          <div className={`border-b px-5 py-3 text-sm shadow-sm backdrop-blur sm:px-8 lg:px-10 ${billingState.level === "danger" ? "border-red-200 bg-red-50/90 text-red-800" : billingState.level === "warning" ? "border-amber-200 bg-amber-50/90 text-amber-900" : "border-sky-200 bg-sky-50/90 text-sky-900"}`}>
+          <div className={`dashboard-system-banner border-b px-5 py-3 text-sm shadow-sm backdrop-blur sm:px-8 lg:px-10 ${billingState.level === "danger" ? "border-red-200 bg-red-50/90 text-red-800" : billingState.level === "warning" ? "border-amber-200 bg-amber-50/90 text-amber-900" : "border-sky-200 bg-sky-50/90 text-sky-900"}`}>
             <strong>{billingState.title}.</strong> {billingState.message}
           </div>
         ) : null}
         {openCharge ? (
-          <div className="border-b border-amber-200 bg-amber-50/90 px-5 py-3 text-sm text-amber-900 shadow-sm backdrop-blur sm:px-8 lg:px-10">
+          <div className="dashboard-system-banner border-b border-amber-200 bg-amber-50/90 px-5 py-3 text-sm text-amber-900 shadow-sm backdrop-blur sm:px-8 lg:px-10">
             <strong>Pagamento pendente.</strong> Existe uma cobranca com vencimento em {formatDate(openCharge.vencimento)}. Se nao for regularizada, o sistema pode ser bloqueado automaticamente.
             {openCharge.invoice_url ? <a href={openCharge.invoice_url} target="_blank" className="ml-2 font-bold underline">Abrir fatura</a> : null}
           </div>
         ) : null}
-        <div className="h-1" style={{ background: "linear-gradient(90deg, var(--clinic-primary), var(--clinic-accent))" }} />
+        <div className="dashboard-accent-line h-1" style={{ background: "linear-gradient(90deg, var(--clinic-primary), var(--clinic-accent))" }} />
         {children}
       </section>
     </div>

@@ -929,3 +929,453 @@ textarea {
     transform: translateX(420%) rotate(18deg);
   }
 }
+
+/* Dashboard dark glass premium — NexaWi Barbearias */
+.dashboard-shell {
+  --dashboard-bg: #050506;
+  --dashboard-surface: rgba(15, 15, 18, 0.76);
+  --dashboard-surface-strong: rgba(20, 20, 24, 0.9);
+  --dashboard-surface-soft: rgba(255, 255, 255, 0.045);
+  --dashboard-line: rgba(255, 255, 255, 0.09);
+  --dashboard-line-strong: rgba(255, 255, 255, 0.14);
+  --dashboard-text: #f5f5f6;
+  --dashboard-muted: #a1a1aa;
+  --dashboard-subtle: #71717a;
+  --dashboard-shadow: 0 28px 80px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.075);
+  min-height: 100vh;
+  color: var(--dashboard-text);
+  color-scheme: dark;
+  background-color: var(--dashboard-bg) !important;
+  background-image:
+    radial-gradient(circle at 8% -8%, color-mix(in srgb, var(--clinic-primary) 22%, transparent), transparent 34rem),
+    radial-gradient(circle at 98% 2%, color-mix(in srgb, var(--clinic-accent) 13%, transparent), transparent 30rem),
+    radial-gradient(circle at 78% 92%, rgba(255, 255, 255, 0.035), transparent 28rem),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(145deg, #050506 0%, #09090b 50%, #030304 100%) !important;
+  background-size: auto, auto, auto, 34px 34px, 34px 34px, auto;
+  background-attachment: fixed;
+}
+
+.dashboard-shell ::selection {
+  background: color-mix(in srgb, var(--clinic-accent) 42%, transparent);
+  color: #fff;
+}
+
+.dashboard-shell :focus-visible {
+  outline-color: color-mix(in srgb, var(--clinic-accent) 72%, white);
+}
+
+.dashboard-shell h1,
+.dashboard-shell h2,
+.dashboard-shell h3,
+.dashboard-shell h4,
+.dashboard-shell h5,
+.dashboard-shell strong {
+  color: var(--dashboard-text);
+}
+
+.dashboard-shell .text-neutral-950,
+.dashboard-shell .text-neutral-900,
+.dashboard-shell .text-neutral-800 {
+  color: #f4f4f5 !important;
+}
+
+.dashboard-shell .text-neutral-700,
+.dashboard-shell .text-neutral-600 {
+  color: #b8b8c0 !important;
+}
+
+.dashboard-shell .text-neutral-500 {
+  color: var(--dashboard-muted) !important;
+}
+
+.dashboard-shell .text-neutral-400 {
+  color: var(--dashboard-subtle) !important;
+}
+
+.dashboard-shell .border-neutral-100,
+.dashboard-shell .border-neutral-200,
+.dashboard-shell .border-neutral-300 {
+  border-color: var(--dashboard-line) !important;
+}
+
+.dashboard-shell .border-white\/70,
+.dashboard-shell .border-white\/15,
+.dashboard-shell .border-white\/12,
+.dashboard-shell .border-white\/10 {
+  border-color: var(--dashboard-line-strong) !important;
+}
+
+.dashboard-shell .bg-white,
+.dashboard-shell .bg-white\/95,
+.dashboard-shell .bg-white\/75,
+.dashboard-shell .bg-white\/70,
+.dashboard-shell .bg-neutral-50,
+.dashboard-shell .bg-neutral-100 {
+  border-color: var(--dashboard-line) !important;
+  background-color: var(--dashboard-surface-soft) !important;
+  color: var(--dashboard-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.dashboard-shell [class*="bg-[color-mix(in_srgb,var(--clinic-accent)"] {
+  background: color-mix(in srgb, var(--clinic-accent) 12%, rgba(255, 255, 255, 0.025)) !important;
+}
+
+.dashboard-shell [class*="text-[var(--clinic-primary)]"] {
+  color: color-mix(in srgb, var(--clinic-accent) 68%, white) !important;
+}
+
+.dashboard-shell .premium-panel,
+.dashboard-shell .dashboard-card {
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid var(--dashboard-line);
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--clinic-primary) 8%, transparent), transparent 19rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025) 44%, rgba(255, 255, 255, 0.045)),
+    var(--dashboard-surface);
+  color: var(--dashboard-text);
+  box-shadow: var(--dashboard-shadow);
+  backdrop-filter: blur(24px) saturate(138%);
+  -webkit-backdrop-filter: blur(24px) saturate(138%);
+}
+
+.dashboard-shell .premium-panel::before,
+.dashboard-shell .dashboard-card::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  content: "";
+  background:
+    linear-gradient(118deg, transparent 0 38%, rgba(255, 255, 255, 0.055) 48%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%);
+  opacity: 0.7;
+}
+
+.dashboard-shell .premium-panel > *,
+.dashboard-shell .dashboard-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-shell .premium-panel:hover,
+.dashboard-shell .premium-panel:focus-within,
+.dashboard-shell .dashboard-card:hover,
+.dashboard-shell .dashboard-card:focus-within {
+  border-color: color-mix(in srgb, var(--clinic-accent) 22%, var(--dashboard-line));
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.48),
+    0 0 46px color-mix(in srgb, var(--clinic-primary) 11%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.dashboard-shell .premium-panel-dark {
+  border-color: var(--dashboard-line-strong);
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--clinic-primary) 18%, transparent), transparent 24rem),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--clinic-accent) 9%, transparent), transparent 22rem),
+    linear-gradient(145deg, rgba(24, 24, 28, 0.96), rgba(8, 8, 10, 0.98));
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+.dashboard-shell :where(article, section, form, details, div).shadow-sm:not(aside):not(nav) {
+  border-color: var(--dashboard-line);
+  box-shadow: var(--dashboard-shadow);
+}
+
+.dashboard-shell .dashboard-page-header {
+  border-color: var(--dashboard-line);
+}
+
+.dashboard-shell .dashboard-page-header h1 {
+  color: #fafafa !important;
+  text-shadow: 0 12px 44px rgba(0, 0, 0, 0.5);
+}
+
+.dashboard-shell .dashboard-page-header > div > p:first-child {
+  color: color-mix(in srgb, var(--clinic-accent) 74%, white) !important;
+  text-shadow: 0 0 26px color-mix(in srgb, var(--clinic-primary) 34%, transparent);
+}
+
+.dashboard-shell .metric-orb {
+  border: 1px solid color-mix(in srgb, var(--clinic-accent) 20%, var(--dashboard-line));
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.15), transparent 42%),
+    linear-gradient(145deg, color-mix(in srgb, var(--clinic-primary) 22%, rgba(255, 255, 255, 0.05)), rgba(255, 255, 255, 0.025));
+  color: color-mix(in srgb, var(--clinic-accent) 70%, white) !important;
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--clinic-primary) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-shell input,
+.dashboard-shell select,
+.dashboard-shell textarea {
+  border-color: var(--dashboard-line-strong) !important;
+  background: rgba(5, 5, 7, 0.62) !important;
+  color: #f4f4f5 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 30px rgba(0, 0, 0, 0.12);
+  caret-color: color-mix(in srgb, var(--clinic-accent) 70%, white);
+}
+
+.dashboard-shell input:hover,
+.dashboard-shell select:hover,
+.dashboard-shell textarea:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.dashboard-shell input:focus,
+.dashboard-shell select:focus,
+.dashboard-shell textarea:focus {
+  border-color: color-mix(in srgb, var(--clinic-accent) 60%, white) !important;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--clinic-primary) 18%, transparent),
+    0 16px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dashboard-shell input::placeholder,
+.dashboard-shell textarea::placeholder {
+  color: #686872 !important;
+}
+
+.dashboard-shell select option {
+  background: #101013;
+  color: #f4f4f5;
+}
+
+.dashboard-shell input[type="checkbox"],
+.dashboard-shell input[type="radio"] {
+  accent-color: var(--clinic-primary);
+  box-shadow: none !important;
+}
+
+.dashboard-shell input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--clinic-primary) 80%, #171719);
+  color: white;
+  font-weight: 700;
+}
+
+.dashboard-shell .dashboard-primary-button,
+.dashboard-shell a.bg-neutral-950 {
+  border: 1px solid color-mix(in srgb, var(--clinic-accent) 28%, transparent);
+  box-shadow:
+    0 16px 38px color-mix(in srgb, var(--clinic-primary) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.dashboard-shell button,
+.dashboard-shell a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dashboard-shell table {
+  overflow: hidden;
+  border-color: var(--dashboard-line);
+  color: var(--dashboard-text);
+}
+
+.dashboard-shell thead {
+  background: rgba(255, 255, 255, 0.045);
+  color: #c7c7cf;
+}
+
+.dashboard-shell tbody tr {
+  border-color: var(--dashboard-line);
+  transition: background-color 160ms ease;
+}
+
+.dashboard-shell tbody tr:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.dashboard-shell details,
+.dashboard-shell summary {
+  color: var(--dashboard-text);
+}
+
+.dashboard-shell details[open] {
+  border-color: color-mix(in srgb, var(--clinic-accent) 18%, var(--dashboard-line));
+}
+
+.dashboard-shell .dashboard-sidebar {
+  border-color: var(--dashboard-line) !important;
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--clinic-primary) 20%, transparent), transparent 18rem),
+    linear-gradient(180deg, rgba(13, 13, 16, 0.94), rgba(5, 5, 7, 0.97)) !important;
+  box-shadow: 24px 0 90px rgba(0, 0, 0, 0.38), inset -1px 0 0 rgba(255, 255, 255, 0.025) !important;
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+}
+
+.dashboard-shell .dashboard-brand {
+  color: color-mix(in srgb, var(--clinic-accent) 66%, white) !important;
+  text-shadow: 0 0 30px color-mix(in srgb, var(--clinic-primary) 30%, transparent);
+}
+
+.dashboard-shell .dashboard-sidebar-nav {
+  scrollbar-width: none;
+}
+
+.dashboard-shell .dashboard-sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dashboard-shell .dashboard-nav-item {
+  border: 1px solid transparent;
+  color: #9696a0 !important;
+}
+
+.dashboard-shell .dashboard-nav-item:hover {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: #f4f4f5 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.dashboard-shell .dashboard-nav-item.is-active {
+  border-color: color-mix(in srgb, var(--clinic-accent) 18%, var(--dashboard-line));
+  background:
+    radial-gradient(circle at 8% 50%, color-mix(in srgb, var(--clinic-primary) 27%, transparent), transparent 11rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)) !important;
+  color: color-mix(in srgb, var(--clinic-accent) 72%, white) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.22),
+    0 0 32px color-mix(in srgb, var(--clinic-primary) 12%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.dashboard-shell .dashboard-mobile-header {
+  border-color: var(--dashboard-line) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--clinic-primary) 18%, transparent), transparent 15rem),
+    rgba(8, 8, 10, 0.88) !important;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.dashboard-shell .dashboard-mobile-panel {
+  border-radius: 0 1.5rem 1.5rem 0 !important;
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--clinic-primary) 22%, transparent), transparent 20rem),
+    rgba(8, 8, 10, 0.96) !important;
+}
+
+.dashboard-shell .dashboard-accent-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--clinic-primary), var(--clinic-accent), transparent) !important;
+  box-shadow: 0 0 28px color-mix(in srgb, var(--clinic-primary) 38%, transparent);
+}
+
+.dashboard-shell .dashboard-system-banner {
+  border-color: var(--dashboard-line) !important;
+  background-color: rgba(11, 11, 14, 0.88) !important;
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.dashboard-shell .dashboard-notice,
+.dashboard-shell [class*="bg-sky-50"],
+.dashboard-shell [class*="bg-amber-50"],
+.dashboard-shell [class*="bg-red-50"],
+.dashboard-shell [class*="bg-emerald-50"],
+.dashboard-shell [class*="bg-green-50"],
+.dashboard-shell [class*="bg-violet-50"],
+.dashboard-shell [class*="bg-orange-50"] {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 16px 42px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-shell [class*="bg-sky-50"] {
+  border-color: rgba(56, 189, 248, 0.22) !important;
+  background: rgba(14, 116, 144, 0.13) !important;
+  color: #bae6fd !important;
+}
+
+.dashboard-shell [class*="bg-amber-50"],
+.dashboard-shell [class*="bg-orange-50"] {
+  border-color: rgba(251, 191, 36, 0.22) !important;
+  background: rgba(180, 83, 9, 0.13) !important;
+  color: #fde68a !important;
+}
+
+.dashboard-shell [class*="bg-red-50"] {
+  border-color: rgba(248, 113, 113, 0.22) !important;
+  background: rgba(153, 27, 27, 0.14) !important;
+  color: #fecaca !important;
+}
+
+.dashboard-shell [class*="bg-emerald-50"],
+.dashboard-shell [class*="bg-green-50"] {
+  border-color: rgba(52, 211, 153, 0.22) !important;
+  background: rgba(6, 95, 70, 0.14) !important;
+  color: #a7f3d0 !important;
+}
+
+.dashboard-shell [class*="bg-violet-50"] {
+  border-color: rgba(167, 139, 250, 0.22) !important;
+  background: rgba(91, 33, 182, 0.14) !important;
+  color: #ddd6fe !important;
+}
+
+.dashboard-shell .dashboard-logout {
+  border-color: transparent;
+  background: transparent !important;
+  color: #8f8f99 !important;
+  box-shadow: none !important;
+}
+
+.dashboard-shell .dashboard-logout:hover {
+  border-color: rgba(248, 113, 113, 0.16);
+  background: rgba(127, 29, 29, 0.13) !important;
+  color: #fca5a5 !important;
+}
+
+.dashboard-shell ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dashboard-shell ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dashboard-shell ::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--clinic-primary) 38%, #3f3f46);
+  background-clip: padding-box;
+}
+
+@media (max-width: 767px) {
+  .dashboard-shell {
+    background-size: auto, auto, auto, 26px 26px, 26px 26px, auto;
+  }
+
+  .dashboard-shell .premium-panel,
+  .dashboard-shell .dashboard-card {
+    border-radius: 1rem;
+    backdrop-filter: blur(18px) saturate(130%);
+    -webkit-backdrop-filter: blur(18px) saturate(130%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell *,
+  .dashboard-shell *::before,
+  .dashboard-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

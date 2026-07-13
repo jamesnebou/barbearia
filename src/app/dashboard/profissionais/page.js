@@ -1,10 +1,11 @@
 ﻿import Link from "next/link";
+import { paidAmount } from "@/lib/barbearia/finance";
 import { createClient } from "@/lib/supabase/server";
 import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, EmptyState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { createProfissionalAction, deleteProfissionalAction, toggleProfissionalAction } from "../actions";
 
-export const metadata = { title: "Profissionais | Clínica SaaS" };
+export const metadata = { title: "Barbeiros | Barbearia SaaS" };
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -27,7 +28,7 @@ function isFaturavel(item) {
 function periodMetrics(rows, start, commissionPercent) {
   const periodRows = rows.filter((item) => new Date(item.inicio).toISOString() >= start);
   const previsto = periodRows.reduce((acc, item) => acc + Number(item.valor || 0), 0);
-  const faturado = periodRows.reduce((acc, item) => acc + Number(item.valor_pago || 0), 0);
+  const faturado = periodRows.reduce((acc, item) => acc + paidAmount(item), 0);
   const repasse = (faturado * Number(commissionPercent || 0)) / 100;
 
   return { previsto, faturado, repasse, quantidade: periodRows.length };
@@ -45,14 +46,14 @@ export default async function ProfissionaisPage({ searchParams }) {
   const ranges = periodRanges();
   const [{ data: profissionais = [] }, { data: agendamentosFinanceiros = [] }] = await Promise.all([
     supabase
-      .from("profissionais")
-      .select("id, nome, telefone, email, especialidade, comissao_percentual, ativo, observacoes")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_barbeiros")
+      .select("id, nome, telefone, email, especialidades, comissao_servico_percentual, ativo, observacoes")
+      .eq("barbearia_id", activeClinic.id)
       .order("created_at", { ascending: false }),
     supabase
-      .from("agendamentos")
-      .select("id, profissional_id, inicio, status, valor, valor_pago, pagamento_status, clientes(nome), procedimentos(nome)")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_agendamentos")
+      .select("id, barbeiro_id, inicio, status, valor:valor_final, pagamento_status, clientes:barbearia_clientes(nome), procedimentos:barbearia_servicos(nome), pagamentos:barbearia_pagamentos(valor, status)")
+      .eq("barbearia_id", activeClinic.id)
       .gte("inicio", ranges.startMonth)
       .lte("inicio", ranges.now),
   ]);
@@ -60,9 +61,9 @@ export default async function ProfissionaisPage({ searchParams }) {
   const metricsByProfessional = new Map();
   for (const profissional of profissionais) {
     const rows = agendamentosFinanceiros
-      .filter((item) => item.profissional_id === profissional.id && isFaturavel(item))
+      .filter((item) => item.barbeiro_id === profissional.id && isFaturavel(item))
       .sort((a, b) => new Date(b.inicio) - new Date(a.inicio));
-    const commissionPercent = Number(profissional.comissao_percentual || 0);
+    const commissionPercent = Number(profissional.comissao_servico_percentual || 0);
 
     metricsByProfessional.set(profissional.id, {
       rows,
@@ -75,7 +76,7 @@ export default async function ProfissionaisPage({ searchParams }) {
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <PageHeader eyebrow="Equipe" title="Profissionais" description="Cadastre especialistas, comissões e status de atendimento." />
+        <PageHeader eyebrow="Equipe" title="Barbeiros" description="Cadastre especialistas, comissões e status de atendimento." />
 
         {params?.erro === "limite" ? (
           <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -87,15 +88,15 @@ export default async function ProfissionaisPage({ searchParams }) {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[420px_1fr]">
           <form action={createProfissionalAction} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">Novo profissional</h2>
+            <h2 className="text-lg font-semibold">Novo barbeiro</h2>
             <div className="mt-4 space-y-4">
               <Field label="Nome" name="nome" required />
               <Field label="Telefone" name="telefone" />
               <Field label="E-mail" name="email" type="email" />
-              <Field label="Especialidade" name="especialidade" placeholder="Esteticista, biomédica, fisioterapeuta..." />
-              <Field label="Comissão (%)" name="comissao_percentual" type="number" defaultValue="0" />
+              <Field label="Especialidade" name="especialidades" placeholder="Cortes clássicos, barba, acabamento..." />
+              <Field label="Comissão (%)" name="comissao_servico_percentual" type="number" defaultValue="0" />
               <TextArea label="Observações" name="observacoes" />
-              <SubmitButton>Cadastrar profissional</SubmitButton>
+              <SubmitButton>Cadastrar barbeiro</SubmitButton>
             </div>
           </form>
 
@@ -117,8 +118,8 @@ export default async function ProfissionaisPage({ searchParams }) {
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                       <div>
                       <h3 className="font-semibold">{item.nome}</h3>
-                      <p className="mt-1 text-sm text-neutral-600">{item.especialidade || "Sem especialidade"}</p>
-                      <p className="mt-1 text-xs text-neutral-500">{item.telefone || "Sem telefone"} - Comissão: {Number(item.comissao_percentual || 0)}%</p>
+                      <p className="mt-1 text-sm text-neutral-600">{item.especialidades || "Sem especialidades"}</p>
+                      <p className="mt-1 text-xs text-neutral-500">{item.telefone || "Sem telefone"} - Comissão: {Number(item.comissao_servico_percentual || 0)}%</p>
                         <p className="mt-2 text-xs font-bold text-[var(--clinic-primary)]">Clique para ver faturamento, comissão e atendimentos do mês.</p>
                       </div>
                       <span className="inline-flex h-9 items-center rounded-lg border border-neutral-200 px-3 text-xs font-bold text-neutral-600">Ver detalhes</span>
@@ -153,19 +154,19 @@ export default async function ProfissionaisPage({ searchParams }) {
                     <div className="mt-5 rounded-lg border border-neutral-200">
                       <div className="border-b border-neutral-200 px-4 py-3">
                         <h4 className="text-sm font-bold text-neutral-950">Atendimentos do mês</h4>
-                        <p className="mt-1 text-xs text-neutral-500">O repasse é calculado sobre o valor pago, usando a comissão cadastrada do profissional.</p>
+                        <p className="mt-1 text-xs text-neutral-500">O repasse é calculado sobre o valor pago, usando a comissão cadastrada do barbeiro.</p>
                       </div>
                       <div className="divide-y divide-neutral-200">
                         {metrics.rows.length === 0 ? (
                           <p className="px-4 py-4 text-sm text-neutral-600">Nenhum atendimento faturável neste mês.</p>
                         ) : metrics.rows.map((agendamento) => {
-                          const pago = Number(agendamento.valor_pago || 0);
-                          const repasse = (pago * Number(item.comissao_percentual || 0)) / 100;
+                          const pago = paidAmount(agendamento);
+                          const repasse = (pago * Number(item.comissao_servico_percentual || 0)) / 100;
                           return (
                             <div key={agendamento.id} className="grid gap-2 px-4 py-3 text-sm md:grid-cols-[1fr_150px_150px_150px] md:items-center">
                               <div>
                                 <p className="font-semibold text-neutral-950">{agendamento.clientes?.nome || "Cliente"}</p>
-                                <p className="mt-1 text-xs text-neutral-500">{agendamento.procedimentos?.nome || "Procedimento"} - {new Date(agendamento.inicio).toLocaleDateString("pt-BR")}</p>
+                                <p className="mt-1 text-xs text-neutral-500">{agendamento.procedimentos?.nome || "Serviço"} - {new Date(agendamento.inicio).toLocaleDateString("pt-BR")}</p>
                               </div>
                               <p className="text-neutral-600">Previsto: <strong className="text-neutral-950">{money(agendamento.valor)}</strong></p>
                               <p className="text-neutral-600">Pago: <strong className="text-neutral-950">{money(pago)}</strong></p>

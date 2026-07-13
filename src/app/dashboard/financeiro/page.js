@@ -1,10 +1,11 @@
 import { CreditCard, Package, TrendingUp, Wallet } from "lucide-react";
+import { paidAmount } from "@/lib/barbearia/finance";
 import { createClient } from "@/lib/supabase/server";
 import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { createPacoteAction, sellClientePacoteAction, updateAgendamentoFinanceiroAction } from "../actions";
 
-export const metadata = { title: "Financeiro | Clínica SaaS" };
+export const metadata = { title: "Financeiro | Barbearia SaaS" };
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -41,23 +42,23 @@ export default async function FinanceiroPage({ searchParams }) {
   const supabase = await createClient();
   const [agendamentosResult, pagamentosResult, clientesResult, procedimentosResult, pacotesResult, clientePacotesResult] = await Promise.all([
     supabase
-      .from("agendamentos")
-      .select("id, cliente_id, profissional_id, inicio, status, valor, valor_pago, pagamento_status, forma_pagamento, clientes(nome), profissionais(nome, comissao_percentual), procedimentos(nome)")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_agendamentos")
+      .select("id, cliente_id, barbeiro_id, inicio, status, valor:valor_final, pagamento_status, clientes:barbearia_clientes(nome), profissionais:barbearia_barbeiros(nome, comissao_servico_percentual), procedimentos:barbearia_servicos(nome), pagamentos:barbearia_pagamentos(valor, status)")
+      .eq("barbearia_id", activeClinic.id)
       .gte("inicio", start)
       .lt("inicio", end)
       .order("inicio", { ascending: false }),
     supabase
-      .from("pagamentos_clinica")
-      .select("id, agendamento_id, descricao, valor, valor_pago, status, forma_pagamento, data_pagamento, created_at, clientes(nome), profissionais(nome)")
-      .eq("clinica_id", activeClinic.id)
+      .from("barbearia_pagamentos")
+      .select("id, agendamento_id, valor, valor_pago:valor, status, forma_pagamento:forma, data_pagamento:pago_em, created_at, clientes:barbearia_clientes(nome)")
+      .eq("barbearia_id", activeClinic.id)
       .gte("created_at", start)
       .lt("created_at", end)
       .order("created_at", { ascending: false }),
-    supabase.from("clientes").select("id, nome").eq("clinica_id", activeClinic.id).order("nome"),
-    supabase.from("procedimentos").select("id, nome").eq("clinica_id", activeClinic.id).eq("ativo", true).order("nome"),
-    supabase.from("pacotes_clinica").select("id, nome, quantidade_sessoes, valor, validade_dias, ativo, procedimento_ids").eq("clinica_id", activeClinic.id).order("created_at", { ascending: false }),
-    supabase.from("cliente_pacotes").select("id, nome_pacote, sessoes_total, sessoes_utilizadas, valor_total, status, clientes(nome)").eq("clinica_id", activeClinic.id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("barbearia_clientes").select("id, nome").eq("barbearia_id", activeClinic.id).order("nome"),
+    supabase.from("barbearia_servicos").select("id, nome").eq("barbearia_id", activeClinic.id).eq("ativo", true).order("nome"),
+    supabase.from("barbearia_pacotes").select("id, nome, quantidade_sessoes:limite_utilizacoes, valor:preco, validade_dias, ativo").eq("barbearia_id", activeClinic.id).order("created_at", { ascending: false }),
+    supabase.from("barbearia_cliente_pacotes").select("id, sessoes_total:utilizacoes_total, sessoes_utilizadas:utilizacoes_consumidas, status, clientes:barbearia_clientes(nome), pacote:barbearia_pacotes(nome, preco)").eq("barbearia_id", activeClinic.id).order("created_at", { ascending: false }).limit(20),
   ]);
 
   const agendamentos = agendamentosResult.data || [];
@@ -68,12 +69,12 @@ export default async function FinanceiroPage({ searchParams }) {
   const clientePacotes = clientePacotesResult.data || [];
   const agendamentosFaturaveis = agendamentos.filter((item) => !["cancelado", "faltou"].includes(item.status) && item.pagamento_status !== "cancelado");
   const faturamentoPrevisto = agendamentosFaturaveis.reduce((acc, item) => acc + Number(item.valor || 0), 0);
-  const recebidoAgendamentos = agendamentosFaturaveis.reduce((acc, item) => acc + Number(item.valor_pago || 0), 0);
-  const recebido = recebidoAgendamentos + pagamentos.filter((item) => !item.agendamento_id).reduce((acc, item) => acc + Number(item.valor_pago || 0), 0);
+  const recebidoAgendamentos = agendamentosFaturaveis.reduce((acc, item) => acc + paidAmount(item), 0);
+  const recebido = recebidoAgendamentos + pagamentos.filter((item) => !item.agendamento_id).reduce((acc, item) => acc + paidAmount(item), 0);
   const pendente = Math.max(0, faturamentoPrevisto - recebidoAgendamentos);
   const comissoes = agendamentosFaturaveis.reduce((acc, item) => {
     if (item.pagamento_status !== "pago") return acc;
-    return acc + (Number(item.valor_pago || item.valor || 0) * Number(item.profissionais?.comissao_percentual || 0)) / 100;
+    return acc + ((paidAmount(item) || Number(item.valor || 0)) * Number(item.profissionais?.comissao_servico_percentual || 0)) / 100;
   }, 0);
 
   const cards = [
@@ -86,7 +87,7 @@ export default async function FinanceiroPage({ searchParams }) {
   return (
     <main className="min-w-0 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl min-w-0">
-        <PageHeader eyebrow="Financeiro" title="Financeiro da clínica" description="Controle básico de pagamentos, faturamento, comissões e pacotes." />
+        <PageHeader eyebrow="Financeiro" title="Financeiro da barbearia" description="Controle básico de pagamentos, faturamento, comissões e pacotes." />
 
         <form className="mt-6 grid w-full gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:max-w-md sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" action="/dashboard/financeiro">
           <Field label="Mês" name="month" type="month" defaultValue={safeMonth} />
@@ -115,19 +116,19 @@ export default async function FinanceiroPage({ searchParams }) {
                     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                       <div>
                         <p className="font-semibold">{item.clientes?.nome || "Cliente"}</p>
-                        <p className="mt-1 text-sm text-neutral-600">{item.procedimentos?.nome || "Procedimento"} · {new Date(item.inicio).toLocaleDateString("pt-BR")}</p>
+                        <p className="mt-1 text-sm text-neutral-600">{item.procedimentos?.nome || "Serviço"} · {new Date(item.inicio).toLocaleDateString("pt-BR")}</p>
                       </div>
-                      <div className="text-sm font-semibold text-neutral-700">{formatMoney(item.valor_pago)} / {formatMoney(item.valor)} · {item.status === "cancelado" || item.status === "faltou" ? `${item.status} · ` : ""}{item.pagamento_status}</div>
+                      <div className="text-sm font-semibold text-neutral-700">{formatMoney(paidAmount(item))} / {formatMoney(item.valor)} · {item.status === "cancelado" || item.status === "faltou" ? `${item.status} · ` : ""}{item.pagamento_status}</div>
                     </div>
                   </summary>
                   <form action={updateAgendamentoFinanceiroAction} className="mt-4 grid gap-4 rounded-lg bg-neutral-50 p-3 md:grid-cols-3">
                     <input type="hidden" name="agendamento_id" value={item.id} />
                     <input type="hidden" name="cliente_id" value={item.cliente_id || ""} />
-                    <input type="hidden" name="profissional_id" value={item.profissional_id || ""} />
+                    <input type="hidden" name="barbeiro_id" value={item.barbeiro_id || ""} />
                     <input type="hidden" name="month" value={safeMonth} />
                     <input type="hidden" name="descricao" value={`${item.procedimentos?.nome || "Atendimento"} - ${item.clientes?.nome || "Cliente"}`} />
                     <Field label="Valor" name="valor" type="number" defaultValue={String(item.valor || 0)} />
-                    <Field label="Valor pago" name="valor_pago" type="number" defaultValue={String(item.valor_pago || 0)} />
+                    <Field label="Valor pago" name="valor_pago" type="number" defaultValue={String(paidAmount(item))} />
                     <SelectField label="Status" name="pagamento_status" defaultValue={item.pagamento_status || "pendente"}>
                       <option value="pendente">Pendente</option>
                       <option value="parcial">Parcial</option>
@@ -158,20 +159,20 @@ export default async function FinanceiroPage({ searchParams }) {
               <div className="mt-4 space-y-4">
                 <Field label="Nome" name="nome" required />
                 <div>
-                  <span className="text-sm font-medium text-neutral-700">Procedimentos do pacote</span>
+                  <span className="text-sm font-medium text-neutral-700">Serviços do pacote</span>
                   <div className="mt-2 grid max-h-56 gap-2 overflow-auto rounded-lg border border-neutral-200 bg-white p-3">
                     <label className="inline-flex items-center gap-2 text-sm text-neutral-600">
-                      <input type="checkbox" name="procedimento_ids" value="" />
-                      Pacote geral, sem procedimento específico
+                      <input type="checkbox" name="servico_ids" value="" />
+                      Pacote geral, sem serviço específico
                     </label>
                     {procedimentos.map((item) => (
                       <label key={item.id} className="inline-flex items-center gap-2 text-sm text-neutral-700">
-                        <input type="checkbox" name="procedimento_ids" value={item.id} />
+                        <input type="checkbox" name="servico_ids" value={item.id} />
                         {item.nome}
                       </label>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs text-neutral-500">Selecione um ou mais procedimentos para montar um pacote personalizado.</p>
+                  <p className="mt-2 text-xs text-neutral-500">Selecione um ou mais serviços para montar um pacote personalizado.</p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Field label="Sessões" name="quantidade_sessoes" type="number" defaultValue="5" />
@@ -204,9 +205,9 @@ export default async function FinanceiroPage({ searchParams }) {
               <div className="mt-4 space-y-3">
                 {clientePacotes.length === 0 ? <p className="rounded-lg bg-neutral-50 px-4 py-3 text-sm text-neutral-600">Nenhum pacote vendido.</p> : clientePacotes.map((item) => (
                   <div key={item.id} className="rounded-lg border border-neutral-200 p-3">
-                    <p className="text-sm font-semibold">{item.nome_pacote}</p>
+                    <p className="text-sm font-semibold">{item.pacote?.nome || "Pacote"}</p>
                     <p className="mt-1 text-xs text-neutral-500">{item.clientes?.nome || "Cliente"} · {item.sessoes_utilizadas}/{item.sessoes_total} sessões</p>
-                    <p className="mt-1 text-xs text-neutral-500">{formatMoney(item.valor_total)} · {item.status}</p>
+                    <p className="mt-1 text-xs text-neutral-500">{formatMoney(item.pacote?.preco)} · {item.status}</p>
                   </div>
                 ))}
               </div>

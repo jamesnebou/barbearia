@@ -16,17 +16,19 @@ function isPlatformHost(host) {
   return configured.includes(value);
 }
 
-async function findSlugByDomain(host) {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function domainContext(host) {
   const domain = String(host || "").toLowerCase().split(":")[0];
   const withoutWww = domain.replace(/^www\./, "");
   const candidates = Array.from(new Set([domain, withoutWww, `www.${withoutWww}`].filter(Boolean)));
-
-  if (!supabaseUrl || !serviceRoleKey || !domain) return null;
-
   const encodedCandidates = candidates.map((item) => `"${item.replaceAll('"', '\\"')}"`).join(",");
-  const response = await fetch(`${supabaseUrl}/rest/v1/clinica_dominios?dominio=in.(${encodedCandidates})&status=in.(ativo,verificado,pendente)&select=dominio,status,clinicas(slug)`, {
+  return { domain, encodedCandidates };
+}
+
+async function querySupabase(path, serviceRoleKey) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl || !serviceRoleKey) return [];
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
     headers: {
       apikey: serviceRoleKey,
       authorization: `Bearer ${serviceRoleKey}`,
@@ -34,11 +36,47 @@ async function findSlugByDomain(host) {
     cache: "no-store",
   });
 
-  if (!response.ok) return null;
-  const data = await response.json().catch(() => []);
-  const exact = data?.find((item) => item.dominio === domain);
-  const verified = data?.find((item) => ["ativo", "verificado"].includes(item.status));
-  return exact?.clinicas?.slug || verified?.clinicas?.slug || data?.[0]?.clinicas?.slug || null;
+  if (!response.ok) return [];
+  return response.json().catch(() => []);
+}
+
+function preferredDomainRow(rows, domain) {
+  return rows.find((item) => item.dominio === domain)
+    || rows.find((item) => ["ativo", "verificado"].includes(item.status))
+    || rows[0]
+    || null;
+}
+
+async function findBarbershopByDomain({ domain, encodedCandidates, serviceRoleKey }) {
+  const rows = await querySupabase(
+    `barbearia_dominios?dominio=in.(${encodedCandidates})&status=in.(ativo,verificado,pendente)&select=dominio,status,barbearias(slug,status,site_publicado)`,
+    serviceRoleKey,
+  );
+  const eligible = rows.filter((item) =>
+    item.barbearias?.site_publicado === true
+    && ["trial", "ativa"].includes(item.barbearias?.status),
+  );
+  return preferredDomainRow(eligible, domain)?.barbearias?.slug || null;
+}
+
+async function findClinicByDomain({ domain, encodedCandidates, serviceRoleKey }) {
+  const rows = await querySupabase(
+    `barbearia_dominios?dominio=in.(${encodedCandidates})&status=in.(ativo,verificado,pendente)&select=dominio,status,barbearias(slug)`,
+    serviceRoleKey,
+  );
+  return preferredDomainRow(rows, domain)?.barbearias?.slug || null;
+}
+
+async function findPublicSiteByDomain(host) {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const context = domainContext(host);
+  if (!serviceRoleKey || !context.domain) return null;
+
+  const barbershopSlug = await findBarbershopByDomain({ ...context, serviceRoleKey });
+  if (barbershopSlug) return { type: "barbershop", slug: barbershopSlug };
+
+  const clinicSlug = await findClinicByDomain({ ...context, serviceRoleKey });
+  return clinicSlug ? { type: "clinic", slug: clinicSlug } : null;
 }
 
 export async function proxy(request) {
@@ -48,12 +86,12 @@ export async function proxy(request) {
     return NextResponse.next();
   }
 
-  const slug = await findSlugByDomain(host);
-  if (!slug) {
+  const site = await findPublicSiteByDomain(host);
+  if (!site) {
     return NextResponse.next();
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = `/c/${slug}`;
+  url.pathname = site.type === "barbershop" ? `/b/${site.slug}` : `/c/${site.slug}`;
   return NextResponse.rewrite(url);
 }

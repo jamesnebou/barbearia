@@ -4,25 +4,25 @@ import { useState } from "react";
 import { SubmitButton } from "@/components/app-shell/ui";
 
 const TERMOS = {
-  procedimento: {
-    titulo: "Termo de consentimento para procedimento estético",
+  atendimento: {
+    titulo: "Termo de consentimento para serviço de barbearia",
     texto:
-      "Declaro que recebi explicações claras sobre o procedimento estético indicado, seus objetivos, benefícios esperados, cuidados necessários antes e depois, possíveis reações, riscos comuns, limitações de resultado e necessidade de retorno. Confirmo que tive oportunidade de esclarecer dúvidas e autorizo a realização do atendimento conforme orientação profissional.",
+      "Declaro que recebi informações claras sobre o serviço escolhido, duração, valor, resultado esperado e cuidados recomendados. Autorizo a realização do atendimento pelo barbeiro selecionado.",
   },
   imagem: {
     titulo: "Termo de autorização de uso de imagem",
     texto:
-      "Autorizo o registro e armazenamento de imagens antes, durante e depois do atendimento para acompanhamento clínico e documentação do prontuário. Caso a clínica utilize imagens para fins de divulgação, essa utilização deverá respeitar a autorização específica definida neste atendimento, preservando a privacidade e a finalidade informada ao cliente.",
+      "Autorizo o registro e armazenamento de imagens de referência e do resultado do atendimento na ficha do cliente. Qualquer divulgação dependerá da autorização de marketing indicada neste cadastro.",
   },
   lgpd: {
     titulo: "Termo de consentimento LGPD",
     texto:
-      "Autorizo o tratamento dos meus dados pessoais e dados sensíveis relacionados ao atendimento estético pela clínica, incluindo dados cadastrais, informações de saúde, anamnese, registros fotográficos autorizados e histórico de atendimentos, exclusivamente para prestação do serviço, acompanhamento, comunicação, obrigações legais e defesa de direitos.",
+      "Autorizo o tratamento dos meus dados cadastrais, preferências, histórico de atendimentos e registros fotográficos autorizados para agendamento, prestação dos serviços, comunicação e cumprimento de obrigações legais.",
   },
-  anamnese: {
-    titulo: "Termo de veracidade da anamnese",
+  marketing: {
+    titulo: "Autorização de comunicação e marketing",
     texto:
-      "Declaro que as informações fornecidas na anamnese são verdadeiras e completas, incluindo histórico de saúde, alergias, medicamentos em uso, procedimentos anteriores, gestação, doenças pré-existentes e demais condições relevantes. Comprometo-me a comunicar qualquer alteração antes de novos atendimentos.",
+      "Autorizo o envio de lembretes, novidades, condições comerciais e campanhas da barbearia pelos canais informados no cadastro. Sei que posso solicitar o cancelamento dessa autorização a qualquer momento.",
   },
   outro: {
     titulo: "",
@@ -31,9 +31,9 @@ const TERMOS = {
 };
 
 export function ConsentimentoForm({ action, clienteId, clienteNome }) {
-  const [tipo, setTipo] = useState("procedimento");
-  const [titulo, setTitulo] = useState(TERMOS.procedimento.titulo);
-  const [texto, setTexto] = useState(TERMOS.procedimento.texto);
+  const [tipo, setTipo] = useState("atendimento");
+  const [titulo, setTitulo] = useState(TERMOS.atendimento.titulo);
+  const [texto, setTexto] = useState(TERMOS.atendimento.texto);
 
   function handleTipoChange(event) {
     const nextTipo = event.target.value;
@@ -54,10 +54,10 @@ export function ConsentimentoForm({ action, clienteId, clienteNome }) {
           onChange={handleTipoChange}
           className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[var(--clinic-primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--clinic-primary)_18%,transparent)]"
         >
-          <option value="procedimento">Procedimento</option>
+          <option value="atendimento">Atendimento</option>
           <option value="imagem">Uso de imagem</option>
           <option value="lgpd">LGPD</option>
-          <option value="anamnese">Anamnese</option>
+          <option value="marketing">Comunicação e marketing</option>
           <option value="outro">Outro</option>
         </select>
       </label>

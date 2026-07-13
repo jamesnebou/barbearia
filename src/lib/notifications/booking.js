@@ -20,7 +20,7 @@ function notificationText({ clinic, booking, procedimento, invoiceUrl }) {
     `Cliente: ${booking.nome}`,
     `WhatsApp: ${booking.telefone || "-"}`,
     `E-mail: ${booking.email || "-"}`,
-    `Procedimento: ${procedimento.nome}`,
+    `Serviço: ${procedimento.nome}`,
     `Data: ${formatDateTime(booking.data_hora)}`,
     `Valor: ${formatMoney(booking.valor_total)}`,
     `Sinal: ${formatMoney(booking.valor_sinal)}`,
@@ -37,13 +37,13 @@ function notificationHtml({ clinic, booking, procedimento, invoiceUrl }) {
         <p><strong>Cliente:</strong> ${booking.nome}</p>
         <p><strong>WhatsApp:</strong> ${booking.telefone || "-"}</p>
         <p><strong>E-mail:</strong> ${booking.email || "-"}</p>
-        <p><strong>Procedimento:</strong> ${procedimento.nome}</p>
+        <p><strong>Serviço:</strong> ${procedimento.nome}</p>
         <p><strong>Data:</strong> ${formatDateTime(booking.data_hora)}</p>
         <p><strong>Valor:</strong> ${formatMoney(booking.valor_total)}</p>
         <p><strong>Sinal:</strong> ${formatMoney(booking.valor_sinal)}</p>
       </div>
       ${invoiceUrl ? `<p style="margin-top: 20px;"><a href="${invoiceUrl}" style="display: inline-block; background: #111827; color: #ffffff; padding: 12px 18px; border-radius: 10px; text-decoration: none; font-weight: 700;">Abrir checkout do sinal</a></p>` : ""}
-      <p style="margin-top: 24px; color: #737373; font-size: 13px;">Este aviso foi enviado automaticamente pelo sistema da clínica.</p>
+      <p style="margin-top: 24px; color: #737373; font-size: 13px;">Este aviso foi enviado automaticamente pelo sistema da barbearia.</p>
     </div>
   `;
 }
@@ -51,7 +51,7 @@ function notificationHtml({ clinic, booking, procedimento, invoiceUrl }) {
 async function sendEmailNotification({ clinic, booking, procedimento, invoiceUrl, integration }) {
   const apiKey = process.env.RESEND_API_KEY;
   const to = integration?.email_ativo ? integration.email_destino || clinic.email : null;
-  const from = integration?.email_remetente || process.env.RESEND_FROM_EMAIL || "Clinica SaaS <onboarding@resend.dev>";
+  const from = integration?.email_remetente || process.env.RESEND_FROM_EMAIL || "Barbearia SaaS <onboarding@resend.dev>";
 
   if (!apiKey || !to) return { skipped: true };
 
@@ -127,7 +127,7 @@ export async function sendWhatsAppIntegrationTest({ clinic, integration }) {
     },
     booking: {
       id: `test-${now}`,
-      nome: "Teste Clinica SaaS",
+      nome: "Teste Barbearia SaaS",
       telefone: integration?.whatsapp_numero_destino || clinic.telefone || "-",
       email: clinic.email || "-",
       data_hora: now,

@@ -11,6 +11,7 @@ import { ensureVercelProjectDomain, getVercelProjectDomain, normalizeCustomDomai
 import { sendWhatsAppIntegrationTest } from "@/lib/notifications/booking";
 import { buildScheduleFromForm, isWithinWorkingPeriods } from "@/lib/clinic/schedule";
 import { ACCESS_SECTIONS } from "@/lib/auth/permissions";
+import { decryptBarbeariaSecrets, encryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 
 async function getScopedSupabase() {
   const context = await requireClinic();
@@ -18,7 +19,7 @@ async function getScopedSupabase() {
   const clinicaId = activeClinic?.id;
 
   if (!clinicaId) {
-    throw new Error("Nenhuma clinica vinculada ao usuario logado.");
+    throw new Error("Nenhuma barbearia vinculada ao usuario logado.");
   }
 
   assertClinicOperational(activeClinic);
@@ -55,11 +56,11 @@ async function redirectLimitError({ clinic, resource, redirectTo }) {
   }
 }
 
-const CLINIC_ROLES = new Set(["owner", "admin", "recepcao", "financeiro", "profissional"]);
+const CLINIC_ROLES = new Set(["owner", "gerente", "recepcao", "financeiro", "barbeiro"]);
 const ACCESS_SECTION_SET = new Set(ACCESS_SECTIONS);
 
 function currentMembership(memberships, clinicaId) {
-  return (memberships || []).find((item) => item.clinica_id === clinicaId) || memberships?.[0] || null;
+  return (memberships || []).find((item) => item.barbearia_id === clinicaId) || memberships?.[0] || null;
 }
 
 function redirectWithMessage(path, code, message) {
@@ -98,15 +99,15 @@ function vercelDomainObservacoes(vercelDomain) {
 
 function requireClinicManager(memberships, clinicaId, redirectTo) {
   const membership = currentMembership(memberships, clinicaId);
-  if (!["owner", "admin"].includes(membership?.papel)) {
+  if (!["owner", "gerente"].includes(membership?.papel)) {
     redirectWithMessage(redirectTo, "permissao", "Seu usuario nao tem permissao para administrar esta area.");
   }
 }
 
 function requireProntuarioAccess(memberships, clinicaId, redirectTo) {
   const membership = currentMembership(memberships, clinicaId);
-  if (!["owner", "admin", "profissional"].includes(membership?.papel)) {
-    redirectWithMessage(redirectTo, "permissao", "Prontuario restrito a owner, admin e profissional.");
+  if (!["owner", "gerente", "barbeiro"].includes(membership?.papel)) {
+    redirectWithMessage(redirectTo, "permissao", "Ficha do cliente restrita ao proprietário, gerente e barbeiro autorizado.");
   }
 }
 
@@ -116,6 +117,11 @@ function normalizeEmail(value) {
 
 function normalizePhone(value) {
   return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeClienteOrigem(value) {
+  const origem = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  return new Set(["cadastro", "site", "whatsapp", "instagram", "google", "indicacao", "importacao", "outro"]).has(origem) ? origem : "outro";
 }
 
 function normalizeProvider(value) {
@@ -171,7 +177,7 @@ function assertWithinWorkingHours({ clinic, inicioRaw, fimRaw, inicio, fim, form
   const schedule = clinic?.metadata?.horario_funcionamento || {};
 
   if (!isWithinWorkingPeriods({ schedule, startDate: inicio, endDate: fim }) || fimRaw.slice(0, 10) !== inicioRaw.slice(0, 10)) {
-    redirectAgendaError(formData, "Este horário está fora do expediente configurado da clínica.", inicioRaw.slice(0, 10));
+    redirectAgendaError(formData, "Este horário está fora do expediente configurado da barbearia.", inicioRaw.slice(0, 10));
   }
 }
 
@@ -179,9 +185,9 @@ async function resolveFimByProcedimento({ supabase, clinicaId, procedimentoId, i
   if (!procedimentoId) return null;
 
   const { data, error } = await supabase
-    .from("procedimentos")
+    .from("barbearia_servicos")
     .select("duracao_minutos")
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .eq("id", procedimentoId)
     .maybeSingle();
 
@@ -194,19 +200,19 @@ export async function createClienteAction(formData) {
   await redirectLimitError({ clinic: activeClinic, resource: "clientes", redirectTo: "/dashboard/clientes" });
 
   const payload = {
-    clinica_id: clinicaId,
+    barbearia_id: clinicaId,
     nome: requireValue(text(formData, "nome"), "Informe o nome do cliente."),
     telefone: nullableText(formData, "telefone"),
     email: nullableText(formData, "email"),
     cpf: nullableText(formData, "cpf"),
     data_nascimento: nullableText(formData, "data_nascimento"),
-    origem: nullableText(formData, "origem"),
+    origem: normalizeClienteOrigem(nullableText(formData, "origem")),
     observacoes: nullableText(formData, "observacoes"),
     consentimento_lgpd: formData.get("consentimento_lgpd") === "on",
-    data_consentimento_lgpd: formData.get("consentimento_lgpd") === "on" ? new Date().toISOString() : null,
+    consentimento_lgpd_em: formData.get("consentimento_lgpd") === "on" ? new Date().toISOString() : null,
   };
 
-  const { error } = await supabase.from("clientes").insert(payload);
+  const { error } = await supabase.from("barbearia_clientes").insert(payload);
   if (error) throw error;
   revalidatePath("/dashboard/clientes");
   revalidatePath("/dashboard");
@@ -217,7 +223,7 @@ export async function updateClienteStatusAction(formData) {
   const id = requireValue(text(formData, "id"), "Cliente não informado.");
   const status = requireValue(text(formData, "status"), "Status não informado.");
 
-  const { error } = await supabase.from("clientes").update({ status }).eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_clientes").update({ status }).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/clientes");
   revalidatePath("/dashboard");
@@ -227,7 +233,7 @@ export async function deleteClienteAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
   const id = requireValue(text(formData, "id"), "Cliente não informado.");
 
-  const { error } = await supabase.from("clientes").delete().eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_clientes").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/clientes");
   revalidatePath("/dashboard");
@@ -237,13 +243,13 @@ export async function createProfissionalAction(formData) {
   const { supabase, clinicaId, activeClinic } = await getScopedSupabase();
   await redirectLimitError({ clinic: activeClinic, resource: "profissionais", redirectTo: "/dashboard/profissionais" });
 
-  const { error } = await supabase.from("profissionais").insert({
-    clinica_id: clinicaId,
-    nome: requireValue(text(formData, "nome"), "Informe o nome do profissional."),
+  const { error } = await supabase.from("barbearia_barbeiros").insert({
+    barbearia_id: clinicaId,
+    nome: requireValue(text(formData, "nome"), "Informe o nome do barbeiro."),
     telefone: nullableText(formData, "telefone"),
     email: nullableText(formData, "email"),
-    especialidade: nullableText(formData, "especialidade"),
-    comissao_percentual: numberValue(formData, "comissao_percentual", 0),
+    especialidades: nullableText(formData, "especialidades") ? [nullableText(formData, "especialidades")] : [],
+    comissao_servico_percentual: numberValue(formData, "comissao_servico_percentual", 0),
     observacoes: nullableText(formData, "observacoes"),
   });
 
@@ -254,19 +260,19 @@ export async function createProfissionalAction(formData) {
 
 export async function toggleProfissionalAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Profissional nao informado.");
+  const id = requireValue(text(formData, "id"), "Barbeiro nao informado.");
   const ativo = text(formData, "ativo") === "true";
 
-  const { error } = await supabase.from("profissionais").update({ ativo }).eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_barbeiros").update({ ativo }).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/profissionais");
 }
 
 export async function deleteProfissionalAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Profissional nao informado.");
+  const id = requireValue(text(formData, "id"), "Barbeiro nao informado.");
 
-  const { error } = await supabase.from("profissionais").delete().eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_barbeiros").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/profissionais");
 }
@@ -275,9 +281,9 @@ export async function createProcedimentoAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
   const uploadedImage = await uploadProcedureImage({ clinicaId, file: formData.get("imagem_file") });
 
-  const { error } = await supabase.from("procedimentos").insert({
-    clinica_id: clinicaId,
-    nome: requireValue(text(formData, "nome"), "Informe o nome do procedimento."),
+  const { error } = await supabase.from("barbearia_servicos").insert({
+    barbearia_id: clinicaId,
+    nome: requireValue(text(formData, "nome"), "Informe o nome do serviço."),
     categoria: nullableText(formData, "categoria"),
     descricao: nullableText(formData, "descricao"),
     duracao_minutos: Math.max(1, numberValue(formData, "duracao_minutos", 60)),
@@ -287,8 +293,8 @@ export async function createProcedimentoAction(formData) {
     publicado_site: formData.get("publicado_site") === "on",
     destaque_site: formData.get("destaque_site") === "on",
     ordem_site: Math.max(0, numberValue(formData, "ordem_site", 0)),
-    cuidados_antes: nullableText(formData, "cuidados_antes"),
-    cuidados_depois: nullableText(formData, "cuidados_depois"),
+    instrucoes_pre_atendimento: nullableText(formData, "instrucoes_pre_atendimento"),
+    instrucoes_pos_atendimento: nullableText(formData, "instrucoes_pos_atendimento"),
     imagem_url: uploadedImage?.publicUrl || null,
     imagem_storage_path: uploadedImage?.path || null,
     imagem_mime_type: uploadedImage?.mimeType || null,
@@ -302,7 +308,7 @@ export async function createProcedimentoAction(formData) {
 
 export async function updateProcedimentoAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Procedimento não informado.");
+  const id = requireValue(text(formData, "id"), "Serviço não informado.");
   const uploadedImage = await uploadProcedureImage({ clinicaId, procedimentoId: id, file: formData.get("imagem_file") });
   const imagePayload = uploadedImage ? {
     imagem_url: uploadedImage.publicUrl,
@@ -312,9 +318,9 @@ export async function updateProcedimentoAction(formData) {
   } : {};
 
   const { error } = await supabase
-    .from("procedimentos")
+    .from("barbearia_servicos")
     .update({
-      nome: requireValue(text(formData, "nome"), "Informe o nome do procedimento."),
+      nome: requireValue(text(formData, "nome"), "Informe o nome do serviço."),
       categoria: nullableText(formData, "categoria"),
       descricao: nullableText(formData, "descricao"),
       duracao_minutos: Math.max(1, numberValue(formData, "duracao_minutos", 60)),
@@ -324,12 +330,12 @@ export async function updateProcedimentoAction(formData) {
       publicado_site: formData.get("publicado_site") === "on",
       destaque_site: formData.get("destaque_site") === "on",
       ordem_site: Math.max(0, numberValue(formData, "ordem_site", 0)),
-      cuidados_antes: nullableText(formData, "cuidados_antes"),
-      cuidados_depois: nullableText(formData, "cuidados_depois"),
+      instrucoes_pre_atendimento: nullableText(formData, "instrucoes_pre_atendimento"),
+      instrucoes_pos_atendimento: nullableText(formData, "instrucoes_pos_atendimento"),
       ...imagePayload,
     })
     .eq("id", id)
-    .eq("clinica_id", clinicaId);
+    .eq("barbearia_id", clinicaId);
 
   if (error) throw error;
   revalidatePath("/dashboard/procedimentos");
@@ -338,19 +344,19 @@ export async function updateProcedimentoAction(formData) {
 
 export async function toggleProcedimentoAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Procedimento não informado.");
+  const id = requireValue(text(formData, "id"), "Serviço não informado.");
   const ativo = text(formData, "ativo") === "true";
 
-  const { error } = await supabase.from("procedimentos").update({ ativo }).eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_servicos").update({ ativo }).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/procedimentos");
 }
 
 export async function deleteProcedimentoAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Procedimento não informado.");
+  const id = requireValue(text(formData, "id"), "Serviço não informado.");
 
-  const { error } = await supabase.from("procedimentos").delete().eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_servicos").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/procedimentos");
 }
@@ -360,7 +366,7 @@ function agendaRedirectUrl(formData, fallbackDate = "") {
   const profissionalId = text(formData, "profissional_filtro");
   const params = new URLSearchParams({ date });
 
-  if (profissionalId) params.set("profissional", profissionalId);
+  if (profissionalId) params.set("barbeiro", profissionalId);
   return `/dashboard/agenda?${params.toString()}`;
 }
 
@@ -379,10 +385,10 @@ async function assertHorarioDisponivel({ supabase, clinicaId, profissionalId, in
   if (!profissionalId) return;
 
   let query = supabase
-    .from("agendamentos")
+    .from("barbearia_agendamentos")
     .select("id")
-    .eq("clinica_id", clinicaId)
-    .eq("profissional_id", profissionalId)
+    .eq("barbearia_id", clinicaId)
+    .eq("barbeiro_id", profissionalId)
     .not("status", "eq", "cancelado")
     .lt("inicio", fimISO)
     .gt("fim", inicioISO)
@@ -397,13 +403,13 @@ async function assertHorarioDisponivel({ supabase, clinicaId, profissionalId, in
   if (error) throw error;
 
   if (data?.length) {
-    redirectAgendaError(formData, "Este profissional já possui atendimento nesse horario.", inicioISO.slice(0, 10));
+    redirectAgendaError(formData, "Este barbeiro já possui atendimento nesse horário.", inicioISO.slice(0, 10));
   }
 }
 
 async function buildAgendaPayload({ supabase, formData, clinicaId, activeClinic, userId }) {
   const inicioRaw = requireValue(text(formData, "inicio"), "Informe o inicio do agendamento.");
-  const procedimentoId = nullableText(formData, "procedimento_id");
+  const procedimentoId = nullableText(formData, "servico_id");
   const inicio = parseDateTime(inicioRaw);
 
   if (!inicio) {
@@ -414,7 +420,7 @@ async function buildAgendaPayload({ supabase, formData, clinicaId, activeClinic,
   let fim = fimRaw ? parseDateTime(fimRaw) : await resolveFimByProcedimento({ supabase, clinicaId, procedimentoId, inicio });
 
   if (!fim) {
-    redirectAgendaError(formData, "Informe o fim do agendamento ou selecione um procedimento com duração cadastrada.", inicioRaw.slice(0, 10));
+    redirectAgendaError(formData, "Informe o fim do agendamento ou selecione um serviço com duração cadastrada.", inicioRaw.slice(0, 10));
   }
 
   if (!fimRaw) {
@@ -429,13 +435,14 @@ async function buildAgendaPayload({ supabase, formData, clinicaId, activeClinic,
   assertWithinWorkingHours({ clinic: activeClinic, inicioRaw, fimRaw, inicio, fim, formData });
 
   return {
-    clinica_id: clinicaId,
+    barbearia_id: clinicaId,
     cliente_id: nullableText(formData, "cliente_id"),
-    profissional_id: nullableText(formData, "profissional_id"),
-    procedimento_id: procedimentoId,
+    barbeiro_id: nullableText(formData, "barbeiro_id"),
+    servico_id: procedimentoId,
     inicio: inicio.toISOString(),
     fim: fim.toISOString(),
-    valor: numberValue(formData, "valor", 0),
+    valor_tabela: numberValue(formData, "valor", 0),
+    valor_final: numberValue(formData, "valor", 0),
     observacoes: nullableText(formData, "observacoes"),
     created_by: userId || null,
   };
@@ -450,13 +457,13 @@ export async function createAgendamentoAction(formData) {
   await assertHorarioDisponivel({
     supabase,
     clinicaId,
-    profissionalId: payload.profissional_id,
+    profissionalId: payload.barbeiro_id,
     inicioISO: payload.inicio,
     fimISO: payload.fim,
     formData,
   });
 
-  const { error } = await supabase.from("agendamentos").insert({
+  const { error } = await supabase.from("barbearia_agendamentos").insert({
     ...payload,
     status: "agendado",
   });
@@ -476,7 +483,7 @@ export async function updateAgendamentoAction(formData) {
   await assertHorarioDisponivel({
     supabase,
     clinicaId,
-    profissionalId: payload.profissional_id,
+    profissionalId: payload.barbeiro_id,
     inicioISO: payload.inicio,
     fimISO: payload.fim,
     ignoreId: id,
@@ -484,19 +491,20 @@ export async function updateAgendamentoAction(formData) {
   });
 
   const { error } = await supabase
-    .from("agendamentos")
+    .from("barbearia_agendamentos")
     .update({
       cliente_id: payload.cliente_id,
-      profissional_id: payload.profissional_id,
-      procedimento_id: payload.procedimento_id,
+      barbeiro_id: payload.barbeiro_id,
+      servico_id: payload.servico_id,
       inicio: payload.inicio,
       fim: payload.fim,
-      valor: payload.valor,
+      valor_tabela: payload.valor_tabela,
+      valor_final: payload.valor_final,
       observacoes: payload.observacoes,
       status,
     })
     .eq("id", id)
-    .eq("clinica_id", clinicaId);
+    .eq("barbearia_id", clinicaId);
 
   if (error) throw error;
   revalidatePath("/dashboard/agenda");
@@ -509,7 +517,7 @@ export async function updateAgendamentoStatusAction(formData) {
   const id = requireValue(text(formData, "id"), "Agendamento nao informado.");
   const status = requireValue(text(formData, "status"), "Status nao informado.");
 
-  const { error } = await supabase.from("agendamentos").update({ status }).eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_agendamentos").update({ status }).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/agenda");
   revalidatePath("/dashboard");
@@ -520,7 +528,7 @@ export async function deleteAgendamentoAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
   const id = requireValue(text(formData, "id"), "Agendamento nao informado.");
 
-  const { error } = await supabase.from("agendamentos").delete().eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_agendamentos").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/agenda");
   revalidatePath("/dashboard");
@@ -528,10 +536,23 @@ export async function deleteAgendamentoAction(formData) {
 }
 
 export async function updateClienteFichaAction(formData) {
-  const { supabase, clinicaId, memberships, user } = await getScopedSupabase();
+  const { supabase, clinicaId, memberships } = await getScopedSupabase();
   const id = requireValue(text(formData, "id"), "Cliente não informado.");
   requireProntuarioAccess(memberships, clinicaId, `/dashboard/clientes/${id}`);
   const termoAceito = formData.get("termo_consentimento_aceito") === "on";
+  const { data: currentClient, error: currentClientError } = await supabase
+    .from("barbearia_clientes")
+    .select("preferencias")
+    .eq("id", id)
+    .eq("barbearia_id", clinicaId)
+    .maybeSingle();
+  if (currentClientError) throw currentClientError;
+  let currentPreferences = {};
+  try {
+    currentPreferences = JSON.parse(currentClient?.preferencias || "{}");
+  } catch {
+    currentPreferences = { observacoes: currentClient?.preferencias || "" };
+  }
 
   const payload = {
     nome: requireValue(text(formData, "nome"), "Informe o nome do cliente."),
@@ -540,23 +561,19 @@ export async function updateClienteFichaAction(formData) {
     cpf: nullableText(formData, "cpf"),
     data_nascimento: nullableText(formData, "data_nascimento"),
     endereco: nullableText(formData, "endereco"),
-    origem: nullableText(formData, "origem"),
+    bairro: nullableText(formData, "bairro"),
+    cidade: nullableText(formData, "cidade"),
+    origem: normalizeClienteOrigem(nullableText(formData, "origem")),
     status: requireValue(text(formData, "status"), "Status não informado."),
     observacoes: nullableText(formData, "observacoes"),
-    observacoes_clinicas: nullableText(formData, "observacoes_clinicas"),
-    alergias: nullableText(formData, "alergias"),
-    contraindicacoes: nullableText(formData, "contraindicacoes"),
-    medicamentos_uso: nullableText(formData, "medicamentos_uso"),
-    procedimentos_previos: nullableText(formData, "procedimentos_previos"),
-    retorno_recomendado_em: nullableText(formData, "retorno_recomendado_em"),
-    termo_consentimento_aceito: termoAceito,
-    termo_consentimento_aceito_em: termoAceito ? (nullableText(formData, "termo_consentimento_aceito_em") || new Date().toISOString()) : null,
-    termo_consentimento_observacao: nullableText(formData, "termo_consentimento_observacao"),
-    termo_consentimento_versao: nullableText(formData, "termo_consentimento_versao") || "v1",
-    termo_consentimento_registrado_por: termoAceito ? user?.id || null : null,
+    preferencias: JSON.stringify({ ...currentPreferences, observacoes: nullableText(formData, "observacoes_clinicas") }),
+    ultima_visita_em: nullableText(formData, "ultima_visita_em"),
+    consentimento_lgpd: termoAceito,
+    consentimento_lgpd_em: termoAceito ? (nullableText(formData, "termo_consentimento_aceito_em") || new Date().toISOString()) : null,
+    consentimento_lgpd_versao: nullableText(formData, "termo_consentimento_versao") || "v1",
   };
 
-  const { error } = await supabase.from("clientes").update(payload).eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_clientes").update(payload).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath(`/dashboard/clientes/${id}`);
   revalidatePath("/dashboard/clientes");
@@ -567,24 +584,17 @@ export async function updateClienteAnamneseAction(formData) {
   const id = requireValue(text(formData, "id"), "Cliente não informado.");
   requireProntuarioAccess(memberships, clinicaId, `/dashboard/clientes/${id}`);
 
-  const anamnese = {
-    objetivo_principal: nullableText(formData, "objetivo_principal"),
-    queixa_principal: nullableText(formData, "queixa_principal"),
-    gestante: formData.get("gestante") === "on",
-    lactante: formData.get("lactante") === "on",
-    diabetes: formData.get("diabetes") === "on",
-    hipertensao: formData.get("hipertensao") === "on",
-    marcapasso: formData.get("marcapasso") === "on",
-    cancer_tratamento: formData.get("cancer_tratamento") === "on",
-    tendencia_queloide: formData.get("tendencia_queloide") === "on",
-    usa_acidos: formData.get("usa_acidos") === "on",
-    exposicao_solar: nullableText(formData, "exposicao_solar"),
-    rotina_skincare: nullableText(formData, "rotina_skincare"),
+  const preferencias = {
+    corte_preferido: nullableText(formData, "corte_preferido"),
+    barba_preferida: nullableText(formData, "barba_preferida"),
+    acabamento_preferido: nullableText(formData, "acabamento_preferido"),
+    frequencia_visitas: nullableText(formData, "frequencia_visitas"),
+    produtos_preferidos: nullableText(formData, "produtos_preferidos"),
+    produtos_evitar: nullableText(formData, "produtos_evitar"),
     observacoes: nullableText(formData, "anamnese_observacoes"),
-    updated_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase.from("clientes").update({ anamnese }).eq("id", id).eq("clinica_id", clinicaId);
+  const { error } = await supabase.from("barbearia_clientes").update({ preferencias: JSON.stringify(preferencias) }).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath(`/dashboard/clientes/${id}`);
 }
@@ -594,10 +604,10 @@ export async function createClienteFotoAction(formData) {
   const clienteId = requireValue(text(formData, "cliente_id"), "Cliente não informado.");
   requireProntuarioAccess(memberships, clinicaId, `/dashboard/clientes/${clienteId}`);
 
-  const { error } = await supabase.from("cliente_fotos").insert({
-    clinica_id: clinicaId,
+  const { error } = await supabase.from("barbearia_cliente_fotos").insert({
+    barbearia_id: clinicaId,
     cliente_id: clienteId,
-    tipo: requireValue(text(formData, "tipo"), "Tipo da foto não informado."),
+    tipo: ({ antes: "referencia", depois: "resultado" }[text(formData, "tipo")] || text(formData, "tipo") || "referencia"),
     titulo: nullableText(formData, "titulo"),
     url: requireValue(text(formData, "url"), "Informe a URL da foto."),
     observacoes: nullableText(formData, "observacoes"),
@@ -618,7 +628,7 @@ export async function deleteClienteFotoAction(formData) {
   const clienteId = requireValue(text(formData, "cliente_id"), "Cliente não informado.");
   requireProntuarioAccess(memberships, clinicaId, `/dashboard/clientes/${clienteId}`);
 
-  const { error } = await supabase.from("cliente_fotos").delete().eq("id", id).eq("clinica_id", clinicaId).eq("cliente_id", clienteId);
+  const { error } = await supabase.from("barbearia_cliente_fotos").delete().eq("id", id).eq("barbearia_id", clinicaId).eq("cliente_id", clienteId);
   if (error) throw error;
   revalidatePath(`/dashboard/clientes/${clienteId}`);
 }
@@ -636,8 +646,8 @@ export async function createClienteFotoUploadAction(formData) {
   const file = formData.get("arquivo");
   const uploaded = await uploadClientPhoto({ clinicaId, clienteId, file });
 
-  const { error } = await supabaseAdmin.from("cliente_fotos").insert({
-    clinica_id: clinicaId,
+  const { error } = await supabaseAdmin.from("barbearia_cliente_fotos").insert({
+    barbearia_id: clinicaId,
     cliente_id: clienteId,
     tipo: requireValue(text(formData, "tipo"), "Tipo da foto não informado."),
     titulo: nullableText(formData, "titulo"),
@@ -668,9 +678,9 @@ export async function createClienteConsentimentoAction(formData) {
   }
 
   const payload = {
-    clinica_id: clinicaId,
+    barbearia_id: clinicaId,
     cliente_id: clienteId,
-    tipo: text(formData, "tipo") || "procedimento",
+    tipo: ({ procedimento: "atendimento", anamnese: "atendimento" }[text(formData, "tipo")] || text(formData, "tipo") || "atendimento"),
     titulo: requireValue(text(formData, "titulo"), "Informe o titulo do termo."),
     versao: text(formData, "versao") || "v1",
     texto: requireValue(text(formData, "texto"), "Informe o texto do termo."),
@@ -681,20 +691,19 @@ export async function createClienteConsentimentoAction(formData) {
     created_by: user?.id || null,
   };
 
-  const { error } = await supabase.from("cliente_consentimentos").insert(payload);
+  const { error } = await supabase.from("barbearia_cliente_consentimentos").insert(payload);
   if (error) throw error;
 
-  if (["procedimento", "imagem", "lgpd", "anamnese"].includes(payload.tipo)) {
+  if (payload.tipo === "lgpd") {
     await supabase
-      .from("clientes")
+      .from("barbearia_clientes")
       .update({
-        termo_consentimento_aceito: true,
-        termo_consentimento_aceito_em: payload.aceito_em,
-        termo_consentimento_versao: payload.versao,
-        termo_consentimento_registrado_por: user?.id || null,
+        consentimento_lgpd: true,
+        consentimento_lgpd_em: payload.aceito_em,
+        consentimento_lgpd_versao: payload.versao,
       })
       .eq("id", clienteId)
-      .eq("clinica_id", clinicaId);
+      .eq("barbearia_id", clinicaId);
   }
 
   revalidatePath(`/dashboard/clientes/${clienteId}`);
@@ -704,7 +713,7 @@ export async function updateAgendamentoFinanceiroAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
   const agendamentoId = requireValue(text(formData, "agendamento_id"), "Agendamento não informado.");
   const clienteId = nullableText(formData, "cliente_id");
-  const profissionalId = nullableText(formData, "profissional_id");
+  const profissionalId = nullableText(formData, "barbeiro_id");
   const valor = numberValue(formData, "valor", 0);
   const valorPagoInformado = numberValue(formData, "valor_pago", 0);
   const status = requireValue(text(formData, "pagamento_status"), "Status de pagamento não informado.");
@@ -712,46 +721,44 @@ export async function updateAgendamentoFinanceiroAction(formData) {
   const formaPagamento = status === "cancelado" ? null : nullableText(formData, "forma_pagamento");
   const dataPagamento = status === "cancelado" ? null : nullableText(formData, "data_pagamento") || (status === "pago" ? new Date().toISOString() : null);
 
+  const agendaPaymentStatus = status === "cancelado" ? "estornado" : status;
   const { error: agendaError } = await supabase
-    .from("agendamentos")
+    .from("barbearia_agendamentos")
     .update({
-      valor,
-      valor_pago: valorPago,
-      pagamento_status: status,
-      forma_pagamento: formaPagamento,
-      data_pagamento: dataPagamento,
+      valor_tabela: valor,
+      valor_final: valor,
+      pagamento_status: agendaPaymentStatus,
     })
     .eq("id", agendamentoId)
-    .eq("clinica_id", clinicaId);
+    .eq("barbearia_id", clinicaId);
 
   if (agendaError) throw agendaError;
 
   const pagamentoPayload = {
-    clinica_id: clinicaId,
+    barbearia_id: clinicaId,
     cliente_id: clienteId,
     agendamento_id: agendamentoId,
-    profissional_id: profissionalId,
-    descricao: nullableText(formData, "descricao") || "Pagamento de atendimento",
-    valor,
-    valor_pago: valorPago,
-    status,
-    forma_pagamento: formaPagamento,
-    data_pagamento: dataPagamento,
-    observacoes: nullableText(formData, "observacoes_financeiras"),
+    valor: valorPago,
+    status: "pago",
+    forma: formaPagamento || "outro",
+    pago_em: dataPagamento,
+    observacoes: [nullableText(formData, "descricao") || "Pagamento de atendimento", nullableText(formData, "observacoes_financeiras"), profissionalId ? `barbeiro_id:${profissionalId}` : null].filter(Boolean).join(" | "),
   };
 
   const { data: existente, error: buscaError } = await supabase
-    .from("pagamentos_clinica")
+    .from("barbearia_pagamentos")
     .select("id")
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .eq("agendamento_id", agendamentoId)
     .maybeSingle();
 
   if (buscaError) throw buscaError;
 
-  const query = existente?.id
-    ? supabase.from("pagamentos_clinica").update(pagamentoPayload).eq("id", existente.id)
-    : supabase.from("pagamentos_clinica").insert(pagamentoPayload);
+  const query = valorPago <= 0
+    ? supabase.from("barbearia_pagamentos").delete().eq("barbearia_id", clinicaId).eq("agendamento_id", agendamentoId)
+    : existente?.id
+      ? supabase.from("barbearia_pagamentos").update(pagamentoPayload).eq("id", existente.id)
+      : supabase.from("barbearia_pagamentos").insert(pagamentoPayload);
 
   const { error: pagamentoError } = await query;
   if (pagamentoError) throw pagamentoError;
@@ -764,22 +771,26 @@ export async function updateAgendamentoFinanceiroAction(formData) {
 export async function createPacoteAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
   const procedimentoIds = formData
-    .getAll("procedimento_ids")
+    .getAll("servico_ids")
     .map((value) => String(value || "").trim())
     .filter(Boolean);
 
-  const { error } = await supabase.from("pacotes_clinica").insert({
-    clinica_id: clinicaId,
+  const { data: pacote, error } = await supabase.from("barbearia_pacotes").insert({
+    barbearia_id: clinicaId,
     nome: requireValue(text(formData, "nome"), "Informe o nome do pacote."),
     descricao: nullableText(formData, "descricao"),
-    procedimento_id: procedimentoIds[0] || null,
-    procedimento_ids: procedimentoIds,
-    quantidade_sessoes: Math.max(1, numberValue(formData, "quantidade_sessoes", 1)),
-    valor: numberValue(formData, "valor", 0),
+    limite_utilizacoes: Math.max(1, numberValue(formData, "quantidade_sessoes", 1)),
+    preco: numberValue(formData, "valor", 0),
     validade_dias: Math.max(1, numberValue(formData, "validade_dias", 90)),
-  });
+  }).select("id").single();
 
   if (error) throw error;
+  if (procedimentoIds.length) {
+    const { error: servicosError } = await supabase.from("barbearia_pacote_servicos").insert(
+      procedimentoIds.map((servicoId) => ({ barbearia_id: clinicaId, pacote_id: pacote.id, servico_id: servicoId, quantidade: 1 })),
+    );
+    if (servicosError) throw servicosError;
+  }
   revalidatePath("/dashboard/financeiro");
   redirect(financeRedirectUrl(formData));
 }
@@ -790,9 +801,9 @@ export async function sellClientePacoteAction(formData) {
   const clienteId = requireValue(text(formData, "cliente_id"), "Cliente não informado.");
 
   const { data: pacote, error: pacoteError } = await supabase
-    .from("pacotes_clinica")
-    .select("id, nome, quantidade_sessoes, valor, validade_dias")
-    .eq("clinica_id", clinicaId)
+    .from("barbearia_pacotes")
+    .select("id, nome, limite_utilizacoes, preco, validade_dias")
+    .eq("barbearia_id", clinicaId)
     .eq("id", pacoteId)
     .maybeSingle();
 
@@ -803,19 +814,16 @@ export async function sellClientePacoteAction(formData) {
   const validade = new Date(`${compra}T12:00:00`);
   validade.setDate(validade.getDate() + Number(pacote.validade_dias || 90));
   const valorPago = numberValue(formData, "valor_pago", 0);
-  const status = valorPago >= Number(pacote.valor || 0) ? "pago" : valorPago > 0 ? "parcial" : "pendente";
 
   const { data: clientePacote, error: vendaError } = await supabase
-    .from("cliente_pacotes")
+    .from("barbearia_cliente_pacotes")
     .insert({
-      clinica_id: clinicaId,
+      barbearia_id: clinicaId,
       cliente_id: clienteId,
       pacote_id: pacote.id,
-      nome_pacote: pacote.nome,
-      sessoes_total: pacote.quantidade_sessoes,
-      valor_total: pacote.valor,
-      data_compra: compra,
-      validade_em: validade.toISOString().slice(0, 10),
+      adquirido_em: `${compra}T12:00:00`,
+      valido_ate: validade.toISOString().slice(0, 10),
+      utilizacoes_total: pacote.limite_utilizacoes,
       observacoes: nullableText(formData, "observacoes"),
     })
     .select("id")
@@ -823,17 +831,17 @@ export async function sellClientePacoteAction(formData) {
 
   if (vendaError) throw vendaError;
 
-  const { error: pagamentoError } = await supabase.from("pagamentos_clinica").insert({
-    clinica_id: clinicaId,
-    cliente_id: clienteId,
-    descricao: `Venda de pacote: ${pacote.nome}`,
-    valor: pacote.valor,
-    valor_pago: valorPago,
-    status,
-    forma_pagamento: nullableText(formData, "forma_pagamento"),
-    data_pagamento: valorPago > 0 ? new Date().toISOString() : null,
-    observacoes: clientePacote?.id ? `cliente_pacote_id:${clientePacote.id}` : null,
-  });
+  const { error: pagamentoError } = valorPago > 0
+    ? await supabase.from("barbearia_pagamentos").insert({
+        barbearia_id: clinicaId,
+        cliente_id: clienteId,
+        valor: valorPago,
+        status: "pago",
+        forma: nullableText(formData, "forma_pagamento") || "outro",
+        pago_em: new Date().toISOString(),
+        observacoes: `Venda de pacote: ${pacote.nome}${clientePacote?.id ? ` | cliente_pacote_id:${clientePacote.id}` : ""}`,
+      })
+    : { error: null };
 
   if (pagamentoError) throw pagamentoError;
   revalidatePath("/dashboard/financeiro");
@@ -859,17 +867,17 @@ export async function inviteClinicUserAction(formData) {
     nome: nullableText(formData, "nome") || email,
   });
 
-  const { error } = await supabase.from("usuarios_clinica").upsert({
-    clinica_id: clinicaId,
+  const { error } = await supabase.from("barbearia_usuarios").upsert({
+    barbearia_id: clinicaId,
     user_id: authResult.user?.id || null,
     nome: nullableText(formData, "nome") || email,
     email,
     papel,
     permissoes: permissionsFromForm(formData, papel),
     ativo: true,
-    invited_at: new Date().toISOString(),
-    accepted_at: authResult.user?.id ? new Date().toISOString() : null,
-  }, { onConflict: "clinica_id,email" });
+    convidado_em: new Date().toISOString(),
+    aceito_em: authResult.user?.id ? new Date().toISOString() : null,
+  }, { onConflict: "barbearia_id,email" });
 
   if (error) throw error;
   revalidatePath("/dashboard/usuarios");
@@ -892,39 +900,39 @@ export async function updateClinicUserAction(formData) {
   }
 
   const { data: existing, error: existingError } = await supabase
-    .from("usuarios_clinica")
+    .from("barbearia_usuarios")
     .select("id, papel, ativo")
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .eq("id", id)
     .maybeSingle();
 
   if (existingError) throw existingError;
-  if (!existing) redirectWithMessage("/dashboard/usuarios", "usuario", "Usuario nao encontrado nesta clinica.");
+  if (!existing) redirectWithMessage("/dashboard/usuarios", "usuario", "Usuario nao encontrado nesta barbearia.");
 
   if (existing.papel === "owner" && (!ativo || papel !== "owner")) {
     const { count, error } = await supabase
-      .from("usuarios_clinica")
+      .from("barbearia_usuarios")
       .select("id", { count: "exact", head: true })
-      .eq("clinica_id", clinicaId)
+      .eq("barbearia_id", clinicaId)
       .eq("papel", "owner")
       .eq("ativo", true)
       .neq("id", id);
 
     if (error) throw error;
     if ((count || 0) === 0) {
-      redirectWithMessage("/dashboard/usuarios", "owner", "Mantenha pelo menos um owner ativo na clinica.");
+      redirectWithMessage("/dashboard/usuarios", "owner", "Mantenha pelo menos um owner ativo na barbearia.");
     }
   }
 
   const { error } = await supabase
-    .from("usuarios_clinica")
+    .from("barbearia_usuarios")
     .update({
       nome: nullableText(formData, "nome"),
       papel,
       permissoes: permissionsFromForm(formData, papel),
       ativo,
     })
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .eq("id", id);
 
   if (error) throw error;
@@ -945,8 +953,8 @@ function crmRedirectUrl(formData) {
 export async function createCrmOpportunityAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
 
-  const { error } = await supabase.from("crm_oportunidades").insert({
-    clinica_id: clinicaId,
+  const { error } = await supabase.from("barbearia_crm_oportunidades").insert({
+    barbearia_id: clinicaId,
     cliente_id: nullableText(formData, "cliente_id"),
     nome: requireValue(text(formData, "nome"), "Informe o nome da oportunidade."),
     telefone: nullableText(formData, "telefone"),
@@ -970,7 +978,7 @@ export async function updateCrmOpportunityAction(formData) {
   const status = text(formData, "status") || "lead";
 
   const { error } = await supabase
-    .from("crm_oportunidades")
+    .from("barbearia_crm_oportunidades")
     .update({
       status,
       origem: text(formData, "origem") || "whatsapp",
@@ -982,7 +990,7 @@ export async function updateCrmOpportunityAction(formData) {
       convertido_em: status === "convertido" ? new Date().toISOString() : null,
     })
     .eq("id", id)
-    .eq("clinica_id", clinicaId);
+    .eq("barbearia_id", clinicaId);
 
   if (error) throw error;
   revalidatePath("/dashboard/crm");
@@ -995,10 +1003,10 @@ export async function convertCrmOpportunityAction(formData) {
   const id = requireValue(text(formData, "id"), "Oportunidade não informada.");
 
   const { data: oportunidade, error: opportunityError } = await supabase
-    .from("crm_oportunidades")
+    .from("barbearia_crm_oportunidades")
     .select("id, cliente_id, nome, telefone, email, origem, observacoes")
     .eq("id", id)
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .maybeSingle();
 
   if (opportunityError) throw opportunityError;
@@ -1007,7 +1015,7 @@ export async function convertCrmOpportunityAction(formData) {
   let clienteId = oportunidade.cliente_id;
 
   if (!clienteId) {
-    let existingQuery = supabase.from("clientes").select("id").eq("clinica_id", clinicaId).limit(1);
+    let existingQuery = supabase.from("barbearia_clientes").select("id").eq("barbearia_id", clinicaId).limit(1);
     if (oportunidade.email) {
       existingQuery = existingQuery.eq("email", oportunidade.email);
     } else if (oportunidade.telefone) {
@@ -1023,9 +1031,9 @@ export async function convertCrmOpportunityAction(formData) {
     if (!clienteId) {
       const phone = normalizePhone(oportunidade.telefone);
       const { data: cliente, error: clienteError } = await supabase
-        .from("clientes")
+        .from("barbearia_clientes")
         .insert({
-          clinica_id: clinicaId,
+          barbearia_id: clinicaId,
           nome: oportunidade.nome,
           telefone: oportunidade.telefone,
           email: oportunidade.email,
@@ -1043,14 +1051,14 @@ export async function convertCrmOpportunityAction(formData) {
   }
 
   const { error } = await supabase
-    .from("crm_oportunidades")
+    .from("barbearia_crm_oportunidades")
     .update({
       cliente_id: clienteId,
       status: "convertido",
       convertido_em: new Date().toISOString(),
     })
     .eq("id", id)
-    .eq("clinica_id", clinicaId);
+    .eq("barbearia_id", clinicaId);
 
   if (error) throw error;
   revalidatePath("/dashboard/crm");
@@ -1103,7 +1111,7 @@ export async function updateClinicAccountAction(formData) {
   }
 
   const { error: membershipError } = await supabaseAdmin
-    .from("usuarios_clinica")
+    .from("barbearia_usuarios")
     .update({
       nome: nome || currentMembershipRow?.nome || email,
       email,
@@ -1111,7 +1119,7 @@ export async function updateClinicAccountAction(formData) {
     .eq("user_id", user.id);
 
   if (membershipError) {
-    redirectWithMessage("/dashboard/configuracoes", "conta", membershipError.message || "Nao foi possivel atualizar o usuario da clinica.");
+    redirectWithMessage("/dashboard/configuracoes", "conta", membershipError.message || "Nao foi possivel atualizar o usuario da barbearia.");
   }
 
   revalidatePath("/dashboard");
@@ -1126,28 +1134,28 @@ export async function syncClinicDomainAction(formData) {
   const domain = normalizeCustomDomain(requireValue(text(formData, "dominio"), "Dominio nao informado."));
 
   const { data: existingDomain, error: existingDomainError } = await supabaseAdmin
-    .from("clinica_dominios")
-    .select("id, clinica_id")
+    .from("barbearia_dominios")
+    .select("id, barbearia_id")
     .eq("dominio", domain)
     .maybeSingle();
 
   if (existingDomainError) throw existingDomainError;
 
-  if (!existingDomain || existingDomain.clinica_id !== clinicaId) {
-    redirectWithMessage("/dashboard/configuracoes", "dominio", "Dominio nao encontrado nesta clinica.");
+  if (!existingDomain || existingDomain.barbearia_id !== clinicaId) {
+    redirectWithMessage("/dashboard/configuracoes", "dominio", "Dominio nao encontrado nesta barbearia.");
   }
 
   const vercelDomain = await getVercelProjectDomain(domain);
   const now = new Date().toISOString();
   const { error } = await supabaseAdmin
-    .from("clinica_dominios")
+    .from("barbearia_dominios")
     .update({
       status: vercelDomain.status || "pendente",
       verificado_em: vercelDomain.status === "ativo" ? now : null,
       observacoes: vercelDomainObservacoes(vercelDomain),
     })
     .eq("id", existingDomain.id)
-    .eq("clinica_id", clinicaId);
+    .eq("barbearia_id", clinicaId);
 
   if (error) throw error;
   revalidatePath("/dashboard/configuracoes");
@@ -1162,9 +1170,9 @@ export async function removeClinicDomainAction(formData) {
   await removeVercelProjectDomain(domain);
 
   const { error } = await supabaseAdmin
-    .from("clinica_dominios")
+    .from("barbearia_dominios")
     .delete()
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .eq("dominio", domain);
 
   if (error) throw error;
@@ -1185,10 +1193,10 @@ export async function updateClinicSettingsAction(formData) {
     uploadedLogo = await uploadClinicLogo({ clinicaId, file: logoFile });
     for (const [field, slot] of [
       ["site_hero_image_file", "hero"],
-      ["site_profissional_image_file", "profissional"],
-      ["site_clinica_foto_1_file", "clinica-1"],
-      ["site_clinica_foto_2_file", "clinica-2"],
-      ["site_clinica_foto_3_file", "clinica-3"],
+      ["site_profissional_image_file", "barbeiro"],
+      ["site_clinica_foto_1_file", "barbearia-1"],
+      ["site_clinica_foto_2_file", "barbearia-2"],
+      ["site_clinica_foto_3_file", "barbearia-3"],
       ["site_favicon_file", "favicon"],
       ["site_campaign_image_file", "campaign"],
     ]) {
@@ -1199,13 +1207,16 @@ export async function updateClinicSettingsAction(formData) {
     redirectWithMessage("/dashboard/configuracoes", "upload", error.message || "Nao foi possivel enviar a imagem.");
   }
 
-  const { data: currentIntegration, error: currentIntegrationError } = await supabaseAdmin
-    .from("clinica_integracoes")
-    .select("asaas_api_key, asaas_webhook_token, whatsapp_token")
-    .eq("clinica_id", clinicaId)
-    .maybeSingle();
+  const { data: currentIntegrations, error: currentIntegrationError } = await supabaseAdmin
+    .from("barbearia_integracoes")
+    .select("provedor, segredos_criptografados")
+    .eq("barbearia_id", clinicaId);
 
   if (currentIntegrationError) throw currentIntegrationError;
+  const currentSecrets = Object.fromEntries((currentIntegrations || []).map((item) => [
+    item.provedor,
+    decryptBarbeariaSecrets(item.segredos_criptografados),
+  ]));
 
   const depoimentos = [1, 2, 3, 4].map((index) => ({
     nome: nullableText(formData, `depoimento_${index}_nome`),
@@ -1215,7 +1226,7 @@ export async function updateClinicSettingsAction(formData) {
 
   const nextMetadata = {
     ...metadata,
-    brand_name: nullableText(formData, "brand_name") || requireValue(text(formData, "nome"), "Informe o nome da clínica."),
+    brand_name: nullableText(formData, "brand_name") || requireValue(text(formData, "nome"), "Informe o nome da barbearia."),
     logo_url: uploadedLogo?.publicUrl || metadata.logo_url || "",
     logo_storage_path: uploadedLogo?.path || metadata.logo_storage_path || null,
     logo_mime_type: uploadedLogo?.mimeType || metadata.logo_mime_type || null,
@@ -1275,9 +1286,9 @@ export async function updateClinicSettingsAction(formData) {
   const dominio = nullableText(formData, "site_dominio");
 
   const { data: updatedClinic, error } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .update({
-      nome: requireValue(text(formData, "nome"), "Informe o nome da clínica."),
+      nome: requireValue(text(formData, "nome"), "Informe o nome da barbearia."),
       documento: nullableText(formData, "documento"),
       telefone: nullableText(formData, "telefone"),
       email: nullableText(formData, "email"),
@@ -1295,38 +1306,66 @@ export async function updateClinicSettingsAction(formData) {
     redirectWithMessage("/dashboard/configuracoes", "salvar", "As configuracoes nao foram gravadas. Tente novamente.");
   }
 
+  const secretPayload = (next, current = {}) => {
+    const secrets = Object.fromEntries(Object.entries({ ...current, ...next }).filter(([, value]) => value));
+    return Object.keys(secrets).length ? encryptBarbeariaSecrets(secrets) : null;
+  };
+  const integrationRows = [
+    {
+      barbearia_id: clinicaId,
+      provedor: "asaas",
+      nome: "Asaas",
+      ativo: formData.get("asaas_ativo") === "on",
+      ambiente: String(nullableText(formData, "asaas_base_url") || "").includes("sandbox") ? "sandbox" : "producao",
+      configuracao_publica: { baseUrl: nullableText(formData, "asaas_base_url") || "https://sandbox.asaas.com/api/v3" },
+      segredos_criptografados: secretPayload({
+        apiKey: nullableText(formData, "asaas_api_key"),
+        webhookToken: nullableText(formData, "asaas_webhook_token"),
+      }, currentSecrets.asaas),
+    },
+    {
+      barbearia_id: clinicaId,
+      provedor: "resend",
+      nome: "E-mail",
+      ativo: formData.get("email_ativo") === "on",
+      ambiente: "producao",
+      configuracao_publica: {
+        email_destino: nullableText(formData, "email_destino"),
+        email_remetente: nullableText(formData, "email_remetente"),
+      },
+    },
+    {
+      barbearia_id: clinicaId,
+      provedor: "whatsapp",
+      nome: "WhatsApp",
+      ativo: formData.get("whatsapp_ativo") === "on",
+      ambiente: "producao",
+      configuracao_publica: {
+        provider: normalizeProvider(nullableText(formData, "whatsapp_provider")) || "zapi",
+        numero_destino: nullableText(formData, "whatsapp_numero_destino"),
+      },
+      webhook_url: nullableText(formData, "whatsapp_webhook_url"),
+      segredos_criptografados: secretPayload({ token: nullableText(formData, "whatsapp_token") }, currentSecrets.whatsapp),
+    },
+  ];
   const { error: integrationError } = await supabaseAdmin
-    .from("clinica_integracoes")
-    .upsert({
-      clinica_id: clinicaId,
-      asaas_ativo: formData.get("asaas_ativo") === "on",
-      asaas_base_url: nullableText(formData, "asaas_base_url") || "https://sandbox.asaas.com/api/v3",
-      asaas_api_key: nullableText(formData, "asaas_api_key") || currentIntegration?.asaas_api_key || null,
-      asaas_webhook_token: nullableText(formData, "asaas_webhook_token") || currentIntegration?.asaas_webhook_token || null,
-      email_ativo: formData.get("email_ativo") === "on",
-      email_destino: nullableText(formData, "email_destino"),
-      email_remetente: nullableText(formData, "email_remetente"),
-      whatsapp_ativo: formData.get("whatsapp_ativo") === "on",
-      whatsapp_provider: normalizeProvider(nullableText(formData, "whatsapp_provider")) || "zapi",
-      whatsapp_numero_destino: nullableText(formData, "whatsapp_numero_destino"),
-      whatsapp_webhook_url: nullableText(formData, "whatsapp_webhook_url"),
-      whatsapp_token: nullableText(formData, "whatsapp_token") || currentIntegration?.whatsapp_token || null,
-    }, { onConflict: "clinica_id" });
+    .from("barbearia_integracoes")
+    .upsert(integrationRows, { onConflict: "barbearia_id,provedor,nome" });
 
   if (integrationError) throw integrationError;
 
   if (dominio) {
     const normalizedDomain = normalizeCustomDomain(dominio);
     const { data: existingDomain, error: existingDomainError } = await supabaseAdmin
-      .from("clinica_dominios")
-      .select("id, clinica_id, dominio, status, verificado_em, observacoes")
+      .from("barbearia_dominios")
+      .select("id, barbearia_id, dominio, status, verificado_em, observacoes")
       .eq("dominio", normalizedDomain)
       .maybeSingle();
 
     if (existingDomainError) throw existingDomainError;
 
-    if (existingDomain?.clinica_id && existingDomain.clinica_id !== clinicaId) {
-      redirectWithMessage("/dashboard/configuracoes", "dominio", "Este dominio ja esta vinculado a outra clinica.");
+    if (existingDomain?.barbearia_id && existingDomain.barbearia_id !== clinicaId) {
+      redirectWithMessage("/dashboard/configuracoes", "dominio", "Este dominio ja esta vinculado a outra barbearia.");
     }
 
     let vercelDomain;
@@ -1342,8 +1381,8 @@ export async function updateClinicSettingsAction(formData) {
       };
     }
     const now = new Date().toISOString();
-    const { error: domainError } = await supabaseAdmin.from("clinica_dominios").upsert({
-      clinica_id: clinicaId,
+    const { error: domainError } = await supabaseAdmin.from("barbearia_dominios").upsert({
+      barbearia_id: clinicaId,
       dominio: normalizedDomain,
       status: vercelDomain.status || "pendente",
       verificado_em: vercelDomain.status === "ativo" ? now : null,
@@ -1364,23 +1403,33 @@ export async function testClinicWhatsappIntegrationAction() {
   requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
 
   const { data: integration, error } = await supabaseAdmin
-    .from("clinica_integracoes")
-    .select("whatsapp_ativo, whatsapp_provider, whatsapp_numero_destino, whatsapp_webhook_url, whatsapp_token")
-    .eq("clinica_id", clinicaId)
+    .from("barbearia_integracoes")
+    .select("ativo, nome, configuracao_publica, webhook_url, segredos_criptografados")
+    .eq("barbearia_id", clinicaId)
+    .eq("provedor", "whatsapp")
     .maybeSingle();
 
   if (error) throw error;
 
-  if (!integration?.whatsapp_ativo) {
+  const whatsappSecrets = decryptBarbeariaSecrets(integration?.segredos_criptografados);
+  const whatsappIntegration = integration ? {
+    whatsapp_ativo: integration.ativo,
+    whatsapp_provider: integration.configuracao_publica?.provider || integration.nome,
+    whatsapp_numero_destino: integration.configuracao_publica?.numero_destino,
+    whatsapp_webhook_url: integration.webhook_url,
+    whatsapp_token: whatsappSecrets.token,
+  } : null;
+
+  if (!whatsappIntegration?.whatsapp_ativo) {
     redirectWithMessage("/dashboard/configuracoes", "whatsapp", "Ative a notificacao por WhatsApp e salve as configuracoes antes do teste.");
   }
 
-  if (!integration?.whatsapp_webhook_url || !integration?.whatsapp_token || !integration?.whatsapp_numero_destino) {
+  if (!whatsappIntegration?.whatsapp_webhook_url || !whatsappIntegration?.whatsapp_token || !whatsappIntegration?.whatsapp_numero_destino) {
     redirectWithMessage("/dashboard/configuracoes", "whatsapp", "Preencha URL da Z-API, Client-Token e WhatsApp destino. Salve e teste novamente.");
   }
 
   try {
-    await sendWhatsAppIntegrationTest({ clinic: activeClinic, integration });
+    await sendWhatsAppIntegrationTest({ clinic: activeClinic, integration: whatsappIntegration });
   } catch (error) {
     redirectWithMessage("/dashboard/configuracoes", "whatsapp", error.message || "Nao foi possivel enviar o teste de WhatsApp.");
   }

@@ -30,14 +30,14 @@ export async function createClinicAction(_prevState, formData) {
   const email = text(formData, "email") || user.email;
 
   if (!nome) {
-    return { ok: false, message: "Informe o nome da clínica." };
+    return { ok: false, message: "Informe o nome da barbearia." };
   }
 
   const baseSlug = slugify(text(formData, "slug") || nome);
-  const slug = baseSlug || `clinica-${Date.now()}`;
+  const slug = baseSlug || `barbearia-${Date.now()}`;
 
   const { data: existing } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
@@ -46,8 +46,8 @@ export async function createClinicAction(_prevState, formData) {
     return { ok: false, message: "Este identificador já está em uso. Escolha outro." };
   }
 
-  const { data: clinica, error: clinicaError } = await supabaseAdmin
-    .from("clinicas")
+  const { data: barbearia, error: clinicaError } = await supabaseAdmin
+    .from("barbearias")
     .insert({
       nome,
       slug,
@@ -66,23 +66,23 @@ export async function createClinicAction(_prevState, formData) {
     .single();
 
   if (clinicaError) {
-    return { ok: false, message: clinicaError.message || "Erro ao criar clínica." };
+    return { ok: false, message: clinicaError.message || "Erro ao criar barbearia." };
   }
 
   const { error: membershipError } = await supabaseAdmin
-    .from("usuarios_clinica")
+    .from("barbearia_usuarios")
     .insert({
-      clinica_id: clinica.id,
+      barbearia_id: barbearia.id,
       user_id: user.id,
       nome: user.user_metadata?.name || user.email || "Administrador",
       email: user.email,
       papel: "owner",
       ativo: true,
-      accepted_at: new Date().toISOString(),
+      aceito_em: new Date().toISOString(),
     });
 
   if (membershipError) {
-    return { ok: false, message: membershipError.message || "Clínica criada, mas não foi possível vincular usuário." };
+    return { ok: false, message: membershipError.message || "Barbearia criada, mas não foi possível vincular usuário." };
   }
 
   revalidatePath("/dashboard");

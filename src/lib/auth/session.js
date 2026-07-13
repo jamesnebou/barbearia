@@ -41,18 +41,18 @@ export async function getUserClinics() {
   }
 
   const { data, error } = await supabase
-    .from("usuarios_clinica")
-    .select("id, clinica_id, papel, nome, email, ativo, permissoes, clinicas(id, nome, slug, documento, telefone, email, cidade, estado, status, plano, metadata, trial_ends_at, billing_email, asaas_customer_id, asaas_subscription_id, assinatura_status, proxima_cobranca_em, bloqueada_em, bloqueio_motivo)")
+    .from("barbearia_usuarios")
+    .select("id, barbearia_id, papel, nome, email, ativo, permissoes, barbearias(id, nome, slug, documento, telefone, email, cidade, estado, status, plano, metadata, trial_ends_at, billing_email, asaas_customer_id, asaas_subscription_id, assinatura_status, proxima_cobranca_em, bloqueada_em, bloqueio_motivo)")
     .eq("ativo", true)
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Erro ao carregar clinicas do usuario:", error);
+    console.error("Erro ao carregar barbearias do usuário:", error);
     return { user, memberships: [], activeClinic: null, error };
   }
 
   const memberships = data || [];
-  const activeClinic = memberships[0]?.clinicas || null;
+  const activeClinic = memberships[0]?.barbearias || null;
 
   return { user, memberships, activeClinic, isInternalAdmin: isInternalAdminUser(user) };
 }

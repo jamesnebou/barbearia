@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack -H 127.0.0.1",
+    "dev:turbo": "next dev --turbopack -H 127.0.0.1",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -20,6 +21,7 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "supabase": "^2.109.1",
     "tailwindcss": "^4"
   }
 }

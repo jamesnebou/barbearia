@@ -42,7 +42,7 @@ export function PublicMobileMenu() {
             <a href="#depoimentos" onClick={close}>Depoimentos</a>
             <a href="#localizacao" onClick={close}>Localização</a>
             <a href="popup" onClick={close}>Quero saber mais</a>
-            <a href="/login-cliente" onClick={close}>Área da clínica</a>
+            <a href="/login-cliente" onClick={close}>Área da barbearia</a>
           </nav>
         </div>
       ) : null}

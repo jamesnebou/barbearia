@@ -1,11 +1,12 @@
 ﻿import Link from "next/link";
+import { paidAmount } from "@/lib/barbearia/finance";
 import { AlertTriangle, CalendarRange, CheckCircle2, Clock, MessageCircle, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, EmptyState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { createAgendamentoAction, deleteAgendamentoAction, updateAgendamentoAction, updateAgendamentoStatusAction } from "../actions";
 
-export const metadata = { title: "Agenda | Clinica SaaS" };
+export const metadata = { title: "Agenda | Barbearia SaaS" };
 
 const statusConfig = {
   agendado: { label: "Agendado", className: "border-blue-200 bg-blue-50 text-blue-700", icon: Clock },
@@ -74,10 +75,10 @@ function weekRange(dateString) {
 }
 
 function fillWhatsAppTemplate(template, { cliente, data, procedimento }) {
-  return String(template || "Ola, {cliente}. Passando para confirmar seu horario na clinica em {data}.")
+  return String(template || "Ola, {cliente}. Passando para confirmar seu horario na barbearia em {data}.")
     .replaceAll("{cliente}", cliente || "tudo bem")
     .replaceAll("{data}", data || "")
-    .replaceAll("{procedimento}", procedimento || "procedimento");
+    .replaceAll("{procedimento}", procedimento || "serviço");
 }
 
 function StatusBadge({ status }) {
@@ -147,29 +148,29 @@ export default async function AgendaPage({ searchParams }) {
 
   const supabase = await createClient();
   let agendaQuery = supabase
-    .from("agendamentos")
-    .select("id, cliente_id, profissional_id, procedimento_id, inicio, fim, status, valor, valor_pago, pagamento_status, observacoes, clientes(nome, telefone), profissionais(nome), procedimentos(nome)")
-    .eq("clinica_id", activeClinic.id)
+    .from("barbearia_agendamentos")
+    .select("id, cliente_id, barbeiro_id, servico_id, inicio, fim, status, valor:valor_final, pagamento_status, observacoes, clientes:barbearia_clientes(nome, telefone), profissionais:barbearia_barbeiros(nome), procedimentos:barbearia_servicos(nome), pagamentos:barbearia_pagamentos(valor, status)")
+    .eq("barbearia_id", activeClinic.id)
     .gte("inicio", start)
     .lt("inicio", end)
     .order("inicio", { ascending: true });
 
   let weekQuery = supabase
-    .from("agendamentos")
-    .select("id, inicio, status, valor")
-    .eq("clinica_id", activeClinic.id)
+    .from("barbearia_agendamentos")
+    .select("id, inicio, status, valor:valor_final, pagamentos:barbearia_pagamentos(valor, status)")
+    .eq("barbearia_id", activeClinic.id)
     .gte("inicio", weekStart)
     .lt("inicio", weekEnd);
 
   if (selectedProfessional) {
-    agendaQuery = agendaQuery.eq("profissional_id", selectedProfessional);
-    weekQuery = weekQuery.eq("profissional_id", selectedProfessional);
+    agendaQuery = agendaQuery.eq("barbeiro_id", selectedProfessional);
+    weekQuery = weekQuery.eq("barbeiro_id", selectedProfessional);
   }
 
   const [clientesResult, profissionaisResult, procedimentosResult, agendamentosResult, weekResult] = await Promise.all([
-    supabase.from("clientes").select("id, nome, telefone").eq("clinica_id", activeClinic.id).order("nome"),
-    supabase.from("profissionais").select("id, nome, especialidade").eq("clinica_id", activeClinic.id).eq("ativo", true).order("nome"),
-    supabase.from("procedimentos").select("id, nome, preco, duracao_minutos").eq("clinica_id", activeClinic.id).eq("ativo", true).order("nome"),
+    supabase.from("barbearia_clientes").select("id, nome, telefone").eq("barbearia_id", activeClinic.id).order("nome"),
+    supabase.from("barbearia_barbeiros").select("id, nome, especialidades").eq("barbearia_id", activeClinic.id).eq("ativo", true).order("nome"),
+    supabase.from("barbearia_servicos").select("id, nome, preco, duracao_minutos").eq("barbearia_id", activeClinic.id).eq("ativo", true).order("nome"),
     agendaQuery,
     weekQuery,
   ]);
@@ -188,7 +189,7 @@ export default async function AgendaPage({ searchParams }) {
   return (
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <PageHeader eyebrow="Agenda" title="Agenda diária" description="Visão comercial por dia, profissional, status, WhatsApp e edição de horários." />
+        <PageHeader eyebrow="Agenda" title="Agenda diária" description="Visão comercial por dia, barbeiro, status, WhatsApp e edição de horários." />
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"><p className="text-sm text-neutral-500">Atendimentos</p><strong className="mt-2 block text-2xl">{agendamentos.length}</strong></div>
@@ -203,8 +204,8 @@ export default async function AgendaPage({ searchParams }) {
             <input name="date" type="date" defaultValue={selectedDate} className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 text-sm" />
           </label>
           <label className="block md:w-72">
-            <span className="text-sm font-medium text-neutral-700">Profissional</span>
-            <select name="profissional" defaultValue={selectedProfessional} className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm">
+            <span className="text-sm font-medium text-neutral-700">Barbeiro</span>
+            <select name="barbeiro" defaultValue={selectedProfessional} className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm">
               <option value="">Todos os profissionais</option>
               {profissionais.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
             </select>
@@ -244,13 +245,13 @@ export default async function AgendaPage({ searchParams }) {
             <h2 className="text-lg font-semibold">Novo agendamento</h2>
             <div className="mt-4 space-y-4">
               <SelectField label="Cliente" name="cliente_id" required><option value="">Selecione</option>{clientes.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</SelectField>
-              <SelectField label="Profissional" name="profissional_id" defaultValue={selectedProfessional} required><option value="">Selecione</option>{profissionais.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</SelectField>
-              <SelectField label="Procedimento" name="procedimento_id" required><option value="">Selecione</option>{procedimentos.map((item) => <option key={item.id} value={item.id}>{item.nome} - {formatMoney(item.preco)} - {item.duracao_minutos} min</option>)}</SelectField>
+              <SelectField label="Barbeiro" name="barbeiro_id" defaultValue={selectedProfessional} required><option value="">Selecione</option>{profissionais.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</SelectField>
+              <SelectField label="Serviço" name="servico_id" required><option value="">Selecione</option>{procedimentos.map((item) => <option key={item.id} value={item.id}>{item.nome} - {formatMoney(item.preco)} - {item.duracao_minutos} min</option>)}</SelectField>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Inicio" name="inicio" type="datetime-local" required defaultValue={`${selectedDate}T09:00`} />
                 <Field label="Fim (opcional)" name="fim" type="datetime-local" />
               </div>
-              <p className="text-xs leading-5 text-neutral-500">Se o fim ficar vazio, o sistema calcula pela duracao do procedimento.</p>
+              <p className="text-xs leading-5 text-neutral-500">Se o fim ficar vazio, o sistema calcula pela duracao do serviço.</p>
               <Field label="Valor" name="valor" type="number" defaultValue="0" />
               <TextArea label="Observacoes" name="observacoes" />
               <SubmitButton>Agendar</SubmitButton>
@@ -273,9 +274,9 @@ export default async function AgendaPage({ searchParams }) {
                   <article key={item.id} className="rounded-lg border border-neutral-200 p-4">
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                       <div>
-                        <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.clientes?.nome || "Cliente nao informado"}</h3><StatusBadge status={item.status} /><PaymentBadge pagamentoStatus={item.pagamento_status} valorPago={item.valor_pago} /></div>
-                        <p className="mt-1 text-sm text-neutral-600">{item.procedimentos?.nome || "Procedimento"} com {item.profissionais?.nome || "profissional"}</p>
-                        <p className="mt-1 text-xs text-neutral-500">{new Date(item.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {new Date(item.fim).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {formatMoney(item.valor)} · recebido {formatMoney(item.valor_pago)}</p>
+                        <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{item.clientes?.nome || "Cliente nao informado"}</h3><StatusBadge status={item.status} /><PaymentBadge pagamentoStatus={item.pagamento_status} valorPago={paidAmount(item)} /></div>
+                        <p className="mt-1 text-sm text-neutral-600">{item.procedimentos?.nome || "Serviço"} com {item.profissionais?.nome || "barbeiro"}</p>
+                        <p className="mt-1 text-xs text-neutral-500">{new Date(item.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {new Date(item.fim).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · {formatMoney(item.valor)} · recebido {formatMoney(paidAmount(item))}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {whats ? <a className="inline-flex h-9 items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--clinic-primary)_24%,#e5e5e5)] px-3 text-sm font-semibold text-[var(--clinic-primary)]" href={whats} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a> : null}
@@ -299,8 +300,8 @@ export default async function AgendaPage({ searchParams }) {
                         <input type="hidden" name="profissional_filtro" value={selectedProfessional} />
                         <div className="grid gap-4 md:grid-cols-3">
                           <SelectField label="Cliente" name="cliente_id" defaultValue={item.cliente_id} required><option value="">Selecione</option>{clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}</SelectField>
-                          <SelectField label="Profissional" name="profissional_id" defaultValue={item.profissional_id} required><option value="">Selecione</option>{profissionais.map((profissional) => <option key={profissional.id} value={profissional.id}>{profissional.nome}</option>)}</SelectField>
-                          <SelectField label="Procedimento" name="procedimento_id" defaultValue={item.procedimento_id} required><option value="">Selecione</option>{procedimentos.map((procedimento) => <option key={procedimento.id} value={procedimento.id}>{procedimento.nome}</option>)}</SelectField>
+                          <SelectField label="Barbeiro" name="barbeiro_id" defaultValue={item.barbeiro_id} required><option value="">Selecione</option>{profissionais.map((profissional) => <option key={profissional.id} value={profissional.id}>{profissional.nome}</option>)}</SelectField>
+                          <SelectField label="Serviço" name="servico_id" defaultValue={item.servico_id} required><option value="">Selecione</option>{procedimentos.map((procedimento) => <option key={procedimento.id} value={procedimento.id}>{procedimento.nome}</option>)}</SelectField>
                         </div>
                         <div className="grid gap-4 md:grid-cols-4">
                           <Field label="Inicio" name="inicio" type="datetime-local" defaultValue={toDatetimeLocal(item.inicio)} required />

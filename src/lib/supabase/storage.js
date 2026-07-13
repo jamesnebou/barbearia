@@ -1,8 +1,8 @@
 ﻿import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export const CLIENT_PHOTOS_BUCKET = "cliente-fotos";
-export const CLINIC_LOGOS_BUCKET = "clinica-logos";
-export const CLINIC_SITE_IMAGES_BUCKET = "clinica-site-images";
+export const CLIENT_PHOTOS_BUCKET = "barbearia-clientes";
+export const CLINIC_LOGOS_BUCKET = "barbearia-site";
+export const CLINIC_SITE_IMAGES_BUCKET = "barbearia-site";
 
 const MAX_CLIENT_PHOTO_BYTES = 10 * 1024 * 1024;
 const MAX_CLINIC_LOGO_BYTES = 30 * 1024 * 1024;
@@ -172,16 +172,16 @@ export async function uploadProcedureImage({ clinicaId, procedimentoId = "novo",
   }
 
   if (!file.type?.startsWith("image/")) {
-    throw new Error("Envie apenas arquivos de imagem para o procedimento.");
+    throw new Error("Envie apenas arquivos de imagem para o serviço.");
   }
 
   if (file.size > MAX_PROCEDURE_IMAGE_BYTES) {
-    throw new Error("A imagem do procedimento precisa ter no máximo 10 MB.");
+    throw new Error("A imagem do serviço precisa ter no máximo 10 MB.");
   }
 
   const extension = file.name?.includes(".") ? file.name.split(".").pop() : "jpg";
   const filename = `${Date.now()}-${sanitizeFileName(file.name || `procedimento.${extension}`)}`;
-  const path = `${clinicaId}/procedimentos/${procedimentoId}/${filename}`;
+  const path = `${clinicaId}/servicos/${procedimentoId}/${filename}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error } = await supabaseAdmin.storage

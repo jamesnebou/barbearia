@@ -5,7 +5,7 @@ import { getClinicBillingState, getClinicPlan, getClinicUsage, getLimitRows, get
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { startSubscriptionAction, updateBillingEmailAction } from "./actions";
 
-export const metadata = { title: "Assinatura | Clínica SaaS" };
+export const metadata = { title: "Assinatura | Barbearia SaaS" };
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -47,9 +47,9 @@ function SelectField({ label, name, defaultValue = "", children }) {
 
 async function getBillingRows(clinicaId) {
   const { data, error } = await supabaseAdmin
-    .from("asaas_cobrancas")
+    .from("barbearia_cobrancas_saas")
     .select("id, status, valor, vencimento, pago_em, invoice_url, bank_slip_url, created_at")
-    .eq("clinica_id", clinicaId)
+    .eq("barbearia_id", clinicaId)
     .order("created_at", { ascending: false })
     .limit(6);
 
@@ -87,15 +87,15 @@ export default async function AssinaturaPage({ searchParams }) {
         <PageHeader
           eyebrow="Assinatura"
           title="Plano, limites e cobrança"
-          description="Acompanhe o status comercial da clínica, consumo do plano e ativação de assinatura."
+          description="Acompanhe o status comercial da barbearia, consumo do plano e ativação de assinatura."
         />
 
         {params?.ok === "assinatura" ? <Notice type="success">Assinatura enviada ao Asaas e plano ativado no sistema. O webhook manterá a cobrança sincronizada.</Notice> : null}
         {params?.ok === "email" ? <Notice type="success">E-mail de cobrança atualizado.</Notice> : null}
         {params?.erro === "asaas" ? <Notice>O Asaas ainda não está configurado. Defina `ASAAS_API_KEY` e `ASAAS_BASE_URL` na Vercel para ativar planos automaticamente.</Notice> : null}
-        {params?.erro === "asaas_api" ? <Notice>{params?.mensagem || "Não foi possível criar a assinatura no Asaas agora. Confira a chave, ambiente e dados da clínica."}</Notice> : null}
-        {params?.erro === "permissao" ? <Notice>{params?.mensagem || "Seu usuário não tem permissão para alterar a assinatura da clínica."}</Notice> : null}
-        {params?.erro === "upgrade" || params?.erro === "clinica" || params?.erro === "email" ? <Notice>{params?.mensagem || "Não foi possível processar esta alteração agora."}</Notice> : null}
+        {params?.erro === "asaas_api" ? <Notice>{params?.mensagem || "Não foi possível criar a assinatura no Asaas agora. Confira a chave, ambiente e dados da barbearia."}</Notice> : null}
+        {params?.erro === "permissao" ? <Notice>{params?.mensagem || "Seu usuário não tem permissão para alterar a assinatura da barbearia."}</Notice> : null}
+        {params?.erro === "upgrade" || params?.erro === "barbearia" || params?.erro === "email" ? <Notice>{params?.mensagem || "Não foi possível processar esta alteração agora."}</Notice> : null}
         {params?.erro === "plano" ? <Notice>Plano não encontrado ou inativo. Revise os planos no painel interno.</Notice> : null}
         {openCharge ? (
           <Notice>
@@ -170,7 +170,7 @@ export default async function AssinaturaPage({ searchParams }) {
                       <div className="min-w-0">
                         <h3 className="font-semibold">{plan.nome}</h3>
                         <p className="mt-1 text-sm text-neutral-500">{formatMoney(plan.preco_mensal)}/mês</p>
-                        <p className="mt-2 break-words text-xs leading-5 text-neutral-600">{plan.limite_usuarios} usuários - {plan.limite_profissionais} profissionais - {plan.limite_clientes} clientes - {plan.limite_agendamentos_mes} agendamentos/mês</p>
+                        <p className="mt-2 break-words text-xs leading-5 text-neutral-600">{plan.limite_usuarios} usuários - {plan.limite_barbeiros} profissionais - {plan.limite_clientes} clientes - {plan.limite_agendamentos_mes} agendamentos/mês</p>
                       </div>
                       {plan.slug === currentPlan.slug ? <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-[var(--clinic-primary)]">Atual</span> : null}
                     </div>

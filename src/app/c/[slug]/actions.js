@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createAsaasCustomerForPatient, createAsaasPaymentForBooking, isAsaasConfigured } from "@/lib/asaas/client";
 import { notifyClinicPublicBooking } from "@/lib/notifications/booking";
 import { isWithinWorkingPeriods } from "@/lib/clinic/schedule";
+import { decryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 
 function text(formData, key) {
   return String(formData.get(key) || "").trim();
@@ -42,7 +43,7 @@ function assertWorkingHours({ clinic, start, end, slug }) {
   const schedule = clinic?.metadata?.horario_funcionamento || {};
 
   if (!isWithinWorkingPeriods({ schedule, startDate: start, endDate: end })) {
-    publicRedirect(slug, { erro: "agenda", mensagem: "Este horário esta fora do expediente da clinica." });
+    publicRedirect(slug, { erro: "agenda", mensagem: "Este horário esta fora do expediente da barbearia." });
   }
 }
 
@@ -50,10 +51,10 @@ async function assertSlotAvailable({ clinicId, profissionalId, startISO, endISO,
   if (!profissionalId) return;
 
   const { data, error } = await supabaseAdmin
-    .from("agendamentos")
+    .from("barbearia_agendamentos")
     .select("id")
-    .eq("clinica_id", clinicId)
-    .eq("profissional_id", profissionalId)
+    .eq("barbearia_id", clinicId)
+    .eq("barbeiro_id", profissionalId)
     .not("status", "eq", "cancelado")
     .lt("inicio", endISO)
     .gt("fim", startISO)
@@ -67,8 +68,8 @@ async function assertSlotAvailable({ clinicId, profissionalId, startISO, endISO,
 
 export async function createPublicBookingAction(formData) {
   const slug = text(formData, "slug");
-  const procedimentoId = text(formData, "procedimento_id");
-  const profissionalId = nullableText(formData, "profissional_id") || nullableText(formData, "profissional_disponivel_id");
+  const procedimentoId = text(formData, "servico_id");
+  const profissionalId = nullableText(formData, "barbeiro_id") || nullableText(formData, "barbeiro_disponivel_id");
   const nome = text(formData, "nome");
   const telefone = nullableText(formData, "telefone");
   const email = nullableText(formData, "email");
@@ -85,40 +86,47 @@ export async function createPublicBookingAction(formData) {
   }
 
   const { data: clinic, error: clinicError } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .select("id, nome, slug, status, email, telefone, metadata")
     .eq("slug", slug)
     .in("status", ["trial", "ativa"])
     .maybeSingle();
 
   if (clinicError) throw clinicError;
-  if (!clinic) publicRedirect(slug, { erro: "clínica", mensagem: "Clínica indisponível para agendamento online." });
+  if (!clinic) publicRedirect(slug, { erro: "barbearia", mensagem: "Barbearia indisponível para agendamento online." });
 
-  const { data: integration, error: integrationError } = await supabaseAdmin
-    .from("clinica_integracoes")
-    .select("clinica_id, asaas_ativo, asaas_api_key, asaas_base_url, email_ativo, email_destino, email_remetente, whatsapp_ativo, whatsapp_provider, whatsapp_numero_destino, whatsapp_webhook_url, whatsapp_token")
-    .eq("clinica_id", clinic.id)
-    .maybeSingle();
+  const { data: integrations, error: integrationError } = await supabaseAdmin
+    .from("barbearia_integracoes")
+    .select("barbearia_id, provedor, nome, ativo, ambiente, configuracao_publica, webhook_url, segredos_criptografados")
+    .eq("barbearia_id", clinic.id)
+    .eq("ativo", true);
 
   if (integrationError) throw integrationError;
-  const clinicIntegration = integration || { clinica_id: clinic.id };
+  const clinicIntegration = (integrations || []).reduce((result, integration) => {
+    const config = integration.configuracao_publica || {};
+    const secrets = decryptBarbeariaSecrets(integration.segredos_criptografados);
+    if (integration.provedor === "asaas") return { ...result, asaas_ativo: integration.ativo, baseUrl: config.baseUrl, apiKey: secrets.apiKey };
+    if (integration.provedor === "resend") return { ...result, email_ativo: integration.ativo, email_destino: config.email_destino, email_remetente: config.email_remetente };
+    if (integration.provedor === "whatsapp") return { ...result, whatsapp_ativo: integration.ativo, whatsapp_provider: config.provider || integration.nome, whatsapp_numero_destino: config.numero_destino, whatsapp_webhook_url: integration.webhook_url, whatsapp_token: secrets.token };
+    return result;
+  }, { barbearia_id: clinic.id });
 
   const siteConfig = clinic.metadata?.site_publico || {};
   if (siteConfig.publicado === false) {
-    publicRedirect(slug, { erro: "site", mensagem: "O agendamento online desta clínica ainda nao esta publicado." });
+    publicRedirect(slug, { erro: "site", mensagem: "O agendamento online desta barbearia ainda nao esta publicado." });
   }
 
   const { data: procedimento, error: procedimentoError } = await supabaseAdmin
-    .from("procedimentos")
+    .from("barbearia_servicos")
     .select("id, nome, descricao, duracao_minutos, preco, sinal_percentual, sinal_valor, publicado_site, ativo")
-    .eq("clinica_id", clinic.id)
+    .eq("barbearia_id", clinic.id)
     .eq("id", procedimentoId)
     .eq("ativo", true)
     .eq("publicado_site", true)
     .maybeSingle();
 
   if (procedimentoError) throw procedimentoError;
-  if (!procedimento) publicRedirect(slug, { erro: "procedimento", mensagem: "Procedimento indisponível para agendamento online." });
+  if (!procedimento) publicRedirect(slug, { erro: "procedimento", mensagem: "Serviço indisponível para agendamento online." });
 
   const start = new Date(dataHora);
   if (Number.isNaN(start.getTime()) || start < new Date()) {
@@ -140,7 +148,7 @@ export async function createPublicBookingAction(formData) {
     slug,
   });
 
-  let existingQuery = supabaseAdmin.from("clientes").select("id").eq("clinica_id", clinic.id).limit(1);
+  let existingQuery = supabaseAdmin.from("barbearia_clientes").select("id").eq("barbearia_id", clinic.id).limit(1);
   if (email) {
     existingQuery = existingQuery.eq("email", email);
   } else {
@@ -154,18 +162,18 @@ export async function createPublicBookingAction(formData) {
 
   if (!clienteId) {
     const { data: cliente, error: clienteError } = await supabaseAdmin
-      .from("clientes")
+      .from("barbearia_clientes")
       .insert({
-        clinica_id: clinic.id,
+        barbearia_id: clinic.id,
         nome,
         telefone,
         email,
         cpf,
-        origem: "Site",
+        origem: "site",
         status: "lead",
         observacoes: `Lead criado pelo site publico. Telefone normalizado: ${normalizePhone(telefone) || "-"}.`,
         consentimento_lgpd: true,
-        data_consentimento_lgpd: new Date().toISOString(),
+        consentimento_lgpd_em: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -179,22 +187,22 @@ export async function createPublicBookingAction(formData) {
   const pagamentoStatus = valorSinal > 0 ? "pendente" : "sem_sinal";
 
   if (valorSinal > 0 && !isAsaasConfigured(clinicIntegration)) {
-    publicRedirect(slug, { erro: "pagamento", mensagem: "Checkout online indisponível no momento. A clínica precisa configurar o Asaas para receber o sinal pelo site." });
+    publicRedirect(slug, { erro: "pagamento", mensagem: "Checkout online indisponível no momento. A barbearia precisa configurar o Asaas para receber o sinal pelo site." });
   }
 
   const { data: agendamento, error: agendaError } = await supabaseAdmin
-    .from("agendamentos")
+    .from("barbearia_agendamentos")
     .insert({
-      clinica_id: clinic.id,
+      barbearia_id: clinic.id,
       cliente_id: clienteId,
-      profissional_id: profissionalId,
-      procedimento_id: procedimento.id,
+      barbeiro_id: profissionalId,
+      servico_id: procedimento.id,
       inicio: start.toISOString(),
       fim: end.toISOString(),
       status: "agendado",
-      valor: valorTotal,
-      pagamento_status: pagamentoStatus === "sem_sinal" ? "pendente" : "parcial",
-      valor_pago: 0,
+      valor_tabela: valorTotal,
+      valor_final: valorTotal,
+      pagamento_status: "pendente",
       observacoes: "Agendamento criado pelo site público.",
     })
     .select("id")
@@ -221,17 +229,17 @@ export async function createPublicBookingAction(formData) {
       asaasPaymentId = payment.id || null;
       paymentPayload = payment || {};
     } catch (error) {
-      await supabaseAdmin.from("agendamentos").delete().eq("id", agendamento.id).eq("clinica_id", clinic.id);
+      await supabaseAdmin.from("barbearia_agendamentos").delete().eq("id", agendamento.id).eq("barbearia_id", clinic.id);
       publicRedirect(slug, { erro: "pagamento", mensagem: error.message || "Nao foi possivel gerar o checkout do sinal. Tente novamente." });
     }
   }
 
-  const { data: publicBooking, error: publicError } = await supabaseAdmin.from("site_agendamentos_publicos").insert({
-    clinica_id: clinic.id,
+  const { data: publicBooking, error: publicError } = await supabaseAdmin.from("barbearia_site_agendamentos_publicos").insert({
+    barbearia_id: clinic.id,
     cliente_id: clienteId,
     agendamento_id: agendamento.id,
-    procedimento_id: procedimento.id,
-    profissional_id: profissionalId,
+    servico_id: procedimento.id,
+    barbeiro_id: profissionalId,
     nome,
     telefone,
     email,
@@ -246,14 +254,14 @@ export async function createPublicBookingAction(formData) {
 
   if (publicError) throw publicError;
 
-  await supabaseAdmin.from("crm_oportunidades").insert({
-    clinica_id: clinic.id,
+  await supabaseAdmin.from("barbearia_crm_oportunidades").insert({
+    barbearia_id: clinic.id,
     cliente_id: clienteId,
     nome,
     telefone,
     email,
     origem: "site",
-    status: "avaliacao_marcada",
+    status: "agendamento_marcado",
     valor_estimado: valorTotal,
     proxima_acao_em: start.toISOString(),
     proxima_acao: `Atendimento agendado: ${procedimento.nome}`,
@@ -291,22 +299,22 @@ export async function createPublicLeadAction(formData) {
   }
 
   const { data: clinic, error: clinicError } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .select("id, nome, slug, status, metadata")
     .eq("slug", slug)
     .in("status", ["trial", "ativa"])
     .maybeSingle();
 
   if (clinicError) throw clinicError;
-  if (!clinic) publicLeadRedirect(slug, { lead_erro: "clinica", mensagem: "Clínica indisponível para receber solicitações agora." });
+  if (!clinic) publicLeadRedirect(slug, { lead_erro: "barbearia", mensagem: "Barbearia indisponível para receber solicitações agora." });
 
   const siteConfig = clinic.metadata?.site_publico || {};
   if (siteConfig.publicado === false) {
-    publicLeadRedirect(slug, { lead_erro: "site", mensagem: "O site desta clínica ainda não está publicado." });
+    publicLeadRedirect(slug, { lead_erro: "site", mensagem: "O site desta barbearia ainda não está publicado." });
   }
 
-  const { error } = await supabaseAdmin.from("crm_oportunidades").insert({
-    clinica_id: clinic.id,
+  const { error } = await supabaseAdmin.from("barbearia_crm_oportunidades").insert({
+    barbearia_id: clinic.id,
     nome,
     telefone,
     email,

@@ -1,14 +1,14 @@
 ﻿import { PageHero, PlanForm, StatusPill, formatMoney } from "../admin-core";
 import { getSystemPlans } from "@/lib/saas/plans";
 
-export const metadata = { title: "Planos admin | NexaWi Clínicas" };
+export const metadata = { title: "Planos admin | NexaWi Barbearias" };
 
 export default async function DashboardAdminPlanosPage() {
   const plans = await getSystemPlans();
 
   return (
     <div className="space-y-6">
-      <PageHero eyebrow="Planos" title="Planos comerciais do SaaS" description="Configure preço, limites e disponibilidade dos planos vendidos para as clínicas." />
+      <PageHero eyebrow="Planos" title="Planos comerciais do SaaS" description="Configure preço, limites e disponibilidade dos planos vendidos para as barbearias." />
 
       <section className="grid gap-4 xl:grid-cols-3">
         {plans.map((plan) => (
@@ -22,7 +22,7 @@ export default async function DashboardAdminPlanosPage() {
             </div>
             <strong className="mt-5 block text-3xl font-black">{formatMoney(plan.preco_mensal)}</strong>
             <p className="mt-4 text-sm leading-6 text-neutral-600">
-              {plan.limite_usuarios} usuários · {plan.limite_profissionais} profissionais · {plan.limite_clientes} clientes · {plan.limite_agendamentos_mes} agendamentos/mês
+              {plan.limite_usuarios} usuários · {plan.limite_barbeiros} profissionais · {plan.limite_clientes} clientes · {plan.limite_agendamentos_mes} agendamentos/mês
             </p>
           </article>
         ))}

@@ -187,8 +187,8 @@ export function PublicServicesSection({ procedimentos = [] }) {
       <div className="relative z-10">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-bold uppercase tracking-[0.32em] text-[var(--clinic-accent)]">Nossos serviços</p>
-          <h2 className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">Protocolos em destaque</h2>
-          <p className="mt-4 text-base leading-8 text-white/68">Clique no procedimento para saber mais.</p>
+          <h2 className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">Serviços em destaque</h2>
+          <p className="mt-4 text-base leading-8 text-white/68">Clique no serviço para saber mais.</p>
         </div>
       </div>
 
@@ -222,12 +222,12 @@ export function PublicServicesSection({ procedimentos = [] }) {
               {item.destaque_site ? <span className="public-service-reflection" aria-hidden="true" /> : null}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--clinic-accent)]">{item.categoria || "Procedimento"}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--clinic-accent)]">{item.categoria || "Serviço"}</p>
                   <h3 className="mt-3 text-2xl font-semibold text-white">{item.nome}</h3>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-white/78">{item.duracao_minutos} min</span>
               </div>
-              <p className="mt-5 min-h-24 text-sm leading-7 text-white/62">{item.descricao || "Procedimento com avaliação profissional e orientações personalizadas."}</p>
+              <p className="mt-5 min-h-24 text-sm leading-7 text-white/62">{item.descricao || "Serviço com orientação do barbeiro e orientações personalizadas."}</p>
               <div className="mt-7 flex items-end justify-between gap-4 border-t border-white/10 pt-5">
                 <div>
                   <p className="text-xs text-white/42">Valor</p>
@@ -257,25 +257,25 @@ export function PublicServicesSection({ procedimentos = [] }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={selected.imagem_url || fallbackImage(selected.nome, true)} alt={selected.nome} className="h-full min-h-[320px] w-full rounded-[1.5rem] object-cover" />
               <div className="pr-0 lg:pr-6">
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--clinic-accent)]">{selected.categoria || "Procedimento"}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--clinic-accent)]">{selected.categoria || "Serviço"}</p>
                 <h3 className="mt-3 text-4xl font-black tracking-tight">{selected.nome}</h3>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/42">O que é</p>
-                  <p className="mt-2 text-sm leading-7 text-white/72">{selected.descricao || "Procedimento com avaliação profissional e orientações personalizadas."}</p>
+                  <p className="mt-2 text-sm leading-7 text-white/72">{selected.descricao || "Serviço com orientação do barbeiro e orientações personalizadas."}</p>
                 </div>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-white/42">Cuidados antes</p>
-                    <p className="mt-2 text-sm leading-6 text-white/72">{selected.cuidados_antes || "A clínica orientará os cuidados necessários durante a avaliação."}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/72">{selected.instrucoes_pre_atendimento || "A barbearia informará os cuidados necessários antes do serviço."}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-white/42">Cuidados depois</p>
-                    <p className="mt-2 text-sm leading-6 text-white/72">{selected.cuidados_depois || "Após o atendimento, siga as orientações da profissional para melhores resultados."}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/72">{selected.instrucoes_pos_atendimento || "Após o atendimento, siga as orientações do barbeiro para conservar o resultado."}</p>
                   </div>
                 </div>
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
                   <strong className="text-2xl">{money(selected.preco)}</strong>
-                  <a href="#agendar" onClick={handleBookingClick} className="public-modal-booking-cta relative z-20 inline-flex items-center justify-center rounded-full border border-white/15 bg-[var(--clinic-accent)] px-6 py-3 text-sm font-black text-white shadow-[0_18px_42px_color-mix(in_srgb,var(--clinic-accent)_38%,transparent)] transition duration-300">Agendar este procedimento</a>
+                  <a href="#agendar" onClick={handleBookingClick} className="public-modal-booking-cta relative z-20 inline-flex items-center justify-center rounded-full border border-white/15 bg-[var(--clinic-accent)] px-6 py-3 text-sm font-black text-white shadow-[0_18px_42px_color-mix(in_srgb,var(--clinic-accent)_38%,transparent)] transition duration-300">Agendar este serviço</a>
                 </div>
               </div>
             </div>

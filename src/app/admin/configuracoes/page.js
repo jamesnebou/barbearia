@@ -4,7 +4,7 @@ import { getMarketingHomeConfig } from "@/lib/marketing/home-config";
 import { parseInternalAdminEmails } from "@/lib/saas/plans";
 import { updateInternalAdminCredentialsAction, updateMarketingHomeHeroAction } from "../actions";
 
-export const metadata = { title: "Configurações admin | NexaWi Clínicas" };
+export const metadata = { title: "Configurações admin | NexaWi Barbearias" };
 
 function AdminInput({ label, name, type = "text", defaultValue = "", placeholder = "", autoComplete = "off", readOnly = false }) {
   return (
@@ -54,7 +54,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
           <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-300">Admin interno</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Configurações do admin</h1>
           <p className="mt-4 text-sm leading-7 text-white/68">
-            Gerencie o acesso interno do SaaS e o conteúdo comercial da NexaWi Clínicas sem misturar com a área das clínicas.
+            Gerencie o acesso interno do SaaS e o conteúdo comercial da NexaWi Barbearias sem misturar com a área das barbearias.
           </p>
         </div>
       </section>
@@ -138,7 +138,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
           </div>
           <div>
             <h2 className="text-xl font-black">Home comercial</h2>
-            <p className="mt-1 text-sm leading-6 text-neutral-500">Edite a primeira seção do site de vendas da NexaWi Clínicas sem alterar o código. A lateral direita usa uma imagem real em PNG ou JPEG.</p>
+            <p className="mt-1 text-sm leading-6 text-neutral-500">Edite a primeira seção do site de vendas da NexaWi Barbearias sem alterar o código. A lateral direita usa uma imagem real em PNG ou JPEG.</p>
           </div>
         </div>
 

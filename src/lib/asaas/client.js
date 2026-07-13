@@ -6,7 +6,7 @@ function getAsaasConfig(config = {}) {
 }
 
 export function isAsaasConfigured(config = {}) {
-  return Boolean(config?.asaas_ativo && (config.apiKey || config.asaas_api_key)) || Boolean(!config?.clinica_id && process.env.ASAAS_API_KEY);
+  return Boolean(config?.asaas_ativo && (config.apiKey || config.asaas_api_key)) || Boolean(!config?.barbearia_id && process.env.ASAAS_API_KEY);
 }
 
 async function asaasRequest(path, options = {}, config = {}) {
@@ -63,7 +63,7 @@ export async function createAsaasSubscriptionForClinic({ clinic, plan, customerI
       value: Number(plan.preco_mensal || 0),
       nextDueDate: nextDueDate.toISOString().slice(0, 10),
       cycle: "MONTHLY",
-      description: `Assinatura ${plan.nome} - Clinica SaaS`,
+      description: `Assinatura ${plan.nome} - NexaWi Barbearias`,
       externalReference: clinic.id,
     }),
   });

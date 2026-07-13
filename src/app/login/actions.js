@@ -46,7 +46,7 @@ export async function signInAction(_prevState, formData) {
   const email = normalizeEmail(formData.get("email"));
   const password = String(formData.get("password") || "");
   const mode = String(formData.get("mode") || "cliente");
-  const next = safeNext(formData.get("next"), mode === "admin" ? "/dashboard-admin" : "/dashboard");
+  const next = safeNext(formData.get("next"), mode === "gerente" ? "/dashboard-admin" : "/dashboard");
 
   if (!email || !password) {
     return { ok: false, message: "Informe e-mail e senha." };
@@ -68,7 +68,7 @@ export async function signInAction(_prevState, formData) {
     return { ok: false, message: "E-mail ou senha inválidos." };
   }
 
-  if (mode === "admin") {
+  if (mode === "gerente") {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -79,7 +79,7 @@ export async function signInAction(_prevState, formData) {
     }
   }
 
-  if (mode !== "admin" && isInternalAdminEmail(email)) {
+  if (mode !== "gerente" && isInternalAdminEmail(email)) {
     await supabase.auth.signOut();
     return { ok: false, message: "Use a entrada administrativa para acessar este e-mail." };
   }

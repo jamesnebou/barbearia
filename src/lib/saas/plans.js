@@ -9,7 +9,7 @@ export const FALLBACK_PLANS = {
     nome: "Starter",
     preco_mensal: 97,
     limite_usuarios: 3,
-    limite_profissionais: 3,
+    limite_barbeiros: 3,
     limite_clientes: 300,
     limite_agendamentos_mes: 500,
   },
@@ -18,7 +18,7 @@ export const FALLBACK_PLANS = {
     nome: "Growth",
     preco_mensal: 197,
     limite_usuarios: 8,
-    limite_profissionais: 10,
+    limite_barbeiros: 10,
     limite_clientes: 2000,
     limite_agendamentos_mes: 3000,
   },
@@ -27,16 +27,16 @@ export const FALLBACK_PLANS = {
     nome: "Premium",
     preco_mensal: 397,
     limite_usuarios: 25,
-    limite_profissionais: 50,
+    limite_barbeiros: 50,
     limite_clientes: 10000,
     limite_agendamentos_mes: 15000,
   },
 };
 
 const RESOURCE_CONFIG = {
-  usuarios: { table: "usuarios_clinica", limitKey: "limite_usuarios" },
-  profissionais: { table: "profissionais", limitKey: "limite_profissionais" },
-  clientes: { table: "clientes", limitKey: "limite_clientes" },
+  usuarios: { table: "barbearia_usuarios", limitKey: "limite_usuarios" },
+  profissionais: { table: "barbearia_barbeiros", limitKey: "limite_barbeiros" },
+  clientes: { table: "barbearia_clientes", limitKey: "limite_clientes" },
 };
 
 function startOfMonthISO(date = new Date()) {
@@ -61,8 +61,8 @@ export function isInternalAdminEmail(email) {
 
 export async function getSystemPlans() {
   const { data, error } = await supabaseAdmin
-    .from("planos_sistema")
-    .select("slug, nome, descricao, preco_mensal, limite_usuarios, limite_profissionais, limite_clientes, limite_agendamentos_mes, ativo, ordem")
+    .from("barbearia_planos_sistema")
+    .select("slug, nome, descricao, preco_mensal, limite_usuarios, limite_barbeiros, limite_clientes, limite_agendamentos_mes, ativo, ordem")
     .eq("ativo", true)
     .order("ordem", { ascending: true });
 
@@ -77,12 +77,12 @@ export async function getSystemPlans() {
 export async function getClinicPlan(clinic) {
   const slug = clinic?.plano || "starter";
   const { data, error } = await supabaseAdmin
-    .from("planos_sistema")
-    .select("slug, nome, descricao, preco_mensal, limite_usuarios, limite_profissionais, limite_clientes, limite_agendamentos_mes, ativo, ordem")
+    .from("barbearia_planos_sistema")
+    .select("slug, nome, descricao, preco_mensal, limite_usuarios, limite_barbeiros, limite_clientes, limite_agendamentos_mes, ativo, ordem")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (error) console.error("Erro ao carregar plano da clinica:", error);
+  if (error) console.error("Erro ao carregar plano da barbearia:", error);
   return data || FALLBACK_PLANS[slug] || FALLBACK_PLANS.starter;
 }
 
@@ -91,10 +91,10 @@ export async function getClinicUsage(clinicaId) {
   const nextMonthStart = startOfNextMonthISO();
 
   const [usuarios, profissionais, clientes, agendamentosMes] = await Promise.all([
-    supabaseAdmin.from("usuarios_clinica").select("id", { count: "exact", head: true }).eq("clinica_id", clinicaId).eq("ativo", true),
-    supabaseAdmin.from("profissionais").select("id", { count: "exact", head: true }).eq("clinica_id", clinicaId).eq("ativo", true),
-    supabaseAdmin.from("clientes").select("id", { count: "exact", head: true }).eq("clinica_id", clinicaId),
-    supabaseAdmin.from("agendamentos").select("id", { count: "exact", head: true }).eq("clinica_id", clinicaId).gte("inicio", monthStart).lt("inicio", nextMonthStart),
+    supabaseAdmin.from("barbearia_usuarios").select("id", { count: "exact", head: true }).eq("barbearia_id", clinicaId).eq("ativo", true),
+    supabaseAdmin.from("barbearia_barbeiros").select("id", { count: "exact", head: true }).eq("barbearia_id", clinicaId).eq("ativo", true),
+    supabaseAdmin.from("barbearia_clientes").select("id", { count: "exact", head: true }).eq("barbearia_id", clinicaId),
+    supabaseAdmin.from("barbearia_agendamentos").select("id", { count: "exact", head: true }).eq("barbearia_id", clinicaId).gte("inicio", monthStart).lt("inicio", nextMonthStart),
   ]);
 
   for (const result of [usuarios, profissionais, clientes, agendamentosMes]) {
@@ -116,11 +116,11 @@ export function getClinicBillingState(clinic) {
   const trialExpired = status === "trial" && trialEndsAt && trialEndsAt < new Date();
 
   if (assinaturaStatus === "isenta") {
-    return { blocked: false, level: "ok", title: "Assinatura isenta", message: "Esta clínica está liberada por isenção comercial." };
+    return { blocked: false, level: "ok", title: "Assinatura isenta", message: "Esta barbearia está liberada por isenção comercial." };
   }
 
   if (status === "cancelada" || status === "bloqueada") {
-    return { blocked: true, level: "danger", title: "Clinica bloqueada", message: clinic?.bloqueio_motivo || "A assinatura desta clinica esta cancelada ou bloqueada." };
+    return { blocked: true, level: "danger", title: "Barbearia bloqueada", message: clinic?.bloqueio_motivo || "A assinatura desta barbearia esta cancelada ou bloqueada." };
   }
 
   if (status === "inadimplente") {
@@ -132,7 +132,7 @@ export function getClinicBillingState(clinic) {
   }
 
   if (status === "trial") {
-    return { blocked: false, level: "info", title: "Clinica em trial", message: trialEndsAt ? `Teste valido ate ${trialEndsAt.toLocaleDateString("pt-BR")}.` : "Clinica em periodo de teste." };
+    return { blocked: false, level: "info", title: "Barbearia em trial", message: trialEndsAt ? `Teste valido ate ${trialEndsAt.toLocaleDateString("pt-BR")}.` : "Barbearia em periodo de teste." };
   }
 
   return { blocked: false, level: "ok", title: "Assinatura ativa", message: "Plano comercial ativo." };
@@ -141,7 +141,7 @@ export function getClinicBillingState(clinic) {
 export function getLimitRows({ plan, usage }) {
   return [
     { label: "Usuarios", used: usage.usuarios, limit: plan.limite_usuarios },
-    { label: "Profissionais", used: usage.profissionais, limit: plan.limite_profissionais },
+    { label: "Barbeiros", used: usage.profissionais, limit: plan.limite_barbeiros },
     { label: "Clientes", used: usage.clientes, limit: plan.limite_clientes },
     { label: "Agendamentos no mes", used: usage.agendamentos_mes, limit: plan.limite_agendamentos_mes },
   ];
@@ -171,7 +171,7 @@ export async function assertClinicLimit({ clinic, resource }) {
   let query = supabaseAdmin
     .from(config.table)
     .select("id", { count: "exact", head: true })
-    .eq("clinica_id", clinic.id);
+    .eq("barbearia_id", clinic.id);
 
   if (["usuarios", "profissionais"].includes(resource)) {
     query = query.eq("ativo", true);

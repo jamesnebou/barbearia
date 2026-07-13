@@ -28,17 +28,17 @@ function nextBillingDate() {
 }
 
 function ensureCanManageSubscription(memberships, activeClinic) {
-  const membership = memberships.find((item) => item.clinica_id === activeClinic.id) || memberships[0];
-  const allowed = ["owner", "admin", "financeiro"];
+  const membership = memberships.find((item) => item.barbearia_id === activeClinic.id) || memberships[0];
+  const allowed = ["owner", "gerente", "financeiro"];
 
   if (!allowed.includes(membership?.papel)) {
-    throw new Error("Seu usuário não tem permissão para alterar a assinatura da clínica.");
+    throw new Error("Seu usuário não tem permissão para alterar a assinatura da barbearia.");
   }
 }
 
 async function getFullClinic(clinicaId) {
   const { data, error } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .select("id, nome, slug, documento, telefone, email, cidade, estado, status, plano, metadata, trial_ends_at, billing_email, asaas_customer_id, asaas_subscription_id, assinatura_status, proxima_cobranca_em, bloqueada_em, bloqueio_motivo")
     .eq("id", clinicaId)
     .single();
@@ -70,12 +70,12 @@ export async function startSubscriptionAction(formData) {
   try {
     clinic = await getFullClinic(activeClinic.id);
   } catch (error) {
-    redirectSubscriptionError(error, "clinica");
+    redirectSubscriptionError(error, "barbearia");
   }
 
   if (!isAsaasConfigured()) {
     const { error } = await supabaseAdmin
-      .from("clinicas")
+      .from("barbearias")
       .update({
         plano: plan.slug,
         billing_email: billingEmail || null,
@@ -119,7 +119,7 @@ export async function startSubscriptionAction(formData) {
   }
 
   const { error } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .update({
       plano: plan.slug,
       billing_email: billingEmail || null,
@@ -142,8 +142,8 @@ export async function startSubscriptionAction(formData) {
   if (error) redirectSubscriptionError(error, "upgrade");
 
   if (firstPayment?.id) {
-    await supabaseAdmin.from("asaas_cobrancas").upsert({
-      clinica_id: clinic.id,
+    await supabaseAdmin.from("barbearia_cobrancas_saas").upsert({
+      barbearia_id: clinic.id,
       asaas_payment_id: firstPayment.id,
       asaas_subscription_id: subscription.id,
       evento: "SUBSCRIPTION_FIRST_PAYMENT",
@@ -174,7 +174,7 @@ export async function updateBillingEmailAction(formData) {
   const billingEmail = requireValue(text(formData, "billing_email"), "Informe o e-mail de cobrança.");
 
   const { error } = await supabaseAdmin
-    .from("clinicas")
+    .from("barbearias")
     .update({ billing_email: billingEmail })
     .eq("id", activeClinic.id);
 

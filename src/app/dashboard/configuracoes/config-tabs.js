@@ -23,7 +23,7 @@ export function ConfigTabs({ children }) {
   return (
     <div className="space-y-6">
       <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white p-2 shadow-sm">
-        <div className="flex min-w-max gap-2" role="tablist" aria-label="Configurações da clínica">
+        <div className="flex min-w-max gap-2" role="tablist" aria-label="Configurações da barbearia">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const selected = activeTab === tab.id;

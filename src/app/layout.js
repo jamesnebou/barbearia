@@ -9,8 +9,8 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: "NexaWi Clínicas",
-  description: "Sistema SaaS para gestão de clínicas de estética.",
+  title: "NexaWi Barbearias",
+  description: "Sistema SaaS para gestão de barbearias.",
 };
 
 export default function RootLayout({ children }) {

@@ -1,6 +1,6 @@
 ﻿import { KpiCard, PageHero, StatusPill, formatDate, formatMoney, getOverviewStats, loadDashboardAdminData, metricCards } from "../admin-core";
 
-export const metadata = { title: "Funil comercial admin | NexaWi Clínicas" };
+export const metadata = { title: "Funil comercial admin | NexaWi Barbearias" };
 
 export default async function DashboardAdminFunilPage() {
   const { clinics, plans, analytics } = await loadDashboardAdminData();
@@ -9,7 +9,7 @@ export default async function DashboardAdminFunilPage() {
 
   return (
     <div className="space-y-6">
-      <PageHero eyebrow="Funil comercial" title="Leads, oportunidades e conversões" description="Acompanhe a jornada comercial gerada pelos sites das clínicas e pelo CRM operacional." />
+      <PageHero eyebrow="Funil comercial" title="Leads, oportunidades e conversões" description="Acompanhe a jornada comercial gerada pelos sites das barbearias e pelo CRM operacional." />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Leads do site" value={stats.siteLeads} helper="Agendamentos públicos dos últimos 30 dias." icon={metricCards.site} />

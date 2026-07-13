@@ -1,9 +1,9 @@
 export function EmptyClinicState() {
   return (
     <div className="premium-panel rounded-lg p-5 text-amber-900">
-      <h2 className="text-lg font-semibold">Nenhuma clinica vinculada</h2>
+      <h2 className="text-lg font-semibold">Nenhuma barbearia vinculada</h2>
       <p className="mt-2 text-sm leading-6">
-        Seu usuario esta autenticado, mas ainda nao foi vinculado a uma clinica. Crie uma clinica e um registro em usuarios_clinica no Supabase para liberar o painel.
+        Seu usuario esta autenticado, mas ainda nao foi vinculado a uma barbearia. Crie uma barbearia e um registro em barbearia_usuarios no Supabase para liberar o painel.
       </p>
     </div>
   );
@@ -11,7 +11,7 @@ export function EmptyClinicState() {
 
 export function PageHeader({ eyebrow, title, description, action }) {
   return (
-    <div className="relative flex flex-col gap-4 border-b border-neutral-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
+    <div className="dashboard-page-header relative flex flex-col gap-4 border-b border-neutral-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
       <div className="absolute bottom-[-1px] left-0 h-px w-48 bg-[linear-gradient(90deg,var(--clinic-primary),var(--clinic-accent),transparent)]" />
       <div className="absolute bottom-[-2px] left-0 h-[3px] w-20 rounded-full bg-[var(--clinic-primary)] shadow-[0_0_24px_color-mix(in_srgb,var(--clinic-accent)_55%,transparent)]" />
       <div>
@@ -26,7 +26,7 @@ export function PageHeader({ eyebrow, title, description, action }) {
 
 export function Card({ children, className = "" }) {
   return (
-    <section className={`premium-panel min-w-0 rounded-lg p-5 transition duration-200 ${className}`}>
+    <section className={`premium-panel dashboard-card min-w-0 rounded-lg p-5 transition duration-200 ${className}`}>
       {children}
     </section>
   );
@@ -49,7 +49,7 @@ export function Field({ label, name, type = "text", required = false, placeholde
     <label className="block">
       <span className="text-sm font-medium text-neutral-700">{label}</span>
       <input
-        className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-[var(--clinic-primary)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--clinic-primary)_12%,transparent)] focus:ring-0"
+        className="dashboard-field mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-[var(--clinic-primary)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--clinic-primary)_12%,transparent)] focus:ring-0"
         name={name}
         type={type}
         required={required}
@@ -65,7 +65,7 @@ export function TextArea({ label, name, placeholder = "", defaultValue = "" }) {
     <label className="block">
       <span className="text-sm font-medium text-neutral-700">{label}</span>
       <textarea
-        className="mt-2 min-h-24 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-[var(--clinic-primary)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--clinic-primary)_12%,transparent)] focus:ring-0"
+        className="dashboard-field mt-2 min-h-24 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-[var(--clinic-primary)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--clinic-primary)_12%,transparent)] focus:ring-0"
         name={name}
         placeholder={placeholder}
         defaultValue={defaultValue}
@@ -82,7 +82,7 @@ export function SelectField({ label, name, defaultValue = "", required = false, 
         name={name}
         defaultValue={defaultValue}
         required={required}
-        className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[var(--clinic-primary)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--clinic-primary)_12%,transparent)] focus:ring-0"
+        className="dashboard-field mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[var(--clinic-primary)] focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--clinic-primary)_12%,transparent)] focus:ring-0"
       >
         {children}
       </select>
@@ -92,7 +92,7 @@ export function SelectField({ label, name, defaultValue = "", required = false, 
 
 export function SubmitButton({ children }) {
   return (
-    <button className="h-11 rounded-lg bg-[linear-gradient(135deg,var(--clinic-primary),color-mix(in_srgb,var(--clinic-primary)_72%,#111))] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_color-mix(in_srgb,var(--clinic-primary)_22%,transparent)] transition hover:-translate-y-0.5 hover:brightness-105" type="submit">
+    <button className="dashboard-primary-button h-11 rounded-lg bg-[linear-gradient(135deg,var(--clinic-primary),color-mix(in_srgb,var(--clinic-primary)_72%,#111))] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_color-mix(in_srgb,var(--clinic-primary)_22%,transparent)] transition hover:-translate-y-0.5 hover:brightness-105" type="submit">
       {children}
     </button>
   );
@@ -119,7 +119,7 @@ export function Notice({ type = "info", title, children }) {
   };
 
   return (
-    <div className={`rounded-lg border px-4 py-3 text-sm shadow-sm backdrop-blur ${styles[type] || styles.info}`}>
+    <div className={`dashboard-notice rounded-lg border px-4 py-3 text-sm shadow-sm backdrop-blur ${styles[type] || styles.info}`}>
       {title ? <p className="font-semibold">{title}</p> : null}
       <div className={title ? "mt-1 leading-6" : "leading-6"}>{children}</div>
     </div>

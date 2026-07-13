@@ -5,11 +5,11 @@ import { requireClinicSection } from "@/lib/auth/session";
 import { Card, EmptyClinicState, EmptyState, Field, LimitNotice, Notice, PageHeader, SectionTitle, SelectField, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { convertCrmOpportunityAction, createCrmOpportunityAction, updateCrmOpportunityAction } from "../actions";
 
-export const metadata = { title: "CRM | Clínica SaaS" };
+export const metadata = { title: "CRM | Barbearia SaaS" };
 
 const statusOptions = [
   ["lead", "Lead"],
-  ["avaliacao_marcada", "Avaliação marcada"],
+  ["avaliacao_marcada", "Atendimento marcado"],
   ["em_negociacao", "Em negociação"],
   ["convertido", "Convertido"],
   ["perdido", "Perdido"],
@@ -45,7 +45,7 @@ function whatsappUrl(phone, name) {
   const digits = String(phone || "").replace(/\D/g, "");
   if (!digits) return null;
   const number = digits.startsWith("55") ? digits : `55${digits}`;
-  const message = encodeURIComponent(`Olá, ${name}. Tudo bem? Estou entrando em contato pela clínica para falar sobre seu atendimento.`);
+  const message = encodeURIComponent(`Olá, ${name}. Tudo bem? Estou entrando em contato pela barbearia para falar sobre seu atendimento.`);
   return `https://wa.me/${number}?text=${message}`;
 }
 
@@ -61,9 +61,9 @@ export default async function CrmPage({ searchParams }) {
   const statusFilter = params?.status || "";
   const supabase = await createClient();
   let query = supabase
-    .from("crm_oportunidades")
+    .from("barbearia_crm_oportunidades")
     .select("id, cliente_id, nome, telefone, email, origem, status, valor_estimado, proxima_acao_em, proxima_acao, observacoes, perdido_motivo, convertido_em, created_at")
-    .eq("clinica_id", activeClinic.id)
+    .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: false });
 
   if (statusFilter) query = query.eq("status", statusFilter);
@@ -85,7 +85,7 @@ export default async function CrmPage({ searchParams }) {
         <PageHeader
           eyebrow="CRM"
           title="Pipeline comercial"
-          description="Acompanhe leads, avaliações, negociações e conversões da clínica sem misturar com prontuário."
+          description="Acompanhe leads, avaliações, negociações e conversões da barbearia sem misturar com ficha do cliente."
         />
 
         <div className="mt-6 space-y-3">
@@ -130,7 +130,7 @@ export default async function CrmPage({ searchParams }) {
                 {statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </SelectField>
               <Field label="Valor" name="valor_estimado" type="number" defaultValue="0" />
-              <Field label="Próxima ação" name="proxima_acao" placeholder="Confirmar avaliação..." />
+              <Field label="Próxima ação" name="proxima_acao" placeholder="Confirmar atendimento..." />
               <SubmitButton>Criar</SubmitButton>
             </form>
           </Card>

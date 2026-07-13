@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { decryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 
 export const runtime = "nodejs";
 
@@ -14,17 +15,14 @@ function getWebhookToken(request) {
 async function isAllowedWebhookToken(token) {
   const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
   if (expectedToken && token === expectedToken) return true;
-  if (!token) return !expectedToken;
-
+  if (!token) return false;
   const { data, error } = await supabaseAdmin
-    .from("clinica_integracoes")
-    .select("clinica_id")
-    .eq("asaas_webhook_token", token)
-    .eq("asaas_ativo", true)
-    .limit(1);
-
+    .from("barbearia_integracoes")
+    .select("segredos_criptografados")
+    .eq("provedor", "asaas")
+    .eq("ativo", true);
   if (error) throw error;
-  return Boolean(data?.length);
+  return (data || []).some((integration) => decryptBarbeariaSecrets(integration.segredos_criptografados).webhookToken === token);
 }
 
 function normalizePaymentStatus(status) {
@@ -66,17 +64,17 @@ async function findClinicByPayment(payment) {
   const externalReference = payment?.externalReference || "";
 
   if (subscriptionId) {
-    const { data } = await supabaseAdmin.from("clinicas").select("id").eq("asaas_subscription_id", subscriptionId).maybeSingle();
+    const { data } = await supabaseAdmin.from("barbearias").select("id").eq("asaas_subscription_id", subscriptionId).maybeSingle();
     if (data?.id) return data;
   }
 
   if (externalReference) {
-    const { data } = await supabaseAdmin.from("clinicas").select("id").eq("id", externalReference).maybeSingle();
+    const { data } = await supabaseAdmin.from("barbearias").select("id").eq("id", externalReference).maybeSingle();
     if (data?.id) return data;
   }
 
   if (customerId) {
-    const { data } = await supabaseAdmin.from("clinicas").select("id").eq("asaas_customer_id", customerId).maybeSingle();
+    const { data } = await supabaseAdmin.from("barbearias").select("id").eq("asaas_customer_id", customerId).maybeSingle();
     if (data?.id) return data;
   }
 
@@ -88,8 +86,8 @@ async function updatePublicBookingPayment({ payment, payload, event, paymentStat
   const externalReference = payment?.externalReference || "";
 
   let query = supabaseAdmin
-    .from("site_agendamentos_publicos")
-    .select("id, clinica_id, agendamento_id, valor_sinal")
+    .from("barbearia_site_agendamentos_publicos")
+    .select("id, barbearia_id, cliente_id, agendamento_id, valor_sinal")
     .limit(1);
 
   if (paymentId) {
@@ -108,7 +106,7 @@ async function updatePublicBookingPayment({ payment, payload, event, paymentStat
   const publicStatus = paymentStatus === "pago" ? "pago" : paymentStatus === "cancelado" ? "cancelado" : "pendente";
 
   const { error: publicError } = await supabaseAdmin
-    .from("site_agendamentos_publicos")
+    .from("barbearia_site_agendamentos_publicos")
     .update({
       pagamento_status: publicStatus,
       asaas_payment_id: paymentId || null,
@@ -120,18 +118,33 @@ async function updatePublicBookingPayment({ payment, payload, event, paymentStat
   if (publicError) throw publicError;
 
   if (booking.agendamento_id && paymentStatus === "pago") {
+    const paidValue = Number(booking.valor_sinal || payment?.value || 0);
     const { error: agendaError } = await supabaseAdmin
-      .from("agendamentos")
+      .from("barbearia_agendamentos")
       .update({
         pagamento_status: "parcial",
-        forma_pagamento: "outro",
-        valor_pago: Number(booking.valor_sinal || payment?.value || 0),
-        data_pagamento: paidAt ? new Date(paidAt).toISOString() : new Date().toISOString(),
         status: "confirmado",
       })
       .eq("id", booking.agendamento_id);
 
     if (agendaError) throw agendaError;
+
+    if (paidValue > 0) {
+      const { error: paymentError } = await supabaseAdmin.from("barbearia_pagamentos").upsert({
+        barbearia_id: booking.barbearia_id,
+        cliente_id: booking.cliente_id,
+        agendamento_id: booking.agendamento_id,
+        valor: paidValue,
+        forma: "outro",
+        status: "pago",
+        provedor: "asaas",
+        provedor_pagamento_id: paymentId || null,
+        link_pagamento: payment?.invoiceUrl || null,
+        pago_em: paidAt ? new Date(paidAt).toISOString() : new Date().toISOString(),
+        payload,
+      }, { onConflict: "barbearia_id,provedor,provedor_pagamento_id" });
+      if (paymentError) throw paymentError;
+    }
   }
 
   return true;
@@ -143,17 +156,17 @@ async function findClinicBySubscription(subscription) {
   const externalReference = subscription?.externalReference || "";
 
   if (subscriptionId) {
-    const { data } = await supabaseAdmin.from("clinicas").select("id").eq("asaas_subscription_id", subscriptionId).maybeSingle();
+    const { data } = await supabaseAdmin.from("barbearias").select("id").eq("asaas_subscription_id", subscriptionId).maybeSingle();
     if (data?.id) return data;
   }
 
   if (externalReference) {
-    const { data } = await supabaseAdmin.from("clinicas").select("id").eq("id", externalReference).maybeSingle();
+    const { data } = await supabaseAdmin.from("barbearias").select("id").eq("id", externalReference).maybeSingle();
     if (data?.id) return data;
   }
 
   if (customerId) {
-    const { data } = await supabaseAdmin.from("clinicas").select("id").eq("asaas_customer_id", customerId).maybeSingle();
+    const { data } = await supabaseAdmin.from("barbearias").select("id").eq("asaas_customer_id", customerId).maybeSingle();
     if (data?.id) return data;
   }
 
@@ -178,7 +191,7 @@ export async function POST(request) {
 
     const commercialStatus = commercialStatusFromSubscription(event, subscription);
     const { error } = await supabaseAdmin
-      .from("clinicas")
+      .from("barbearias")
       .update({
         ...(commercialStatus || {}),
         asaas_subscription_id: subscription?.id || null,
@@ -209,8 +222,8 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, matched: false, type: "payment" });
   }
 
-  const { error: billingError } = await supabaseAdmin.from("asaas_cobrancas").upsert({
-    clinica_id: clinic.id,
+  const { error: billingError } = await supabaseAdmin.from("barbearia_cobrancas_saas").upsert({
+    barbearia_id: clinic.id,
     asaas_payment_id: payment?.id || null,
     asaas_subscription_id: payment?.subscription || null,
     evento: event || null,
@@ -230,7 +243,7 @@ export async function POST(request) {
   const commercialStatus = commercialStatusFromPayment(payment?.status);
   if (commercialStatus) {
     const { error: clinicError } = await supabaseAdmin
-      .from("clinicas")
+      .from("barbearias")
       .update({
         ...commercialStatus,
         proxima_cobranca_em: payment?.dueDate || null,

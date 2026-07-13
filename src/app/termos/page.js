@@ -1,9 +1,9 @@
 ﻿import Link from "next/link";
 
-export const metadata = { title: "Termos de Uso | Clínica SaaS" };
+export const metadata = { title: "Termos de Uso | Barbearia SaaS" };
 
 const company = {
-  productName: "Clínica SaaS - NexaWi",
+  productName: "Barbearia SaaS - NexaWi",
   legalName: "NexaWi",
   document: "54.954.915/0001-65",
   contactEmail: "contato@nexawi.com.br",
@@ -11,9 +11,9 @@ const company = {
 };
 
 const sections = [
-  ["Uso do sistema", `${company.productName} e uma plataforma SaaS para gestao de clinicas de estetica, incluindo agenda, clientes, prontuario, anamnese, fotos antes/depois, financeiro, pacotes, usuarios e indicadores operacionais.`],
-  ["Responsabilidade da clinica", "A clinica contratante e responsavel pela veracidade dos dados inseridos, pela autorizacao dos seus usuarios, pela definicao de papeis de acesso e pela obtencao de consentimentos necessarios de clientes e pacientes."],
-  ["Prontuario, fotos e dados sensiveis", "Informacoes sensiveis, anamnese, fotos antes/depois e termos de consentimento devem ser coletados e armazenados pela clinica conforme a legislacao aplicavel. O sistema fornece controles tecnicos, mas a avaliacao clinica e a regularidade dos procedimentos sao responsabilidade da clinica."],
+  ["Uso do sistema", `${company.productName} e uma plataforma SaaS para gestao de barbearias, incluindo agenda, clientes, preferencias, consentimentos e fotos de referencia, financeiro, pacotes, usuarios e indicadores operacionais.`],
+  ["Responsabilidade da barbearia", "A barbearia contratante e responsavel pela veracidade dos dados inseridos, pela autorizacao dos seus usuarios, pela definicao dos papeis de acesso e pela obtencao dos consentimentos necessarios dos clientes."],
+  ["Ficha do cliente, fotos e consentimentos", "Preferencias, fotos de referencia e resultado e termos de consentimento devem ser coletados e armazenados pela barbearia conforme a legislacao aplicavel. O sistema fornece controles tecnicos, mas a prestacao dos servicos e o atendimento sao responsabilidade da barbearia."],
   ["Acesso e seguranca", "Cada usuario deve usar credenciais proprias. E proibido compartilhar senha, acessar dados sem autorizacao, exportar informacoes indevidamente ou utilizar o sistema para finalidade ilicita."],
   ["Planos e cobranca", "O uso pode estar sujeito a planos, limites, periodo de teste, cobranca recorrente, bloqueio por inadimplencia e cancelamento conforme condicoes comerciais acordadas."],
   ["Disponibilidade", "A plataforma busca operar com estabilidade, mas pode passar por manutencoes, indisponibilidades de terceiros, instabilidades de internet, falhas de provedores ou ajustes tecnicos necessarios a evolucao do produto."],
