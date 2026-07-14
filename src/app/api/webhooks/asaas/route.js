@@ -12,15 +12,19 @@ function getWebhookToken(request) {
   return request.headers.get("asaas-access-token") || request.headers.get("x-webhook-token") || "";
 }
 
-async function isAllowedWebhookToken(token) {
+async function isAllowedWebhookToken(request, token) {
   const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
   if (expectedToken && token === expectedToken) return true;
   if (!token) return false;
-  const { data, error } = await supabaseAdmin
+
+  const clinicId = request.nextUrl.searchParams.get("barbearia");
+  let query = supabaseAdmin
     .from("barbearia_integracoes")
-    .select("segredos_criptografados")
+    .select("barbearia_id, segredos_criptografados")
     .eq("provedor", "asaas")
     .eq("ativo", true);
+  if (clinicId) query = query.eq("barbearia_id", clinicId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data || []).some((integration) => decryptBarbeariaSecrets(integration.segredos_criptografados).webhookToken === token);
 }
@@ -150,6 +154,79 @@ async function updatePublicBookingPayment({ payment, payload, event, paymentStat
   return true;
 }
 
+async function updateStoreOrderPayment({ payment, payload, paymentStatus, paidAt }) {
+  const paymentId = payment?.id || "";
+  const externalReference = String(payment?.externalReference || "");
+  const externalOrderId = externalReference.startsWith("loja:") ? externalReference.slice(5) : "";
+  if (!paymentId && !externalOrderId) return false;
+
+  let order = null;
+  if (paymentId) {
+    const { data, error } = await supabaseAdmin
+      .from("barbearia_pedidos")
+      .select("id, barbearia_id, cliente_id, total, pagamento_status, status")
+      .eq("asaas_payment_id", paymentId)
+      .limit(1);
+    if (error) throw error;
+    order = data?.[0] || null;
+  }
+  if (!order && externalOrderId) {
+    const { data, error } = await supabaseAdmin
+      .from("barbearia_pedidos")
+      .select("id, barbearia_id, cliente_id, total, pagamento_status, status")
+      .eq("id", externalOrderId)
+      .limit(1);
+    if (error) throw error;
+    order = data?.[0] || null;
+  }
+  if (!order?.id) return false;
+
+  const invoiceUrl = payment?.invoiceUrl || payment?.bankSlipUrl || null;
+  const { error: orderPayloadError } = await supabaseAdmin.from("barbearia_pedidos").update({
+    asaas_payment_id: paymentId || null,
+    invoice_url: invoiceUrl,
+    payload_pagamento: payload,
+  }).eq("id", order.id).eq("barbearia_id", order.barbearia_id);
+  if (orderPayloadError) throw orderPayloadError;
+
+  if (paymentStatus === "pago") {
+    const { error: confirmError } = await supabaseAdmin.rpc("confirmar_pagamento_pedido_loja", {
+      p_pedido_id: order.id,
+      p_asaas_payment_id: paymentId || null,
+      p_payload: payload,
+      p_pago_em: paidAt ? new Date(paidAt).toISOString() : new Date().toISOString(),
+    });
+    if (confirmError) throw confirmError;
+  } else if (paymentStatus === "estornado" && order.pagamento_status === "pago") {
+    const { error: refundError } = await supabaseAdmin.rpc("estornar_pedido_loja", { p_pedido_id: order.id, p_motivo: "Estorno confirmado pelo webhook Asaas." });
+    if (refundError) throw refundError;
+  } else if (["cancelado", "vencido"].includes(paymentStatus) && order.pagamento_status !== "pago") {
+    const { error: cancelError } = await supabaseAdmin.rpc("cancelar_pedido_loja", { p_pedido_id: order.id, p_motivo: `Pagamento ${paymentStatus} no Asaas.` });
+    if (cancelError) throw cancelError;
+  }
+
+  const billingType = String(payment?.billingType || "").toUpperCase();
+  const forma = billingType === "PIX" ? "pix" : billingType === "BOLETO" ? "boleto" : billingType === "CREDIT_CARD" ? "cartao_credito" : "link";
+  const internalStatus = paymentStatus === "pago" ? "pago" : paymentStatus === "estornado" ? "estornado" : paymentStatus === "cancelado" ? "cancelado" : paymentStatus === "vencido" ? "falhou" : "pendente";
+  const { error: paymentError } = await supabaseAdmin.from("barbearia_pagamentos").upsert({
+    barbearia_id: order.barbearia_id,
+    cliente_id: order.cliente_id,
+    pedido_id: order.id,
+    valor: Number(payment?.value || order.total || 0),
+    forma,
+    status: internalStatus,
+    provedor: "asaas",
+    provedor_pagamento_id: paymentId || null,
+    link_pagamento: invoiceUrl,
+    pago_em: paymentStatus === "pago" ? (paidAt ? new Date(paidAt).toISOString() : new Date().toISOString()) : null,
+    vencimento_em: payment?.dueDate ? new Date(`${payment.dueDate}T23:59:59`).toISOString() : null,
+    payload,
+    observacoes: "Atualizado automaticamente pelo webhook da lojinha.",
+  }, { onConflict: "barbearia_id,provedor,provedor_pagamento_id" });
+  if (paymentError) throw paymentError;
+  return true;
+}
+
 async function findClinicBySubscription(subscription) {
   const subscriptionId = subscription?.id || "";
   const customerId = subscription?.customer || "";
@@ -174,7 +251,7 @@ async function findClinicBySubscription(subscription) {
 }
 
 export async function POST(request) {
-  if (!(await isAllowedWebhookToken(getWebhookToken(request)))) {
+  if (!(await isAllowedWebhookToken(request, getWebhookToken(request)))) {
     return unauthorized();
   }
 
@@ -210,6 +287,11 @@ export async function POST(request) {
   const payment = payload?.payment || payload?.data || payload;
   const paymentStatus = normalizePaymentStatus(payment?.status);
   const paidAt = payment?.paymentDate || payment?.confirmedDate || payment?.clientPaymentDate || null;
+
+  const storeOrderUpdated = await updateStoreOrderPayment({ payment, payload, event, paymentStatus, paidAt });
+  if (storeOrderUpdated) {
+    return NextResponse.json({ ok: true, matched: true, type: "store-order-payment" });
+  }
 
   const publicBookingUpdated = await updatePublicBookingPayment({ payment, payload, event, paymentStatus, paidAt });
   if (publicBookingUpdated) {

@@ -1,7 +1,7 @@
 import { Clock, CreditCard, Mail, MessageCircle, Palette, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
-import { removeClinicDomainAction, syncClinicDomainAction, testClinicWhatsappIntegrationAction, updateClinicAccountAction, updateClinicSettingsAction, updateClinicUserAction } from "../actions";
+import { connectClinicAsaasAction, disconnectClinicAsaasAction, removeClinicDomainAction, syncClinicDomainAction, testClinicWhatsappIntegrationAction, updateClinicAccountAction, updateClinicSettingsAction, updateClinicUserAction } from "../actions";
 import { ConfigTabs } from "./config-tabs";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeSchedule } from "@/lib/clinic/schedule";
@@ -138,12 +138,12 @@ export default async function ConfiguracoesPage({ searchParams }) {
     .order("created_at", { ascending: false });
   const { data: integrationRows = [] } = await supabaseAdmin
     .from("barbearia_integracoes")
-    .select("provedor, nome, ativo, configuracao_publica, webhook_url, segredos_criptografados")
+    .select("provedor, nome, ativo, ambiente, configuracao_publica, webhook_url, segredos_criptografados")
     .eq("barbearia_id", activeClinic.id);
   const integration = integrationRows.reduce((result, item) => {
     const config = item.configuracao_publica || {};
     const secrets = decryptBarbeariaSecrets(item.segredos_criptografados);
-    if (item.provedor === "asaas") return { ...result, asaas_ativo: item.ativo, asaas_base_url: config.baseUrl, asaas_api_key: secrets.apiKey, asaas_webhook_token: secrets.webhookToken };
+    if (item.provedor === "asaas") return { ...result, asaas_ativo: item.ativo, asaas_ambiente: item.ambiente, asaas_configurada: Boolean(secrets.apiKey), asaas_key_last_four: config.key_last_four, asaas_webhook_status: config.webhook_status, asaas_connected_at: config.connected_at, asaas_webhook_url: item.webhook_url };
     if (item.provedor === "resend") return { ...result, email_ativo: item.ativo, email_destino: config.email_destino, email_remetente: config.email_remetente };
     if (item.provedor === "whatsapp") return { ...result, whatsapp_ativo: item.ativo, whatsapp_provider: config.provider || item.nome, whatsapp_numero_destino: config.numero_destino, whatsapp_webhook_url: item.webhook_url, whatsapp_token: secrets.token };
     return result;
@@ -160,6 +160,8 @@ export default async function ConfiguracoesPage({ searchParams }) {
         <PageHeader eyebrow="Barbearia" title="Configurações da barbearia" description="Ajuste dados comerciais, identidade visual, expediente, política de cancelamento e WhatsApp padrão." />
 
         {params?.ok === "configuracoes" ? <Notice>Configurações atualizadas com sucesso.</Notice> : null}
+        {params?.ok === "asaas" ? <Notice>Conta Asaas validada e conectada com sucesso.</Notice> : null}
+        {params?.ok === "asaas_desconectado" ? <Notice>Conta Asaas desconectada desta barbearia.</Notice> : null}
         {params?.ok === "whatsapp" ? <Notice>Mensagem de teste enviada pelo WhatsApp.</Notice> : null}
         {params?.ok === "conta" ? <Notice>Dados de acesso atualizados com sucesso.</Notice> : null}
         {params?.erro ? <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{params?.mensagem || "Não foi possível atualizar as configurações."}</div> : null}
@@ -412,14 +414,33 @@ export default async function ConfiguracoesPage({ searchParams }) {
             <p className="mt-2 text-sm text-neutral-600">Estas credenciais pertencem somente a esta barbearia. Deixe campos sensíveis em branco para manter o valor já salvo.</p>
             <div className="mt-5 grid gap-5">
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-                <label className="inline-flex items-center gap-2 text-sm font-bold text-neutral-800">
-                  <input type="checkbox" name="asaas_ativo" defaultChecked={Boolean(integration?.asaas_ativo)} />
-                  Ativar checkout Asaas desta barbearia
-                </label>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2"><CreditCard size={18} className="text-[var(--clinic-primary)]" /><strong>Recebimentos com Asaas</strong></div>
+                    <p className="mt-2 text-sm leading-6 text-neutral-600">A barbearia conecta a própria conta. A chave fica criptografada e os dados do cartão são digitados somente no checkout hospedado pelo Asaas. Vendas com cartão dependem da aprovação comercial da conta no Asaas.</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${integration?.asaas_ativo ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-600"}`}>
+                    {integration?.asaas_ativo ? "Conectado" : "Desconectado"}
+                  </span>
+                </div>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <Field label="Asaas API URL" name="asaas_base_url" defaultValue={integration?.asaas_base_url || "https://sandbox.asaas.com/api/v3"} />
-                  <Field label="Asaas API Key" name="asaas_api_key" type="password" placeholder={integration?.asaas_api_key ? "Chave salva. Preencha apenas para trocar." : "Cole a API key da barbearia"} />
-                  <Field label="Token do webhook Asaas" name="asaas_webhook_token" type="password" placeholder={integration?.asaas_webhook_token ? "Token salvo. Preencha apenas para trocar." : "Token configurado no webhook da barbearia"} />
+                  <label className="block">
+                    <span className="text-sm font-medium text-neutral-700">Ambiente</span>
+                    <select name="asaas_ambiente" defaultValue={integration?.asaas_ambiente || "sandbox"} className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-[var(--clinic-primary)]">
+                      <option value="sandbox">Sandbox (testes)</option>
+                      <option value="producao">Produção (vendas reais)</option>
+                    </select>
+                  </label>
+                  <Field label="API Key da conta Asaas" name="asaas_api_key" type="password" placeholder={integration?.asaas_configurada ? `Chave salva ••••${integration.asaas_key_last_four || ""}` : "Cole a API Key gerada no Asaas"} />
+                </div>
+                <div className="mt-4 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-xs leading-5 text-neutral-600">
+                  {integration?.asaas_webhook_status === "active" ? <>Webhook automático ativo em <strong>{integration.asaas_webhook_url}</strong>.</> : integration?.asaas_ativo ? <>A chave está validada. Em localhost o webhook fica pendente; após publicar, clique novamente em conectar para ativá-lo automaticamente.</> : <>Gere uma API Key na conta Asaas da barbearia. Não informe senha, login ou chave de outra empresa.</>}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button type="submit" formAction={connectClinicAsaasAction} formNoValidate className="h-10 rounded-lg bg-[var(--clinic-primary)] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">
+                    {integration?.asaas_ativo ? "Validar e reconectar" : "Conectar conta Asaas"}
+                  </button>
+                  {integration?.asaas_ativo ? <button type="submit" formAction={disconnectClinicAsaasAction} formNoValidate className="h-10 rounded-lg border border-red-200 bg-white px-4 text-sm font-bold text-red-700 hover:bg-red-50">Desconectar</button> : null}
                 </div>
               </div>
 

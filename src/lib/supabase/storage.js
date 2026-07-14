@@ -8,6 +8,7 @@ const MAX_CLIENT_PHOTO_BYTES = 10 * 1024 * 1024;
 const MAX_CLINIC_LOGO_BYTES = 30 * 1024 * 1024;
 const MAX_CLINIC_SITE_IMAGE_BYTES = 50 * 1024 * 1024;
 const MAX_PROCEDURE_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_PRODUCT_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_MARKETING_HOME_IMAGE_BYTES = 20 * 1024 * 1024;
 
 function sanitizeFileName(name = "foto") {
@@ -199,6 +200,50 @@ export async function uploadProcedureImage({ clinicaId, procedimentoId = "novo",
     path,
     publicUrl: data?.publicUrl || "",
     mimeType: file.type || null,
+    size: file.size || null,
+  };
+}
+
+export async function uploadProductImage({ clinicaId, produtoId = "novo", file }) {
+  if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) {
+    return null;
+  }
+
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  if (!allowedTypes.has(file.type)) {
+    throw new Error("Envie a imagem do produto em JPG, PNG ou WebP.");
+  }
+
+  if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
+    throw new Error("A imagem do produto precisa ter no máximo 10 MB.");
+  }
+
+  const extensionByType = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  const extension = extensionByType[file.type] || "jpg";
+  const baseName = sanitizeFileName(file.name || `produto.${extension}`);
+  const filename = `${Date.now()}-${baseName.replace(/\.[^.]+$/, "")}.${extension}`;
+  const path = `${clinicaId}/produtos/${produtoId}/${filename}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage
+    .from(CLINIC_SITE_IMAGES_BUCKET)
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabaseAdmin.storage.from(CLINIC_SITE_IMAGES_BUCKET).getPublicUrl(path);
+
+  return {
+    path,
+    publicUrl: data?.publicUrl || "",
+    mimeType: file.type,
     size: file.size || null,
   };
 }

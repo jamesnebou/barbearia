@@ -37,6 +37,8 @@ const navItems = [
   { href: "/dashboard/crm", label: "CRM", icon: "crm", section: "crm" },
   { href: "/dashboard/profissionais", label: "Barbeiros", icon: "profissionais", section: "profissionais" },
   { href: "/dashboard/procedimentos", label: "Serviços", icon: "procedimentos", section: "procedimentos" },
+  { href: "/dashboard/produtos", label: "Lojinha", icon: "produtos", section: "produtos" },
+  { href: "/dashboard/pedidos", label: "Pedidos", icon: "pedidos", section: "pedidos" },
   { href: "/dashboard/usuarios", label: "Usuários", icon: "usuarios", section: "usuarios" },
   { href: "/dashboard/configuracoes", label: "Configurações", icon: "configuracoes", section: "configuracoes" },
   { href: "/dashboard/financeiro", label: "Financeiro", icon: "financeiro", section: "financeiro" },
@@ -109,7 +111,7 @@ export default async function DashboardLayout({ children }) {
   const { user, activeClinic } = context;
 
   if (!activeClinic) {
-    redirect("/onboarding");
+    redirect("/login-cliente");
   }
 
   const metadata = activeClinic.metadata || {};

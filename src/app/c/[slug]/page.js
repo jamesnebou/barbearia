@@ -8,12 +8,18 @@ import { PublicLeadForm } from "./lead-form";
 import { PublicMobileMenu } from "./mobile-menu";
 import { PublicScrollEffects } from "./scroll-effects";
 import { PublicServicesSection } from "./services-section";
+import { PublicStorefront } from "./store-cart";
+import { availableProductStock } from "@/lib/store/config";
 
 export const dynamic = "force-dynamic";
 
 function safeColor(value, fallback) {
   const color = String(value || "").trim();
   return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+}
+
+function money(value) {
+  return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function googleEmbedUrl(clinic, site) {
@@ -224,12 +230,13 @@ export default async function PublicClinicPage({ params, searchParams }) {
 
   const meta = clinic.metadata || {};
   const site = meta.site_publico || {};
+  const lojinhaAtiva = site.lojinha_ativa !== false;
   if (site.publicado === false) notFound();
 
   const primaryColor = safeColor(meta.primary_color, "#2e3a2d");
   const accentColor = safeColor(meta.accent_color, "#d99bae");
 
-  const [{ data: procedimentos = [] }, { data: profissionais = [] }] = await Promise.all([
+  const [{ data: procedimentos = [] }, { data: profissionais = [] }, { data: produtos = [] }] = await Promise.all([
     supabaseAdmin
       .from("barbearia_servicos")
       .select("id, nome, categoria, descricao, duracao_minutos, preco, instrucoes_pre_atendimento, instrucoes_pos_atendimento, sinal_percentual, sinal_valor, destaque_site, ordem_site, imagem_url")
@@ -244,6 +251,15 @@ export default async function PublicClinicPage({ params, searchParams }) {
       .select("id, nome, especialidades, observacoes")
       .eq("barbearia_id", clinic.id)
       .eq("ativo", true)
+      .order("nome", { ascending: true }),
+    supabaseAdmin
+      .from("barbearia_produtos")
+      .select("id, nome, categoria, descricao, preco, estoque_atual, estoque_reservado, unidade, imagem_url")
+      .eq("barbearia_id", clinic.id)
+      .eq("ativo", true)
+      .eq("publicado_site", true)
+      .gt("estoque_atual", 0)
+      .order("categoria", { ascending: true })
       .order("nome", { ascending: true }),
   ]);
 
@@ -304,6 +320,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
           <nav className="hidden items-center gap-5 text-sm font-semibold text-white/78 lg:flex">
             <a href="#sobre">Sobre</a>
             <a href="#servicos">Serviços</a>
+            {lojinhaAtiva ? <a href="#loja">Lojinha</a> : null}
             <a href="#depoimentos">Depoimentos</a>
             <a href="#localizacao">Localização</a>
             <a href="popup">Quero saber mais</a>
@@ -390,6 +407,14 @@ export default async function PublicClinicPage({ params, searchParams }) {
       </section>
 
       <PublicServicesSection procedimentos={procedimentos} />
+
+      {lojinhaAtiva && produtos.length ? (
+        <PublicStorefront
+          slug={clinic.slug}
+          products={produtos.map((produto) => ({ ...produto, estoque_disponivel: availableProductStock(produto) }))}
+          recoveryToken={query?.carrinho || ""}
+        />
+      ) : null}
 
       <section id="depoimentos" className="public-section-soft mx-auto max-w-7xl px-5 py-24 sm:px-8">
         <SectionHeading eyebrow="Depoimentos" title="O que clientes dizem:" description="A satisfação dos clientes são o maior reconhecimento." center />
@@ -492,6 +517,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
               <a href="#topo">Início</a>
               <a href="#sobre">Sobre</a>
               <a href="#servicos">Serviços</a>
+              {lojinhaAtiva ? <a href="#loja">Lojinha</a> : null}
               <a href="#depoimentos">Depoimentos</a>
               <a href="#agendar">Agendamento</a>
               <a href="#localizacao">Localização</a>
@@ -524,9 +550,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
       ) : null}
 
       <PublicLeadForm slug={clinic.slug} query={query} />
-      <PublicMobileMenu />
+      <PublicMobileMenu lojinhaAtiva={lojinhaAtiva} />
     </main>
   );
 }
-
-

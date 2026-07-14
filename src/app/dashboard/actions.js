@@ -1,17 +1,20 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireClinic } from "@/lib/auth/session";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { uploadClientPhoto, uploadClinicLogo, uploadClinicSiteImage, uploadProcedureImage } from "@/lib/supabase/storage";
+import { uploadClientPhoto, uploadClinicLogo, uploadClinicSiteImage, uploadProcedureImage, uploadProductImage } from "@/lib/supabase/storage";
 import { assertClinicLimit, assertClinicOperational } from "@/lib/saas/plans";
 import { ensureVercelProjectDomain, getVercelProjectDomain, normalizeCustomDomain, removeVercelProjectDomain } from "@/lib/vercel/domains";
 import { sendWhatsAppIntegrationTest } from "@/lib/notifications/booking";
 import { buildScheduleFromForm, isWithinWorkingPeriods } from "@/lib/clinic/schedule";
 import { ACCESS_SECTIONS } from "@/lib/auth/permissions";
 import { decryptBarbeariaSecrets, encryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
+import { getAsaasBaseUrl, removeAsaasWebhook, upsertAsaasWebhook, validateAsaasConnection } from "@/lib/asaas/client";
 
 async function getScopedSupabase() {
   const context = await requireClinic();
@@ -359,6 +362,173 @@ export async function deleteProcedimentoAction(formData) {
   const { error } = await supabase.from("barbearia_servicos").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
   revalidatePath("/dashboard/procedimentos");
+}
+
+function produtoPayload(formData) {
+  return {
+    nome: requireValue(text(formData, "nome"), "Informe o nome do produto."),
+    sku: nullableText(formData, "sku"),
+    codigo_barras: nullableText(formData, "codigo_barras"),
+    categoria: nullableText(formData, "categoria"),
+    descricao: nullableText(formData, "descricao"),
+    custo: Math.max(0, numberValue(formData, "custo", 0)),
+    preco: Math.max(0, numberValue(formData, "preco", 0)),
+    estoque_atual: Math.max(0, numberValue(formData, "estoque_atual", 0)),
+    estoque_minimo: Math.max(0, numberValue(formData, "estoque_minimo", 0)),
+    unidade: nullableText(formData, "unidade") || "un",
+    publicado_site: formData.get("publicado_site") === "on",
+  };
+}
+
+function revalidateProdutoPaths(activeClinic) {
+  revalidatePath("/dashboard/produtos");
+  revalidatePath(`/c/${activeClinic.slug}`);
+}
+
+export async function createProdutoAction(formData) {
+  const { supabase, clinicaId, activeClinic } = await getScopedSupabase();
+  let uploadedImage = null;
+
+  try {
+    uploadedImage = await uploadProductImage({ clinicaId, file: formData.get("imagem_file") });
+  } catch (error) {
+    redirectWithMessage("/dashboard/produtos", "imagem", error.message || "Não foi possível enviar a imagem do produto.");
+  }
+
+  const { error } = await supabase.from("barbearia_produtos").insert({
+    barbearia_id: clinicaId,
+    ...produtoPayload(formData),
+    imagem_url: uploadedImage?.publicUrl || null,
+    ativo: true,
+  });
+
+  if (error) throw error;
+  revalidateProdutoPaths(activeClinic);
+}
+
+export async function updateProdutoAction(formData) {
+  const { supabase, clinicaId, activeClinic } = await getScopedSupabase();
+  const id = requireValue(text(formData, "id"), "Produto não informado.");
+  let uploadedImage = null;
+
+  try {
+    uploadedImage = await uploadProductImage({ clinicaId, produtoId: id, file: formData.get("imagem_file") });
+  } catch (error) {
+    redirectWithMessage("/dashboard/produtos", "imagem", error.message || "Não foi possível enviar a imagem do produto.");
+  }
+
+  const payload = produtoPayload(formData);
+  if (uploadedImage?.publicUrl) payload.imagem_url = uploadedImage.publicUrl;
+  const { data: currentProduct, error: currentProductError } = await supabase
+    .from("barbearia_produtos")
+    .select("estoque_reservado")
+    .eq("id", id)
+    .eq("barbearia_id", clinicaId)
+    .maybeSingle();
+  if (currentProductError) throw currentProductError;
+  if (payload.estoque_atual < Number(currentProduct?.estoque_reservado || 0)) {
+    redirectWithMessage("/dashboard/produtos", "estoque", "O estoque não pode ficar abaixo da quantidade reservada em pedidos abertos.");
+  }
+
+  const { error } = await supabase
+    .from("barbearia_produtos")
+    .update(payload)
+    .eq("id", id)
+    .eq("barbearia_id", clinicaId);
+
+  if (error) throw error;
+  revalidateProdutoPaths(activeClinic);
+}
+
+export async function toggleProdutoAction(formData) {
+  const { supabase, clinicaId, activeClinic } = await getScopedSupabase();
+  const id = requireValue(text(formData, "id"), "Produto não informado.");
+  const campo = text(formData, "campo");
+  if (!new Set(["ativo", "publicado_site"]).has(campo)) throw new Error("Campo de produto inválido.");
+
+  const { error } = await supabase
+    .from("barbearia_produtos")
+    .update({ [campo]: text(formData, "valor") === "true" })
+    .eq("id", id)
+    .eq("barbearia_id", clinicaId);
+
+  if (error) throw error;
+  revalidateProdutoPaths(activeClinic);
+}
+
+export async function deleteProdutoAction(formData) {
+  const { supabase, clinicaId, activeClinic } = await getScopedSupabase();
+  const id = requireValue(text(formData, "id"), "Produto não informado.");
+  const { error } = await supabase
+    .from("barbearia_produtos")
+    .delete()
+    .eq("id", id)
+    .eq("barbearia_id", clinicaId);
+
+  if (error) throw error;
+  revalidateProdutoPaths(activeClinic);
+}
+export async function toggleLojinhaAction(formData) {
+  const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  requireClinicManager(memberships, clinicaId, "/dashboard/produtos");
+  const ativa = text(formData, "ativa") === "true";
+  const metadata = activeClinic.metadata || {};
+
+  const { error } = await supabaseAdmin
+    .from("barbearias")
+    .update({
+      metadata: {
+        ...metadata,
+        site_publico: {
+          ...(metadata.site_publico || {}),
+          lojinha_ativa: ativa,
+        },
+      },
+    })
+    .eq("id", clinicaId);
+
+  if (error) throw error;
+  revalidatePath("/dashboard/produtos");
+  revalidatePath(`/c/${activeClinic.slug}`);
+}
+export async function updateStoreCommerceSettingsAction(formData) {
+  const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  requireClinicManager(memberships, clinicaId, "/dashboard/produtos");
+  const metadata = activeClinic.metadata || {};
+  const site = metadata.site_publico || {};
+  const currentConfig = site.lojinha_config || {};
+  const bairrosEntrega = text(formData, "bairros_entrega")
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const nextConfig = {
+    ...currentConfig,
+    retirada_ativa: formData.get("retirada_ativa") === "on",
+    entrega_ativa: formData.get("entrega_ativa") === "on",
+    entrega_modo: text(formData, "entrega_modo") === "motoboy" ? "motoboy" : "propria",
+    taxa_entrega: Math.max(0, numberValue(formData, "taxa_entrega", 0)),
+    frete_gratis_acima: Math.max(0, numberValue(formData, "frete_gratis_acima", 0)),
+    pedido_minimo: Math.max(0, numberValue(formData, "pedido_minimo", 0)),
+    pagamento_retirada_ativo: formData.get("pagamento_retirada_ativo") === "on",
+    checkout_asaas_ativo: formData.get("checkout_asaas_ativo") === "on",
+    pix_ativo: formData.get("pix_ativo") === "on",
+    cartao_ativo: formData.get("cartao_ativo") === "on",
+    reserva_minutos: Math.max(10, Math.min(240, Math.floor(numberValue(formData, "reserva_minutos", 30)))),
+    mensagem_retirada: nullableText(formData, "mensagem_retirada"),
+    prazo_entrega: nullableText(formData, "prazo_entrega"),
+    mensagem_entrega: nullableText(formData, "mensagem_entrega"),
+    entrega_cidade: nullableText(formData, "entrega_cidade"),
+    bairros_entrega: bairrosEntrega,
+  };
+  if (!nextConfig.retirada_ativa && !nextConfig.entrega_ativa) {
+    redirectWithMessage("/dashboard/produtos", "configuracao", "Ative retirada ou entrega para receber pedidos.");
+  }
+  const { error } = await supabaseAdmin.from("barbearias").update({
+    metadata: { ...metadata, site_publico: { ...site, lojinha_config: nextConfig } },
+  }).eq("id", clinicaId);
+  if (error) throw error;
+  revalidatePath("/dashboard/produtos");
+  revalidatePath(`/c/${activeClinic.slug}`);
 }
 
 function agendaRedirectUrl(formData, fallbackDate = "") {
@@ -1313,18 +1483,6 @@ export async function updateClinicSettingsAction(formData) {
   const integrationRows = [
     {
       barbearia_id: clinicaId,
-      provedor: "asaas",
-      nome: "Asaas",
-      ativo: formData.get("asaas_ativo") === "on",
-      ambiente: String(nullableText(formData, "asaas_base_url") || "").includes("sandbox") ? "sandbox" : "producao",
-      configuracao_publica: { baseUrl: nullableText(formData, "asaas_base_url") || "https://sandbox.asaas.com/api/v3" },
-      segredos_criptografados: secretPayload({
-        apiKey: nullableText(formData, "asaas_api_key"),
-        webhookToken: nullableText(formData, "asaas_webhook_token"),
-      }, currentSecrets.asaas),
-    },
-    {
-      barbearia_id: clinicaId,
       provedor: "resend",
       nome: "E-mail",
       ativo: formData.get("email_ativo") === "on",
@@ -1396,6 +1554,143 @@ export async function updateClinicSettingsAction(formData) {
   revalidatePath("/dashboard/configuracoes");
   revalidatePath(`/c/${activeClinic.slug}`);
   redirect("/dashboard/configuracoes?ok=configuracoes");
+}
+
+function publicAppOrigin(requestHeaders) {
+  const configured = String(process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "").trim().replace(/\/$/, "");
+  if (configured) return configured;
+  const protocol = requestHeaders.get("x-forwarded-proto") || (process.env.NODE_ENV === "production" ? "https" : "http");
+  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "localhost:3000";
+  return `${protocol}://${host}`;
+}
+
+function isPublicOrigin(origin) {
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    return parsed.protocol === "https:" && !["localhost", "127.0.0.1", "::1"].includes(hostname) && !hostname.endsWith(".local");
+  } catch {
+    return false;
+  }
+}
+
+export async function connectClinicAsaasAction(formData) {
+  const { clinicaId, activeClinic, memberships, user } = await getScopedSupabase();
+  requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
+
+  const { data: current, error: currentError } = await supabaseAdmin
+    .from("barbearia_integracoes")
+    .select("ambiente, configuracao_publica, webhook_url, segredos_criptografados")
+    .eq("barbearia_id", clinicaId)
+    .eq("provedor", "asaas")
+    .maybeSingle();
+  if (currentError) throw currentError;
+
+  const currentSecrets = decryptBarbeariaSecrets(current?.segredos_criptografados);
+  const apiKey = text(formData, "asaas_api_key") || currentSecrets.apiKey;
+  if (!apiKey) redirectWithMessage("/dashboard/configuracoes", "asaas", "Cole a API Key da conta Asaas da barbearia.");
+
+  const ambiente = text(formData, "asaas_ambiente") === "producao" ? "producao" : "sandbox";
+  const baseUrl = getAsaasBaseUrl(ambiente);
+  const integration = { barbearia_id: clinicaId, asaas_ativo: true, ambiente, baseUrl, apiKey };
+  const connectionChanged = Boolean(currentSecrets.apiKey && currentSecrets.apiKey !== apiKey) || Boolean(current?.ambiente && current.ambiente !== ambiente);
+  const webhookToken = connectionChanged ? randomBytes(32).toString("base64url") : (currentSecrets.webhookToken || randomBytes(32).toString("base64url"));
+  const requestHeaders = await headers();
+  const origin = publicAppOrigin(requestHeaders);
+  const webhookUrl = `${origin}/api/webhooks/asaas?barbearia=${clinicaId}`;
+  const canPublishWebhook = isPublicOrigin(origin);
+  const notificationEmail = activeClinic.email || user?.email;
+  let webhook = null;
+
+  try {
+    await validateAsaasConnection(integration);
+    if (canPublishWebhook) {
+      if (!notificationEmail) throw new Error("Cadastre o e-mail da barbearia antes de conectar o webhook Asaas.");
+      webhook = await upsertAsaasWebhook({ integration, webhookUrl, authToken: webhookToken, email: notificationEmail });
+    }
+  } catch (error) {
+    redirectWithMessage("/dashboard/configuracoes", "asaas", error.message || "Não foi possível validar a conta Asaas.");
+  }
+
+  if (connectionChanged && currentSecrets.apiKey && current?.configuracao_publica?.webhook_id && current.configuracao_publica.webhook_id !== webhook?.id) {
+    try {
+      await removeAsaasWebhook(current.configuracao_publica.webhook_id, {
+        ambiente: current.ambiente,
+        baseUrl: current.configuracao_publica?.baseUrl,
+        apiKey: currentSecrets.apiKey,
+      });
+    } catch {}
+  }
+
+  const now = new Date().toISOString();
+  const preservedWebhook = !connectionChanged && current?.configuracao_publica?.webhook_status === "active";
+  const { error } = await supabaseAdmin.from("barbearia_integracoes").upsert({
+    barbearia_id: clinicaId,
+    provedor: "asaas",
+    nome: "Asaas",
+    ativo: true,
+    ambiente,
+    configuracao_publica: {
+      baseUrl,
+      connection_status: "connected",
+      connected_at: now,
+      key_last_four: apiKey.slice(-4),
+      webhook_status: canPublishWebhook || preservedWebhook ? "active" : "awaiting_public_url",
+      webhook_id: webhook?.id || (!connectionChanged ? current?.configuracao_publica?.webhook_id : null) || null,
+    },
+    segredos_criptografados: encryptBarbeariaSecrets({ apiKey, webhookToken }),
+    webhook_url: canPublishWebhook ? webhookUrl : (preservedWebhook ? current?.webhook_url : null),
+    ultimo_sync_em: now,
+    ultimo_erro: null,
+  }, { onConflict: "barbearia_id,provedor,nome" });
+  if (error) throw error;
+
+  revalidatePath("/dashboard/configuracoes");
+  revalidatePath("/dashboard/produtos");
+  revalidatePath(`/c/${activeClinic.slug}`);
+  redirect("/dashboard/configuracoes?ok=asaas");
+}
+
+export async function disconnectClinicAsaasAction() {
+  const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
+  const { data: current, error: currentError } = await supabaseAdmin
+    .from("barbearia_integracoes")
+    .select("ambiente, configuracao_publica, segredos_criptografados")
+    .eq("barbearia_id", clinicaId)
+    .eq("provedor", "asaas")
+    .maybeSingle();
+  if (currentError) throw currentError;
+
+  const secrets = decryptBarbeariaSecrets(current?.segredos_criptografados);
+  if (secrets.apiKey && current?.configuracao_publica?.webhook_id) {
+    try {
+      await removeAsaasWebhook(current.configuracao_publica.webhook_id, {
+        ambiente: current.ambiente,
+        baseUrl: current.configuracao_publica?.baseUrl,
+        apiKey: secrets.apiKey,
+      });
+    } catch {}
+  }
+
+  const { error } = await supabaseAdmin.from("barbearia_integracoes").update({
+    ativo: false,
+    configuracao_publica: {
+      ...(current?.configuracao_publica || {}),
+      connection_status: "disconnected",
+      webhook_status: "inactive",
+      disconnected_at: new Date().toISOString(),
+      webhook_id: null,
+    },
+    segredos_criptografados: null,
+    webhook_url: null,
+  }).eq("barbearia_id", clinicaId).eq("provedor", "asaas");
+  if (error) throw error;
+
+  revalidatePath("/dashboard/configuracoes");
+  revalidatePath("/dashboard/produtos");
+  revalidatePath(`/c/${activeClinic.slug}`);
+  redirect("/dashboard/configuracoes?ok=asaas_desconectado");
 }
 
 export async function testClinicWhatsappIntegrationAction() {

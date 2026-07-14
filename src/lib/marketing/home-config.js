@@ -4,27 +4,27 @@ export const MARKETING_HOME_CONFIG_KEY = "marketing_home";
 
 export const defaultMarketingHome = {
   hero: {
-    eyebrow: "Gestão, vendas e atendimento para estética",
-    title: "A barbearia organizada para vender antes, atender melhor e voltar a faturar depois.",
+    eyebrow: "A operação por trás da cadeira cheia",
+    title: "Você não precisa de mais correria. Precisa parar de deixar dinheiro na cadeira.",
     subtitle:
-      "NexaWi Barbearias reúne agenda, CRM, ficha do cliente, financeiro, site premium e checkout de sinal em uma operação simples para barbearias.",
-    primaryCtaLabel: "Solicitar demonstração",
+      "A NexaWi conecta site, agenda, sinal, CRM, clientes, comissões e financeiro. Você ocupa melhor as cadeiras, reduz furos e sabe onde o dinheiro está.",
+    primaryCtaLabel: "Quero uma demonstração",
     secondaryCtaLabel: "Ver como funciona",
     previewEyebrow: "Painel operacional",
-    previewTitle: "Barbearia Navalha Nobre",
+    previewTitle: "Navalha Nobre",
     previewStatus: "Ativa",
-    previewImageUrl: "/clinic-dashboard-preview.png",
-    previewImageAlt: "Prévia do dashboard NexaWi Barbearias",
+    previewImageUrl: "/mockup-notebook.png",
+    previewImageAlt: "Painel dark premium da NexaWi Barbearias",
     metrics: [
-      { label: "Confirmados", value: "18" },
+      { label: "Horários protegidos", value: "18" },
       { label: "Receita prevista", value: "R$ 4.680" },
-      { label: "Leads novos", value: "12" },
+      { label: "Clientes para retorno", value: "12" },
     ],
     topics: [
-      "Menos planilhas e menos retrabalho na recepção",
-      "Mais controle sobre agenda, faltas e retornos",
-      "Venda de pacotes e sinal online no mesmo fluxo",
-      "Ficha do cliente organizado para aumentar valor percebido",
+      "Agenda que trabalha mesmo quando a barbearia está fechada",
+      "Sinal online para reduzir furos e proteger a cadeira",
+      "Cliente vira relacionamento, não contato perdido",
+      "Faturamento e comissão sem adivinhação",
     ],
   },
 };

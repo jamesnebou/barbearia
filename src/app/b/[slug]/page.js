@@ -2,9 +2,11 @@ import {
   CalendarDays,
   Clock3,
   MapPin,
+  PackageCheck,
   MessageCircle,
   Scissors,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   Star,
   Users,
@@ -90,7 +92,12 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
   const barbershop = await loadBarbershop(slug);
   if (!barbershop) notFound();
 
-  const [{ data: services = [], error: servicesError }, { data: barbers = [], error: barbersError }] = await Promise.all([
+  const [
+    { data: services = [], error: servicesError },
+    { data: barbers = [], error: barbersError },
+    { data: packages = [], error: packagesError },
+    { data: products = [], error: productsError },
+  ] = await Promise.all([
     supabaseAdmin
       .from("barbearia_servicos")
       .select("id, nome, categoria, descricao, duracao_minutos, preco, preco_promocional, imagem_url, destaque_site, ordem_site")
@@ -108,10 +115,28 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
       .eq("publicado_site", true)
       .order("ordem_site", { ascending: true })
       .order("nome", { ascending: true }),
+    supabaseAdmin
+      .from("barbearia_pacotes")
+      .select("id, nome, descricao, preco, validade_dias, limite_utilizacoes, recorrente")
+      .eq("barbearia_id", barbershop.id)
+      .eq("ativo", true)
+      .eq("publicado_site", true)
+      .order("created_at", { ascending: true }),
+    supabaseAdmin
+      .from("barbearia_produtos")
+      .select("id, nome, categoria, descricao, preco, estoque_atual, unidade, imagem_url")
+      .eq("barbearia_id", barbershop.id)
+      .eq("ativo", true)
+      .eq("publicado_site", true)
+      .gt("estoque_atual", 0)
+      .order("categoria", { ascending: true })
+      .order("nome", { ascending: true }),
   ]);
 
   if (servicesError) throw servicesError;
   if (barbersError) throw barbersError;
+  if (packagesError) throw packagesError;
+  if (productsError) throw productsError;
 
   const brand = barbershop.nome_fantasia || barbershop.nome;
   const primary = safeColor(barbershop.site_cor_primaria, "#111111");
@@ -150,7 +175,9 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
             <span className="truncate text-sm font-black uppercase tracking-[0.22em]">{brand}</span>
           </a>
           <nav className="hidden items-center gap-7 text-sm font-semibold text-white/65 lg:flex">
-            <a href="#servicos" className="transition hover:text-white">Servicos</a>
+            <a href="#servicos" className="transition hover:text-white">Serviços</a>
+            <a href="#planos" className="transition hover:text-white">Planos</a>
+            <a href="#loja" className="transition hover:text-white">Loja</a>
             <a href="#equipe" className="transition hover:text-white">Equipe</a>
             <a href="#contato" className="transition hover:text-white">Contato</a>
           </nav>
@@ -242,6 +269,83 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
         ) : <div className="mt-10"><EmptyVisual>Os servicos serao publicados em breve.</EmptyVisual></div>}
       </section>
 
+      <section id="planos" className="border-y border-white/10 bg-white/[0.025] px-5 py-24 sm:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--barber-accent)]">Clubes e combos</p>
+            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">Seu estilo em dia. Com vantagem de cliente da casa.</h2>
+            <p className="mt-5 text-base leading-7 text-white/55">Planos pensados para criar rotina, proteger seu horário e entregar mais por um valor especial.</p>
+          </div>
+          {packages.length ? (
+            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {packages.map((item) => (
+                <article key={item.id} className="group flex flex-col rounded-[1.75rem] border border-white/10 bg-[#111] p-6 transition duration-300 hover:-translate-y-1 hover:border-[var(--barber-accent)]/45">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--barber-accent)]/30 bg-[var(--barber-accent)]/10 text-[var(--barber-accent)]">
+                      <PackageCheck size={23} />
+                    </span>
+                    {item.recorrente ? <span className="rounded-full bg-[var(--barber-accent)]/12 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--barber-accent)]">Clube mensal</span> : null}
+                  </div>
+                  <h3 className="mt-6 text-2xl font-black">{item.nome}</h3>
+                  {item.descricao ? <p className="mt-3 flex-1 text-sm leading-6 text-white/52">{item.descricao}</p> : null}
+                  <div className="mt-6 flex flex-wrap gap-2 text-xs font-bold text-white/48">
+                    {item.limite_utilizacoes ? <span className="rounded-full border border-white/10 px-3 py-1.5">{item.limite_utilizacoes} utilizações</span> : null}
+                    {item.validade_dias ? <span className="rounded-full border border-white/10 px-3 py-1.5">Validade {item.validade_dias} dias</span> : null}
+                  </div>
+                  <div className="mt-6 flex items-center justify-between gap-4 border-t border-white/10 pt-5">
+                    <strong className="text-2xl font-black text-[var(--barber-accent)]">{money(item.preco)}</strong>
+                    <a href={whatsappHref(barbershop, `Olá! Quero conhecer o plano ${item.nome}.`)} target="_blank" rel="noreferrer" className="rounded-full border border-white/15 px-4 py-2 text-xs font-black text-white transition hover:border-[var(--barber-accent)] hover:text-[var(--barber-accent)]">
+                      Quero este
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : <div className="mt-10"><EmptyVisual>Os clubes e combos serão publicados em breve.</EmptyVisual></div>}
+        </div>
+      </section>
+      <section id="loja" className="mx-auto max-w-7xl px-5 py-24 sm:px-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--barber-accent)]">Lojinha Navalha Nobre</p>
+            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">O corte termina na cadeira. O cuidado continua em casa.</h2>
+            <p className="mt-5 text-base leading-7 text-white/55">Produtos selecionados pelos barbeiros para manter cabelo e barba no padrão até o próximo atendimento.</p>
+          </div>
+          <a href={whatsappHref(barbershop, "Olá! Quero ajuda para escolher um produto da lojinha.")} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-5 py-3 text-sm font-black text-white transition hover:border-[var(--barber-accent)] hover:text-[var(--barber-accent)]">
+            <MessageCircle size={17} /> Pedir indicação
+          </a>
+        </div>
+        {products.length ? (
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => (
+              <article key={product.id} className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.045] transition duration-300 hover:-translate-y-1 hover:border-[var(--barber-accent)]/45">
+                {product.imagem_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={product.imagem_url} alt={product.nome} className="aspect-[4/3] w-full object-cover opacity-90 transition duration-500 group-hover:scale-[1.03]" />
+                ) : (
+                  <div className="flex aspect-[4/3] items-center justify-center bg-[radial-gradient(circle,color-mix(in_srgb,var(--barber-accent)_22%,transparent),transparent_68%)]">
+                    <ShoppingBag size={44} className="text-[var(--barber-accent)]" />
+                  </div>
+                )}
+                <div className="flex flex-1 flex-col p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[var(--barber-accent)]">{product.categoria || "Cuidados"}</p>
+                  <h3 className="mt-3 text-lg font-black leading-6">{product.nome}</h3>
+                  {product.descricao ? <p className="mt-3 flex-1 text-sm leading-6 text-white/50">{product.descricao}</p> : null}
+                  <div className="mt-5 flex items-end justify-between gap-3 border-t border-white/10 pt-4">
+                    <div>
+                      <strong className="text-xl font-black text-[var(--barber-accent)]">{money(product.preco)}</strong>
+                      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300/70">Disponível na loja</p>
+                    </div>
+                    <a href={whatsappHref(barbershop, `Olá! Quero reservar o produto ${product.nome}.`)} target="_blank" rel="noreferrer" aria-label={`Reservar ${product.nome}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--barber-accent)] text-[#111] transition hover:scale-105">
+                      <ShoppingBag size={17} />
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : <div className="mt-10"><EmptyVisual>A seleção de produtos será publicada em breve.</EmptyVisual></div>}
+      </section>
       <section id="equipe" className="border-y border-white/10 bg-white/[0.025] px-5 py-24 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">

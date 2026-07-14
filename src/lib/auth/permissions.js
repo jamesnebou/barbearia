@@ -14,6 +14,8 @@ export const ACCESS_SECTION_LABELS = [
   ["crm", "CRM"],
   ["profissionais", "Barbeiros"],
   ["procedimentos", "Serviços"],
+  ["produtos", "Lojinha"],
+  ["pedidos", "Pedidos da lojinha"],
   ["usuarios", "Usuários"],
   ["configuracoes", "Configurações"],
   ["financeiro", "Financeiro"],
@@ -23,10 +25,10 @@ export const ACCESS_SECTION_LABELS = [
 export const ACCESS_SECTIONS = ACCESS_SECTION_LABELS.map(([section]) => section);
 
 export const ROLE_ACCESS = {
-  owner: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "usuarios", "configuracoes", "financeiro", "assinatura"],
-  gerente: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "usuarios", "configuracoes", "financeiro", "assinatura"],
-  recepcao: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos"],
-  financeiro: ["dashboard", "notificacoes", "clientes", "crm", "financeiro", "assinatura"],
+  owner: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura"],
+  gerente: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura"],
+  recepcao: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos"],
+  financeiro: ["dashboard", "notificacoes", "clientes", "crm", "produtos", "pedidos", "financeiro", "assinatura"],
   barbeiro: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "procedimentos"],
 };
 

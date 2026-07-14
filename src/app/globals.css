@@ -1162,6 +1162,40 @@ textarea {
   font-weight: 700;
 }
 
+.dashboard-shell .product-edit-panel {
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--clinic-primary) 13%, transparent), transparent 19rem),
+    linear-gradient(145deg, rgba(18, 18, 22, 0.98), rgba(6, 6, 8, 0.99)) !important;
+  color: #f7f7f8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.065), 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.dashboard-shell .product-edit-panel summary {
+  color: #fafafa !important;
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dashboard-shell .product-edit-panel label > span:first-child {
+  color: #d9d9df !important;
+}
+
+.dashboard-shell .product-edit-panel .dashboard-field {
+  border-color: rgba(255, 255, 255, 0.17) !important;
+  background: rgba(3, 3, 5, 0.78) !important;
+  color: #fafafa !important;
+}
+
+.dashboard-shell .product-upload-field {
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.dashboard-shell .product-upload-field input[type="file"] {
+  background: rgba(2, 2, 4, 0.72) !important;
+}
+
 .dashboard-shell .dashboard-primary-button,
 .dashboard-shell a.bg-neutral-950 {
   border: 1px solid color-mix(in srgb, var(--clinic-accent) 28%, transparent);
@@ -1373,6 +1407,435 @@ textarea {
   .dashboard-shell *,
   .dashboard-shell *::before,
   .dashboard-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Landing NexaWi Barbearias — dark black premium */
+.marketing-shell {
+  --marketing-bg: #030303;
+  --marketing-surface: rgba(16, 16, 18, 0.72);
+  --marketing-surface-strong: rgba(22, 22, 24, 0.9);
+  --marketing-line: rgba(255, 255, 255, 0.1);
+  --marketing-muted: #a1a1aa;
+  --marketing-accent: #ed7009;
+  --marketing-accent-soft: #ffb25b;
+  position: relative;
+  isolation: isolate;
+  color: #f7f7f8;
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at 4% 2%, rgba(237, 112, 9, 0.2), transparent 30rem),
+    radial-gradient(circle at 98% 8%, rgba(255, 178, 91, 0.09), transparent 27rem),
+    linear-gradient(rgba(255, 255, 255, 0.017) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.017) 1px, transparent 1px),
+    linear-gradient(145deg, #030303 0%, #080808 46%, #020202 100%);
+  background-size: auto, auto, 36px 36px, 36px 36px, auto;
+  background-attachment: fixed;
+}
+
+.marketing-shell ::selection {
+  background: rgba(237, 112, 9, 0.42);
+  color: #fff;
+}
+
+.marketing-shell h1,
+.marketing-shell h2,
+.marketing-shell h3,
+.marketing-shell h4,
+.marketing-shell strong {
+  color: #fafafa;
+}
+
+.marketing-shell .text-neutral-950,
+.marketing-shell .text-neutral-900,
+.marketing-shell .text-neutral-800,
+.marketing-shell .text-neutral-700 {
+  color: #e7e7ea !important;
+}
+
+.marketing-shell .text-neutral-600,
+.marketing-shell .text-neutral-500,
+.marketing-shell .text-neutral-400 {
+  color: var(--marketing-muted) !important;
+}
+
+.marketing-shell .border-neutral-100,
+.marketing-shell .border-neutral-200,
+.marketing-shell .border-black\/10 {
+  border-color: var(--marketing-line) !important;
+}
+
+.marketing-shell .bg-white,
+.marketing-shell .bg-white\/76,
+.marketing-shell .bg-white\/70,
+.marketing-shell .bg-neutral-50 {
+  background-color: rgba(255, 255, 255, 0.045) !important;
+}
+
+.marketing-header {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(237, 112, 9, 0.14), transparent 22rem),
+    rgba(5, 5, 6, 0.84) !important;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.38) !important;
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.marketing-header nav a {
+  position: relative;
+  color: rgba(255, 255, 255, 0.66);
+  transition: color 160ms ease;
+}
+
+.marketing-header nav a::after {
+  position: absolute;
+  right: 0;
+  bottom: -0.6rem;
+  left: 0;
+  height: 1px;
+  transform: scaleX(0);
+  transform-origin: center;
+  content: "";
+  background: linear-gradient(90deg, transparent, var(--marketing-accent), transparent);
+  transition: transform 180ms ease;
+}
+
+.marketing-header nav a:hover {
+  color: #fff;
+}
+
+.marketing-header nav a:hover::after {
+  transform: scaleX(1);
+}
+
+.marketing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  color: white;
+}
+
+.marketing-brand-icon {
+  display: inline-flex;
+  width: 2.45rem;
+  height: 2.45rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 178, 91, 0.24);
+  border-radius: 0.9rem;
+  color: #fff;
+  background: linear-gradient(145deg, #ff8b24, #c94f00);
+  box-shadow: 0 10px 30px rgba(237, 112, 9, 0.27), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.marketing-brand-copy {
+  display: grid;
+  line-height: 1;
+}
+
+.marketing-brand-name {
+  font-size: 1.38rem;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+}
+
+.marketing-brand-name em {
+  color: var(--marketing-accent);
+  font-style: normal;
+}
+
+.marketing-brand-copy small {
+  margin-top: 0.28rem;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+}
+
+.marketing-hero {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(237, 112, 9, 0.15), transparent 30rem),
+    radial-gradient(circle at 88% 14%, rgba(255, 178, 91, 0.08), transparent 28rem);
+}
+
+.marketing-hero::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(118deg, transparent 0 47%, rgba(255, 255, 255, 0.028) 50%, transparent 53%),
+    repeating-radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 7px);
+  opacity: 0.52;
+  mask-image: linear-gradient(90deg, #000, transparent 72%);
+}
+
+.marketing-eyebrow {
+  border-color: rgba(255, 178, 91, 0.22) !important;
+  background: rgba(237, 112, 9, 0.08) !important;
+  color: #ffbd7a !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 40px rgba(0, 0, 0, 0.24) !important;
+}
+
+.marketing-hero h1 {
+  color: #fafafa !important;
+  text-wrap: balance;
+  text-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+}
+
+.marketing-primary-cta {
+  border: 1px solid rgba(255, 178, 91, 0.28) !important;
+  background: linear-gradient(135deg, #ff8420, #d75b00) !important;
+  color: #fff !important;
+  box-shadow: 0 20px 55px rgba(237, 112, 9, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
+}
+
+.marketing-primary-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 25px 70px rgba(237, 112, 9, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+}
+
+.marketing-secondary-cta {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 44px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.marketing-secondary-cta:hover {
+  border-color: rgba(255, 178, 91, 0.24) !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  color: white !important;
+}
+
+.marketing-section {
+  position: relative;
+  background: transparent !important;
+}
+
+.marketing-section::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.025), transparent 32rem);
+}
+
+.marketing-section-title h2 {
+  color: #fafafa !important;
+  text-wrap: balance;
+}
+
+.marketing-section-title > p:first-child {
+  color: #ffad64 !important;
+  letter-spacing: 0.22em;
+}
+
+.marketing-feature-card,
+.marketing-role-card,
+.marketing-price-card,
+.marketing-faq-card,
+.marketing-glass-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: var(--marketing-line) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(237, 112, 9, 0.075), transparent 18rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.022) 48%, rgba(255, 255, 255, 0.04)),
+    var(--marketing-surface) !important;
+  color: #f7f7f8;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.075) !important;
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+
+.marketing-feature-card::before,
+.marketing-role-card::before,
+.marketing-price-card::before,
+.marketing-faq-card::before,
+.marketing-glass-card::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: linear-gradient(118deg, transparent 0 40%, rgba(255, 255, 255, 0.055) 49%, transparent 58%);
+  opacity: 0.55;
+}
+
+.marketing-feature-card,
+.marketing-role-card,
+.marketing-price-card,
+.marketing-faq-card {
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.marketing-feature-card:hover,
+.marketing-role-card:hover,
+.marketing-price-card:hover,
+.marketing-faq-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 178, 91, 0.22) !important;
+  box-shadow: 0 34px 95px rgba(0, 0, 0, 0.48), 0 0 44px rgba(237, 112, 9, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.marketing-feature-icon {
+  border: 1px solid rgba(255, 178, 91, 0.17);
+  color: #ffad64 !important;
+  background: rgba(237, 112, 9, 0.1) !important;
+  box-shadow: 0 12px 34px rgba(237, 112, 9, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.marketing-band {
+  border-block: 1px solid rgba(255, 255, 255, 0.075);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(237, 112, 9, 0.18), transparent 27rem),
+    radial-gradient(circle at 86% 16%, rgba(255, 178, 91, 0.07), transparent 24rem),
+    linear-gradient(145deg, rgba(13, 13, 15, 0.98), rgba(4, 4, 5, 0.99)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 35px 100px rgba(0, 0, 0, 0.26);
+}
+
+.marketing-workflow-item {
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  background: rgba(255, 255, 255, 0.045) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.marketing-dashboard-preview {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2rem;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(237, 112, 9, 0.2), transparent 22rem),
+    radial-gradient(circle at 100% 100%, rgba(255, 178, 91, 0.07), transparent 19rem),
+    linear-gradient(145deg, rgba(25, 25, 28, 0.94), rgba(7, 7, 8, 0.98));
+  box-shadow: 0 42px 120px rgba(0, 0, 0, 0.56), 0 0 70px rgba(237, 112, 9, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(25px) saturate(140%);
+  -webkit-backdrop-filter: blur(25px) saturate(140%);
+}
+
+.marketing-dashboard-preview::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    linear-gradient(118deg, transparent 0 42%, rgba(255, 255, 255, 0.075) 50%, transparent 58%),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: auto, 26px 26px, 26px 26px;
+  opacity: 0.7;
+}
+
+.marketing-preview-topbar,
+.marketing-preview-card,
+.marketing-preview-agenda,
+.marketing-preview-chart {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.marketing-preview-status {
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  color: #a7f3d0;
+  background: rgba(6, 95, 70, 0.19);
+}
+
+.marketing-preview-bar {
+  background: linear-gradient(180deg, #ffb25b, #ed7009);
+  box-shadow: 0 0 20px rgba(237, 112, 9, 0.26);
+}
+
+.marketing-price-card.marketing-plan-featured {
+  border-color: rgba(255, 139, 36, 0.45) !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(237, 112, 9, 0.25), transparent 22rem),
+    linear-gradient(145deg, rgba(29, 25, 22, 0.96), rgba(8, 8, 9, 0.99)) !important;
+  box-shadow: 0 36px 110px rgba(0, 0, 0, 0.5), 0 0 55px rgba(237, 112, 9, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.marketing-comparison {
+  border-color: var(--marketing-line) !important;
+  background: rgba(10, 10, 12, 0.82) !important;
+  box-shadow: 0 30px 95px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.marketing-comparison > div:not(:first-child) {
+  border-color: rgba(255, 255, 255, 0.065) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.marketing-comparison > div:not(:first-child):nth-child(odd) {
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.marketing-faq-card[open] {
+  border-color: rgba(255, 178, 91, 0.25) !important;
+}
+
+.marketing-final-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 178, 91, 0.18);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(237, 112, 9, 0.27), transparent 28rem),
+    radial-gradient(circle at 100% 100%, rgba(255, 178, 91, 0.08), transparent 22rem),
+    linear-gradient(145deg, rgba(20, 20, 22, 0.98), rgba(5, 5, 6, 0.99)) !important;
+  box-shadow: 0 38px 120px rgba(0, 0, 0, 0.52), 0 0 64px rgba(237, 112, 9, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+.marketing-footer {
+  border-color: rgba(255, 255, 255, 0.075) !important;
+  background: rgba(3, 3, 4, 0.92) !important;
+  box-shadow: 0 -28px 90px rgba(0, 0, 0, 0.28) !important;
+}
+
+@media (max-width: 639px) {
+  .marketing-shell {
+    background-size: auto, auto, 28px 28px, 28px 28px, auto;
+  }
+
+  .marketing-brand-icon {
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 0.75rem;
+  }
+
+  .marketing-brand-name {
+    font-size: 1.18rem;
+  }
+
+  .marketing-dashboard-preview {
+    border-radius: 1.4rem;
+    padding: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-shell *,
+  .marketing-shell *::before,
+  .marketing-shell *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

@@ -11,7 +11,7 @@ import {
   CreditCard,
   FileText,
   Globe2,
-  HeartPulse,
+  Scissors,
   MessageCircle,
   ShieldCheck,
   Sparkles,
@@ -22,43 +22,43 @@ import { getMarketingHomeConfig } from "@/lib/marketing/home-config";
 
 const modules = [
   {
-    title: "Agenda inteligente",
-    description: "Horários disponíveis, status visual, conflito por barbeiro, sinal online e confirmação rápida.",
+    title: "Agenda que protege sua cadeira",
+    description: "Horários reais, conflito por barbeiro, confirmação rápida e sinal online para reduzir furos na agenda.",
     icon: CalendarDays,
   },
   {
-    title: "Clientes e ficha do cliente",
-    description: "Ficha completa, preferências de corte e barba, consentimentos, fotos de referência e histórico de atendimentos.",
+    title: "Cliente que volta",
+    description: "Preferências de corte e barba, fotos de referência, histórico e contexto para cada atendimento começar melhor.",
     icon: ClipboardCheck,
   },
   {
-    title: "CRM comercial",
-    description: "Pipeline de leads, origem, follow-up, oportunidades por etapa e conversão em cliente.",
+    title: "CRM que não esquece ninguém",
+    description: "Leads, origem, próxima ação e oportunidades organizadas para o interesse não morrer no WhatsApp.",
     icon: UsersRound,
   },
   {
-    title: "Financeiro da barbearia",
-    description: "Pagamentos, pacotes, comissões, faturamento previsto, recebido e pendências por período.",
+    title: "Dinheiro sem adivinhação",
+    description: "Pagamentos, pacotes, comissões, previsto, recebido e pendências visíveis para o dono decidir com números.",
     icon: WalletCards,
   },
   {
-    title: "Site de vendas incluso",
-    description: "Página premium para cada barbearia com serviços, depoimentos, localização e agendamento online.",
+    title: "Sua vitrine aberta 24 horas",
+    description: "Um site premium com sua marca, serviços, prova social, WhatsApp e agendamento conectado à operação.",
     icon: Globe2,
   },
   {
-    title: "Assinatura SaaS",
-    description: "Planos, limites, trial, inadimplência, Asaas e painel interno para gestão das barbearias.",
+    title: "Operação pronta para crescer",
+    description: "Planos, usuários, permissões e limites que acompanham a barbearia da primeira cadeira até uma equipe maior.",
     icon: ShieldCheck,
   },
 ];
 
 const workflow = [
-  "A cliente entra no site da barbearia",
-  "Escolhe o serviço e o horário disponível",
-  "Paga o sinal pelo checkout",
-  "Cai no CRM e na agenda automaticamente",
-  "A barbearia acompanha financeiro, ficha do cliente e retorno",
+  "O cliente encontra sua barbearia e escolhe o serviço",
+  "Vê horários reais e reserva sem troca de mensagens",
+  "Paga o sinal e protege o horário do barbeiro",
+  "Agenda, CRM e financeiro são atualizados na hora",
+  "Depois do atendimento, o histórico ajuda a trazer o cliente de volta",
 ];
 
 
@@ -67,26 +67,26 @@ const plans = [
     name: "Starter",
     price: "R$ 97",
     badge: "Entrada",
-    description: "Para barbearias em validação comercial.",
-    limits: "3 profissionais, 300 clientes e 500 agendamentos por mês.",
-    differentiator: "Ideal para sair da agenda manual e começar com site, CRM e financeiro.",
+    description: "Para quem quer sair do caderno e ocupar melhor as primeiras cadeiras.",
+    limits: "3 barbeiros, 300 clientes e 500 agendamentos por mês.",
+    differentiator: "O essencial para organizar a casa, receber agendamentos e cobrar sinal.",
   },
   {
     name: "Growth",
     price: "R$ 197",
     badge: "Mais vendido",
-    description: "Para barbearias com equipe e rotina ativa.",
-    limits: "10 profissionais, 2.000 clientes e 3.000 agendamentos por mês.",
-    differentiator: "Melhor equilíbrio para barbearia que já vende, agenda e precisa controlar equipe.",
+    description: "Para barbearias com equipe, agenda girando e ambição de crescer.",
+    limits: "10 barbeiros, 2.000 clientes e 3.000 agendamentos por mês.",
+    differentiator: "Mais controle para vender, acompanhar comissão e transformar movimento em resultado.",
     highlight: true,
   },
   {
     name: "Premium",
     price: "R$ 397",
     badge: "Escala",
-    description: "Para operações maiores e redes locais.",
-    limits: "50 profissionais, 10.000 clientes e alto volume comercial.",
-    differentiator: "Para barbearias com múltiplas agendas, alto volume e operação comercial madura.",
+    description: "Para operações maiores, unidades e equipes com alto volume.",
+    limits: "50 barbeiros, 10.000 clientes e alto volume comercial.",
+    differentiator: "Estrutura para múltiplas agendas, mais gestão e uma operação comercial madura.",
   },
 ];
 
@@ -109,7 +109,7 @@ const faqs = [
   {
     question: "A NexaWi Barbearias substitui agenda, planilha e CRM separados?",
     answer:
-      "Sim. A proposta é centralizar agenda, clientes, ficha do cliente, financeiro, CRM, site público e checkout em um único fluxo operacional.",
+      "Sim. Agenda, clientes, preferências, financeiro, CRM, site e checkout trabalham no mesmo fluxo para reduzir retrabalho e informação perdida.",
   },
   {
     question: "Cada barbearia pode ter o próprio site?",
@@ -134,19 +134,25 @@ const faqs = [
   {
     question: "Qual plano faz mais sentido para começar?",
     answer:
-      "Para uma barbearia pequena, o Starter resolve o início. Para uma operação que já possui equipe, rotina ativa e volume comercial, o Growth costuma ser o melhor ponto de partida.",
+      "O Starter organiza uma operação menor. Quando já existe equipe, agenda ativa e volume de clientes, o Growth costuma entregar o melhor equilíbrio.",
   },
 ];
 
 function LogoMark() {
   return (
-    <Image src="/nexawi-clinicas.png" alt="NexaWi Barbearias" width={180} height={48} priority className="h-10 w-auto object-contain" />
+    <span className="marketing-brand" aria-label="NexaWi Barbearias">
+      <span className="marketing-brand-icon"><Scissors size={20} /></span>
+      <span className="marketing-brand-copy">
+        <span className="marketing-brand-name"><em>Nexa</em>Wi</span>
+        <small>BARBEARIAS</small>
+      </span>
+    </span>
   );
 }
 
 function SectionTitle({ eyebrow, title, description, align = "left" }) {
   return (
-    <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
+    <div className={(align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl") + " marketing-section-title"}>
       <p className="text-xs font-black uppercase text-[#ed7009]">{eyebrow}</p>
       <h2 className="mt-3 text-3xl font-black leading-tight text-[#1c1c1c] sm:text-5xl">{title}</h2>
       {description ? <p className="mt-4 text-base leading-8 text-neutral-600">{description}</p> : null}
@@ -155,44 +161,44 @@ function SectionTitle({ eyebrow, title, description, align = "left" }) {
 }
 
 export const metadata = {
-  title: "NexaWi Barbearias | SaaS para barbearias",
-  description: "Sistema SaaS para barbearias com agenda, site de vendas, CRM, ficha do cliente, financeiro e checkout online.",
+  title: "NexaWi Barbearias | Cadeira ocupada, gestão no controle",
+  description: "Agenda, sinal online, CRM, clientes, comissões, financeiro e site premium no mesmo fluxo para sua barbearia crescer.",
 };
 
 export default async function Home() {
   const { hero } = await getMarketingHomeConfig();
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f4f2ed] text-[#09110f]">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#1c1c1c]/95 text-white shadow-[0_18px_60px_rgba(28,28,28,0.22)] backdrop-blur-xl">
+    <main className="marketing-shell min-h-screen overflow-hidden bg-[#f4f2ed] text-[#09110f]">
+      <header className="marketing-header sticky top-0 z-50 border-b border-white/10 bg-[#1c1c1c]/95 text-white shadow-[0_18px_60px_rgba(28,28,28,0.22)] backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
           <Link href="/" className="flex items-center gap-3">
             <LogoMark />
           </Link>
           <nav className="hidden items-center gap-7 text-sm font-bold text-white/72 lg:flex">
-            <a href="#produto">Produto</a>
-            <a href="#site">Site da barbearia</a>
+            <a href="#produto">Como funciona</a>
+            <a href="#site">Site 24h</a>
             <a href="#planos">Planos</a>
-            <a href="#comparativo">Comparativo</a>
-            <a href="#faq">FAQ</a>
-            <a href="#demo">Demonstração</a>
+            <a href="#comparativo">Compare</a>
+            <a href="#faq">Dúvidas</a>
+            <Link href="/login-cliente">Demo</Link>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login-cliente" className="hidden rounded-full border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-bold text-white/78 shadow-sm transition hover:bg-white/14 hover:text-white sm:inline-flex">
               Entrar
             </Link>
-            <a href="#demo" className="inline-flex items-center gap-2 rounded-full bg-[#1c1c1c] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(28,28,28,0.24)]">
-              Quero vender mais <ArrowRight size={16} />
-            </a>
+            <Link href="/login-cliente" className="marketing-primary-cta inline-flex items-center gap-2 rounded-full bg-[#1c1c1c] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(28,28,28,0.24)]">
+              Quero ver funcionando <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </header>
 
-      <section className="relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_8%_8%,rgba(237,112,9,0.22),transparent_30rem),radial-gradient(circle_at_92%_0%,rgba(219,39,119,0.14),transparent_28rem)]" />
+      <section className="marketing-hero relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_8%_8%,rgba(237,112,9,0.22),transparent_30rem),radial-gradient(circle_at_92%_0%,rgba(255,178,91,0.08),transparent_28rem)]" />
         <div className="relative mx-auto grid min-h-[calc(100vh-72px)] max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 lg:py-20">
           <div className="flex flex-col justify-center">
-            <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-[#ed7009]/20 bg-white/76 px-4 py-2 text-xs font-black uppercase leading-5 text-[#ed7009] shadow-sm backdrop-blur">
+            <div className="marketing-eyebrow inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-[#ed7009]/20 bg-white/76 px-4 py-2 text-xs font-black uppercase leading-5 text-[#ed7009] shadow-sm backdrop-blur">
               <BadgeCheck size={15} /> {hero.eyebrow}
             </div>
             <h1 className="mt-7 max-w-3xl text-4xl font-black leading-[1.03] text-[#1c1c1c] sm:text-5xl lg:text-6xl">
@@ -202,10 +208,10 @@ export default async function Home() {
               {hero.subtitle}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#demo" className="inline-flex h-13 items-center justify-center gap-2 rounded-full bg-[#1c1c1c] px-6 text-sm font-black text-white shadow-[0_22px_56px_rgba(28,28,28,0.26)]">
+              <Link href="/login-cliente" className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-[#1c1c1c] px-6 text-sm font-black text-white shadow-[0_22px_56px_rgba(28,28,28,0.26)]">
                 {hero.primaryCtaLabel} <ArrowRight size={17} />
-              </a>
-              <a href="#produto" className="inline-flex h-13 items-center justify-center rounded-full border border-black/10 bg-white/70 px-6 text-sm font-black text-neutral-800 shadow-sm backdrop-blur">
+              </Link>
+              <a href="#produto" className="marketing-secondary-cta inline-flex h-13 items-center justify-center rounded-full border border-black/10 bg-white/70 px-6 text-sm font-black text-neutral-800 shadow-sm backdrop-blur">
                 {hero.secondaryCtaLabel}
               </a>
             </div>
@@ -221,34 +227,82 @@ export default async function Home() {
 
           <div className="flex items-center lg:justify-end">
             <div className="relative w-full max-w-[650px]">
-              <div className="absolute -inset-6 rounded-[2.5rem] bg-[radial-gradient(circle_at_80%_20%,rgba(237,112,9,0.25),transparent_18rem),radial-gradient(circle_at_10%_90%,rgba(244,114,182,0.20),transparent_18rem)] blur-2xl" />
-              <Image
-                src={hero.previewImageUrl}
-                alt={hero.previewImageAlt}
-                width={1400}
-                height={1000}
-                priority
-                className="relative z-10 h-auto max-h-[560px] w-full object-contain object-center drop-shadow-[0_34px_70px_rgba(28,28,28,0.22)]"
-              />
+              <div className="absolute -inset-8 rounded-[3rem] bg-[radial-gradient(circle_at_76%_18%,rgba(237,112,9,0.28),transparent_20rem),radial-gradient(circle_at_8%_92%,rgba(255,178,91,0.10),transparent_18rem)] blur-3xl" />
+              <div className="marketing-dashboard-preview" aria-label="Prévia do painel NexaWi Barbearias">
+                <div className="marketing-preview-topbar flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-300">{hero.previewEyebrow}</p>
+                    <h2 className="mt-2 text-xl font-black sm:text-2xl">{hero.previewTitle}</h2>
+                  </div>
+                  <span className="marketing-preview-status inline-flex w-fit rounded-full px-3 py-1.5 text-xs font-black uppercase">{hero.previewStatus}</span>
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {hero.metrics.map((metric, index) => (
+                    <div key={metric.label} className="marketing-preview-card rounded-2xl p-4">
+                      <p className="text-xs font-semibold text-white/48">{metric.label}</p>
+                      <strong className={"mt-2 block text-xl font-black " + (index === 1 ? "text-orange-300" : "text-white")}>{metric.value}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+                  <div className="marketing-preview-agenda rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-black">Agenda de hoje</p>
+                      <CalendarDays size={17} className="text-orange-300" />
+                    </div>
+                    <div className="mt-4 grid gap-2.5">
+                      {[
+                        ["09:00", "Corte assinatura", "Confirmado"],
+                        ["11:30", "Barba premium", "Sinal pago"],
+                        ["14:00", "Corte + barba", "Confirmado"],
+                      ].map(([time, service, status]) => (
+                        <div key={time} className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.035] p-3">
+                          <span className="text-xs font-black text-orange-300">{time}</span>
+                          <span className="min-w-0 flex-1 truncate text-xs font-bold text-white/80">{service}</span>
+                          <span className="hidden rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-200 sm:inline">{status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="marketing-preview-chart rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-semibold text-white/46">Recebido na semana</p>
+                        <strong className="mt-1 block text-lg font-black text-white">R$ 4.680</strong>
+                      </div>
+                      <WalletCards size={18} className="text-orange-300" />
+                    </div>
+                    <div className="mt-5 flex h-24 items-end gap-2">
+                      {[42, 68, 54, 82, 64, 92, 76].map((height, index) => (
+                        <span key={index} className="marketing-preview-bar flex-1 rounded-t-md" style={{ height: `${height}%` }} />
+                      ))}
+                    </div>
+                    <p className="mt-3 text-[11px] font-semibold text-white/42">Agenda, sinal e caixa no mesmo ritmo.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="produto" className="bg-white py-20">
+      <section id="produto" className="marketing-section bg-white py-20">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <SectionTitle
             eyebrow="Produto"
-            title="Tudo que uma barbearia precisa para operar com aparência de empresa grande."
-            description="A plataforma foi pensada para rotina real: recepção, barbeiros, financeiro, vendas, retorno, ficha do cliente e site público trabalhando juntos."
+            title="Sua barbearia não precisa parecer grande. Precisa operar como uma."
+            description="Cada parte conversa com a outra: o cliente agenda, o sinal entra, a equipe atende e o dono enxerga o resultado sem caçar informação."
             align="center"
           />
           <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {modules.map((module) => {
               const Icon = module.icon;
               return (
-                <article key={module.title} className="group rounded-[1.5rem] border border-neutral-200 bg-[#fbfaf7] p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(28,28,28,0.12)]">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#ed7009]">
+                <article key={module.title} className="marketing-feature-card group rounded-[1.5rem] border border-neutral-200 bg-[#fbfaf7] p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(28,28,28,0.12)]">
+                  <div className="marketing-feature-icon flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#ed7009]">
                     <Icon size={23} />
                   </div>
                   <h3 className="mt-5 text-xl font-black">{module.title}</h3>
@@ -260,20 +314,20 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="relative bg-[#1c1c1c] px-5 py-20 text-white sm:px-8 lg:px-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(237,112,9,0.22),transparent_26rem),radial-gradient(circle_at_82%_18%,rgba(244,114,182,0.11),transparent_22rem)]" />
+      <section className="marketing-band relative bg-[#1c1c1c] px-5 py-20 text-white sm:px-8 lg:px-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(237,112,9,0.22),transparent_26rem),radial-gradient(circle_at_82%_18%,rgba(255,178,91,0.07),transparent_22rem)]" />
         <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-xs font-black uppercase text-orange-300">Fluxo comercial</p>
-            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Da primeira visita no site ao próximo contato.</h2>
+            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Do primeiro clique ao próximo corte. Tudo conectado.</h2>
             <p className="mt-5 text-base leading-8 text-white/68">
-              O objetivo não é só cadastrar dados. É transformar interesse em agendamento, agendamento em pagamento, atendimento em histórico e histórico em retorno.
+              Sem informação solta. Sem horário perdido. Sem cliente esquecido. Cada etapa prepara a próxima venda.
             </p>
           </div>
-          <div className="rounded-[2rem] border border-white/12 bg-white/[0.06] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur">
+          <div className="marketing-glass-card rounded-[2rem] border border-white/12 bg-white/[0.06] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur">
             <div className="grid gap-3">
               {workflow.map((item, index) => (
-                <div key={item} className="flex items-center gap-4 rounded-2xl bg-white/[0.06] p-4">
+                <div key={item} className="marketing-workflow-item flex items-center gap-4 rounded-2xl bg-white/[0.06] p-4">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ed7009] text-sm font-black text-white">{index + 1}</span>
                   <span className="font-bold text-white/86">{item}</span>
                   <ChevronRight size={18} className="ml-auto hidden text-white/30 sm:block" />
@@ -284,20 +338,20 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="site" className="mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1fr] lg:px-10 lg:items-center">
+      <section id="site" className="marketing-section mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1fr] lg:px-10 lg:items-center">
         <div>
           <SectionTitle
             eyebrow="Site de vendas"
-            title="Cada barbearia ganha um site premium para gerar demanda, não só uma página bonita."
-            description="Serviços, fotos, depoimentos, localização, WhatsApp, agendamento e checkout de sinal conectados diretamente ao SaaS da barbearia."
+            title="Sua barbearia aberta 24 horas — mesmo com a grade abaixada."
+            description="Sua marca apresenta os serviços, prova confiança, mostra horários e transforma visita em reserva sem depender da recepção online o dia inteiro."
           />
           <div className="mt-8 grid gap-4">
             {[
-              ["Domínio próprio", "A barbearia pode usar o próprio domínio, com roteamento para o site certo dentro da plataforma."],
-              ["Agendamento online", "Horários disponíveis seguem a agenda real e evitam conflito com barbeiro."],
-              ["Pagamento de sinal", "Checkout Asaas para reduzir desistência e registrar status dentro do agendamento."],
+              ["Seu endereço, sua marca", "Use domínio próprio, identidade visual e uma presença digital que tenha a mesma assinatura da sua barbearia."],
+              ["Agenda sem troca de mensagens", "O cliente vê horários reais, escolhe o barbeiro e reserva sem esperar resposta no WhatsApp."],
+              ["Sinal que protege o horário", "O checkout registra o pagamento e ajuda a reduzir desistências que deixam cadeira vazia."],
             ].map(([title, description]) => (
-              <div key={title} className="rounded-2xl border border-neutral-200 bg-white/70 p-5 shadow-sm">
+              <div key={title} className="marketing-glass-card rounded-2xl border border-neutral-200 bg-white/70 p-5 shadow-sm">
                 <h3 className="font-black">{title}</h3>
                 <p className="mt-2 text-sm leading-7 text-neutral-600">{description}</p>
               </div>
@@ -317,7 +371,7 @@ export default async function Home() {
             <div className="absolute left-[13%] top-[20%] z-10 h-[50%] w-[74%] overflow-hidden rounded-[0.65rem] bg-[#17130f]">
               <div className="h-full w-full overflow-auto">
                 <iframe
-                  src="/c/studio-ingrid-silva#servicos"
+                  src="/c/navalha-nobre-demo#servicos"
                   title="Site público demonstrativo da barbearia"
                   className="origin-top-left border-0"
                   style={{
@@ -333,17 +387,17 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="bg-white py-20">
+      <section className="marketing-section bg-white py-20">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { label: "Recepção", value: "agenda, WhatsApp e status", icon: MessageCircle },
-              { label: "Barbeiro", value: "ficha do cliente e comissão", icon: HeartPulse },
-              { label: "Gestor", value: "faturamento e indicadores", icon: BarChart3 },
+              { label: "Recepção", value: "menos correria, mais controle", icon: MessageCircle },
+              { label: "Barbeiro", value: "agenda clara, comissão transparente", icon: Scissors },
+              { label: "Dono", value: "números na mão, decisão rápida", icon: BarChart3 },
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <article key={item.label} className="rounded-[1.5rem] border border-neutral-200 bg-[#f7f5f0] p-6">
+                <article key={item.label} className="marketing-role-card rounded-[1.5rem] border border-neutral-200 bg-[#f7f5f0] p-6">
                   <Icon size={24} className="text-[#ed7009]" />
                   <p className="mt-5 text-sm font-bold text-neutral-500">{item.label}</p>
                   <h3 className="mt-2 text-2xl font-black">{item.value}</h3>
@@ -354,11 +408,11 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="planos" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
-        <SectionTitle eyebrow="Planos" title="Planos simples para começar, vender e escalar." description="A barbearia entra com uma estrutura pronta e você controla limites, trial, inadimplência e cobrança." align="center" />
+      <section id="planos" className="marketing-section mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
+        <SectionTitle eyebrow="Planos" title="Comece no tamanho certo. Suba de nível quando a agenda pedir." description="Você recebe a operação pronta e escolhe o plano pelo número de barbeiros, clientes e volume de agenda — sem pagar por complexidade que ainda não usa." align="center" />
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
           {plans.map((plan) => (
-            <article key={plan.name} className={`rounded-[1.75rem] border p-6 shadow-sm ${plan.highlight ? "border-[#ed7009]/60 bg-[#1c1c1c] text-white shadow-[0_30px_90px_rgba(237,112,9,0.20)]" : "border-neutral-200 bg-white"}`}>
+            <article key={plan.name} className={`marketing-price-card rounded-[1.75rem] border p-6 shadow-sm ${plan.highlight ? "marketing-plan-featured border-[#ed7009]/60 bg-[#1c1c1c] text-white shadow-[0_30px_90px_rgba(237,112,9,0.20)]" : "border-neutral-200 bg-white"}`}>
               <div className="flex items-center justify-between gap-4">
                 <h3 className="text-2xl font-black">{plan.name}</h3>
                 <span className={"rounded-full px-3 py-1 text-xs font-black " + (plan.highlight ? "bg-[#ed7009] text-white" : "bg-orange-50 text-[#ed7009]")}>
@@ -377,16 +431,16 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="comparativo" className="bg-white py-20">
+      <section id="comparativo" className="marketing-section bg-white py-20">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <SectionTitle
             eyebrow="Comparativo"
-            title="Escolha pelo momento da barbearia, não por tentativa e erro."
-            description="O comparativo deixa claro o que muda de um plano para outro e ajuda a vender o upgrade com mais facilidade."
+            title="Sem plano confuso. Só o que sua operação precisa agora."
+            description="Compare capacidade e recursos com clareza. Quando a equipe e a agenda crescerem, o próximo passo já estará pronto."
             align="center"
           />
           <div className="mt-12 -mx-5 overflow-x-auto px-5 pb-3 sm:mx-0 sm:px-0">
-            <div className="min-w-[860px] overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-white shadow-[0_24px_80px_rgba(20,18,15,0.08)]">
+            <div className="marketing-comparison min-w-[860px] overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-white shadow-[0_24px_80px_rgba(20,18,15,0.08)]">
               <div className="grid grid-cols-[1.45fr_repeat(3,1fr)] bg-[#1c1c1c] text-sm font-black text-white">
                 <div className="p-4">Recurso</div>
                 {plans.map((plan) => (
@@ -411,16 +465,16 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="faq" className="mx-auto max-w-5xl px-5 py-20 sm:px-8 lg:px-10">
+      <section id="faq" className="marketing-section mx-auto max-w-5xl px-5 py-20 sm:px-8 lg:px-10">
         <SectionTitle
           eyebrow="FAQ"
-          title="Perguntas que aparecem antes da contratação."
-          description="Respostas diretas para reduzir objeções e deixar claro que o produto foi pensado como SaaS comercial para várias barbearias."
+          title="Antes de colocar sua barbearia no próximo nível, tire as dúvidas."
+          description="Respostas diretas, sem conversa de software complicado."
           align="center"
         />
         <div className="mt-10 grid gap-4">
           {faqs.map((item) => (
-            <details key={item.question} className="group rounded-[1.35rem] border border-neutral-200 bg-white p-5 shadow-sm open:shadow-[0_24px_70px_rgba(28,28,28,0.10)]">
+            <details key={item.question} className="marketing-faq-card group rounded-[1.35rem] border border-neutral-200 bg-white p-5 shadow-sm open:shadow-[0_24px_70px_rgba(28,28,28,0.10)]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-black text-neutral-950">
                 {item.question}
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#ed7009] transition group-open:rotate-90">
@@ -433,28 +487,28 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="demo" className="px-5 pb-20 sm:px-8 lg:px-10">
-        <div className="mx-auto grid max-w-7xl gap-8 rounded-[2rem] bg-[#1c1c1c] p-7 text-white shadow-[0_34px_100px_rgba(28,28,28,0.24)] lg:grid-cols-[1fr_0.85fr] lg:p-10">
+      <section id="demo" className="marketing-section px-5 pb-20 sm:px-8 lg:px-10">
+        <div className="marketing-final-cta mx-auto grid max-w-7xl gap-8 rounded-[2rem] bg-[#1c1c1c] p-7 text-white shadow-[0_34px_100px_rgba(28,28,28,0.24)] lg:grid-cols-[1fr_0.85fr] lg:p-10">
           <div>
             <p className="text-xs font-black uppercase text-orange-300">Demonstração</p>
-            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">Pronto para vender para barbearias com uma apresentação profissional.</h2>
+            <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">A diferença aparece quando você vê a operação rodando.</h2>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/68">
-              Use a demo para mostrar agenda, cliente, ficha do cliente, CRM, financeiro, assinatura e site público da barbearia em um roteiro comercial claro.
+              Veja como site, agenda, sinal, cliente, comissão, CRM e financeiro se comportam juntos em uma barbearia de verdade.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/login-cliente" className="inline-flex h-13 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#1c1c1c]">
-                Acessar demonstração <ArrowRight size={17} />
+              <Link href="/login-cliente" className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#1c1c1c]">
+                Ver o painel funcionando <ArrowRight size={17} />
               </Link>
               <a href="https://wa.me/5577999911911" target="_blank" className="inline-flex h-13 items-center justify-center gap-2 rounded-full border border-white/16 px-6 text-sm font-black text-white">
-                Falar com a NexaWi <MessageCircle size={17} />
+                Falar com um especialista <MessageCircle size={17} />
               </a>
             </div>
           </div>
           <div className="grid gap-3">
             {[
-              ["Agenda", "Visão diária, semanal e status dos atendimentos."],
-              ["Ficha do cliente", "Histórico, preferências, consentimentos e fotos de referência."],
-              ["Financeiro", "Sinal, pacotes, pagamentos e comissões."],
+              ["Agenda protegida", "Horários reais, sinal e status de cada atendimento."],
+              ["Cliente que volta", "Preferências, histórico e contexto para o próximo atendimento."],
+              ["Dinheiro sob controle", "Sinal, pacotes, pagamentos e comissões sem adivinhação."],
             ].map(([title, description]) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.06] p-5">
                 <h3 className="font-black">{title}</h3>
@@ -465,7 +519,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 bg-[#1c1c1c] px-5 py-8 text-sm text-white/58 shadow-[0_-24px_70px_rgba(28,28,28,0.14)] sm:px-8 lg:px-10">
+      <footer className="marketing-footer border-t border-white/10 bg-[#1c1c1c] px-5 py-8 text-sm text-white/58 shadow-[0_-24px_70px_rgba(28,28,28,0.14)] sm:px-8 lg:px-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <LogoMark />

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|auth|dashboard|admin|login|login-cliente|onboarding|privacidade|termos).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|auth|dashboard|admin|login|login-cliente|privacidade|termos).*)"],
 };
 
 function isPlatformHost(host) {
@@ -92,6 +92,6 @@ export async function proxy(request) {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = site.type === "barbershop" ? `/b/${site.slug}` : `/c/${site.slug}`;
+  url.pathname = `/c/${site.slug}`;
   return NextResponse.rewrite(url);
 }
