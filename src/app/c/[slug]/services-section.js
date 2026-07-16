@@ -207,7 +207,7 @@ export function PublicServicesSection({ procedimentos = [] }) {
         onFocusCapture={() => { hoverRef.current = true; }}
         onBlurCapture={() => { hoverRef.current = false; }}
       >
-        <div ref={trackRef} className="public-services-track flex w-max gap-5 px-16 sm:px-24">
+        <div ref={trackRef} className="public-services-track flex w-max items-start gap-5 px-16 sm:px-24">
           {servicesLoop.map((item, index) => (
             <button
               key={`${item.id}-${index}`}
@@ -217,25 +217,48 @@ export function PublicServicesSection({ procedimentos = [] }) {
                 if (draggedRef.current) return;
                 setSelected(item);
               }}
-              className="public-card-reveal public-reveal-up public-service-card public-service-card-dark w-[330px] shrink-0 rounded-[1.75rem] border border-white/10 bg-white/[0.075] p-6 text-left text-white backdrop-blur-2xl md:w-[390px]"
+              className="group public-card-reveal public-reveal-up public-service-card public-service-card-dark w-[330px] shrink-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.075] p-0 text-left text-white backdrop-blur-2xl md:w-[390px]"
             >
               {item.destaque_site ? <span className="public-service-reflection" aria-hidden="true" /> : null}
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--clinic-accent)]">{item.categoria || "Serviço"}</p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">{item.nome}</h3>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-white/78">{item.duracao_minutos} min</span>
+              <div className="relative aspect-square w-full overflow-hidden border-b border-white/10 bg-black/20">
+                {item.imagem_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.imagem_url} alt={item.nome} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-[radial-gradient(circle_at_30%_20%,color-mix(in_srgb,var(--clinic-accent)_20%,transparent),transparent_45%),linear-gradient(145deg,#17130f,#24201c)] px-10 text-center">
+                    <span className="text-xs font-black uppercase tracking-[0.28em] text-[var(--clinic-accent)]">{item.categoria || "Serviço"}</span>
+                    <strong className="mt-4 text-2xl font-semibold text-white/88">{item.nome}</strong>
+                  </div>
+                )}
               </div>
-              <p className="mt-5 min-h-24 text-sm leading-7 text-white/62">{item.descricao || "Serviço com orientação do barbeiro e orientações personalizadas."}</p>
-              <div className="mt-7 flex items-end justify-between gap-4 border-t border-white/10 pt-5">
-                <div>
-                  <p className="text-xs text-white/42">Valor</p>
-                  <strong className="text-2xl text-white">{money(item.preco)}</strong>
+              <div className="flex h-[370px] flex-col p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--clinic-accent)]">{item.categoria || "Serviço"}</p>
+                    <h3
+                      className="mt-3 h-16 overflow-hidden text-2xl font-semibold text-white"
+                      style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2 }}
+                    >
+                      {item.nome}
+                    </h3>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-white/78">{item.duracao_minutos} min</span>
                 </div>
-                <p className="max-w-36 text-right text-xs font-semibold text-white/50">{serviceLabel(item)}</p>
+                <p
+                  className="mt-5 h-[5.25rem] text-sm leading-7 text-white/62"
+                  style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden" }}
+                >
+                  {item.descricao || "Serviço com orientação do barbeiro e orientações personalizadas."}
+                </p>
+                <span className="mt-3 inline-flex text-xs font-black text-[var(--clinic-accent)]">Ver mais...</span>
+                <div className="mt-auto flex items-end justify-between gap-4 border-t border-white/10 pt-5">
+                  <div>
+                    <p className="text-xs text-white/42">Valor</p>
+                    <strong className="text-2xl text-white">{money(item.preco)}</strong>
+                  </div>
+                  <p className="max-w-36 text-right text-xs font-semibold text-white/50">{serviceLabel(item)}</p>
+                </div>
               </div>
-              <span className="mt-5 inline-flex rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/70">Ver detalhes</span>
             </button>
           ))}
         </div>
@@ -254,23 +277,25 @@ export function PublicServicesSection({ procedimentos = [] }) {
               ×
             </button>
             <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={selected.imagem_url || fallbackImage(selected.nome, true)} alt={selected.nome} className="h-full min-h-[320px] w-full rounded-[1.5rem] object-cover" />
+              <div className="flex w-full items-start justify-center self-start">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selected.imagem_url || fallbackImage(selected.nome, true)} alt={selected.nome} className="aspect-[3/4] h-auto w-full max-w-[420px] rounded-[1.5rem] object-cover" />
+              </div>
               <div className="pr-0 lg:pr-6">
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--clinic-accent)]">{selected.categoria || "Serviço"}</p>
                 <h3 className="mt-3 text-4xl font-black tracking-tight">{selected.nome}</h3>
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/42">O que é</p>
-                  <p className="mt-2 text-sm leading-7 text-white/72">{selected.descricao || "Serviço com orientação do barbeiro e orientações personalizadas."}</p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-7 text-white/72">{selected.descricao || "Serviço com orientação do barbeiro e orientações personalizadas."}</p>
                 </div>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-white/42">Cuidados antes</p>
-                    <p className="mt-2 text-sm leading-6 text-white/72">{selected.instrucoes_pre_atendimento || "A barbearia informará os cuidados necessários antes do serviço."}</p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-white/72">{selected.instrucoes_pre_atendimento || "A barbearia informará os cuidados necessários antes do serviço."}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-white/42">Cuidados depois</p>
-                    <p className="mt-2 text-sm leading-6 text-white/72">{selected.instrucoes_pos_atendimento || "Após o atendimento, siga as orientações do barbeiro para conservar o resultado."}</p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-white/72">{selected.instrucoes_pos_atendimento || "Após o atendimento, siga as orientações do barbeiro para conservar o resultado."}</p>
                   </div>
                 </div>
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">

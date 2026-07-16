@@ -190,7 +190,7 @@ async function updateStoreOrderPayment({ payment, payload, paymentStatus, paidAt
   if (orderPayloadError) throw orderPayloadError;
 
   if (paymentStatus === "pago") {
-    const { error: confirmError } = await supabaseAdmin.rpc("confirmar_pagamento_pedido_loja", {
+    const { error: confirmError } = await supabaseAdmin.rpc("barbearia_confirmar_pagamento_pedido_loja", {
       p_pedido_id: order.id,
       p_asaas_payment_id: paymentId || null,
       p_payload: payload,
@@ -198,10 +198,10 @@ async function updateStoreOrderPayment({ payment, payload, paymentStatus, paidAt
     });
     if (confirmError) throw confirmError;
   } else if (paymentStatus === "estornado" && order.pagamento_status === "pago") {
-    const { error: refundError } = await supabaseAdmin.rpc("estornar_pedido_loja", { p_pedido_id: order.id, p_motivo: "Estorno confirmado pelo webhook Asaas." });
+    const { error: refundError } = await supabaseAdmin.rpc("barbearia_estornar_pedido_loja", { p_pedido_id: order.id, p_motivo: "Estorno confirmado pelo webhook Asaas." });
     if (refundError) throw refundError;
   } else if (["cancelado", "vencido"].includes(paymentStatus) && order.pagamento_status !== "pago") {
-    const { error: cancelError } = await supabaseAdmin.rpc("cancelar_pedido_loja", { p_pedido_id: order.id, p_motivo: `Pagamento ${paymentStatus} no Asaas.` });
+    const { error: cancelError } = await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.id, p_motivo: `Pagamento ${paymentStatus} no Asaas.` });
     if (cancelError) throw cancelError;
   }
 

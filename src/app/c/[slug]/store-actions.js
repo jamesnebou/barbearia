@@ -184,7 +184,7 @@ export async function createPublicStoreOrderAction(formData) {
   const clienteId = await findOrCreateClient({ clinicId: clinic.id, nome, telefone, email, cpf });
   const freeShipping = entregaTipo === "entrega" && config.freteGratisAcima > 0 && estimatedSubtotal >= config.freteGratisAcima;
   const freight = entregaTipo === "entrega" && !freeShipping ? config.taxaEntrega : 0;
-  const { data: createdRows, error: createError } = await supabaseAdmin.rpc("criar_pedido_loja", {
+  const { data: createdRows, error: createError } = await supabaseAdmin.rpc("barbearia_criar_pedido_loja", {
     p_barbearia_id: clinic.id,
     p_cliente_id: clienteId,
     p_itens: items,
@@ -214,13 +214,13 @@ export async function createPublicStoreOrderAction(formData) {
   const orderUrl = `/c/${slug}/pedido/${order.token_publico}`;
 
   if (Number(order.total || 0) <= 0) {
-    const { error: freeOrderError } = await supabaseAdmin.rpc("confirmar_pagamento_pedido_loja", {
+    const { error: freeOrderError } = await supabaseAdmin.rpc("barbearia_confirmar_pagamento_pedido_loja", {
       p_pedido_id: order.pedido_id,
       p_asaas_payment_id: null,
       p_payload: { origem: "checkout", motivo: "pedido_sem_saldo" },
     });
     if (freeOrderError) {
-      await supabaseAdmin.rpc("cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Falha ao confirmar pedido sem saldo." });
+      await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Falha ao confirmar pedido sem saldo." });
       redirectCheckout(slug, "pedido", "Não foi possível confirmar o pedido. Tente novamente.");
     }
     await markCartConverted({ clinicId: clinic.id, sessionToken: cartToken, orderId: order.pedido_id });
@@ -239,7 +239,7 @@ export async function createPublicStoreOrderAction(formData) {
 
   const integration = await getClinicIntegration(clinic.id);
   if (!config.checkoutAsaasAtivo || !isAsaasConfigured(integration)) {
-    await supabaseAdmin.rpc("cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Checkout Asaas indisponível." });
+    await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Checkout Asaas indisponível." });
     redirectCheckout(slug, "pagamento", "O pagamento online está indisponível. Escolha pagar na retirada ou fale com a barbearia.");
   }
 
@@ -276,7 +276,7 @@ export async function createPublicStoreOrderAction(formData) {
     revalidatePath("/dashboard/pedidos");
     paymentRedirectUrl = checkoutUrl;
   } catch (error) {
-    await supabaseAdmin.rpc("cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Falha ao gerar checkout Asaas." });
+    await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Falha ao gerar checkout Asaas." });
     redirectCheckout(slug, "pagamento", error.message || "Não foi possível gerar o pagamento. Tente novamente.");
   }
 

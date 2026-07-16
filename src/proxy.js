@@ -92,6 +92,17 @@ export async function proxy(request) {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = `/c/${site.slug}`;
+  const publicBasePath = `/c/${site.slug}`;
+
+  // Links internos do site já usam a rota canônica com o slug.
+  // Não os reescreva para a página inicial novamente.
+  if (url.pathname === publicBasePath || url.pathname.startsWith(`${publicBasePath}/`)) {
+    return NextResponse.next();
+  }
+
+  // No domínio personalizado, preserve a subpágina solicitada:
+  // /loja -> /c/[slug]/loja, /checkout -> /c/[slug]/checkout etc.
+  const requestedPath = url.pathname === "/" ? "" : url.pathname;
+  url.pathname = `${publicBasePath}${requestedPath}`;
   return NextResponse.rewrite(url);
 }

@@ -19,6 +19,9 @@ import {
   WalletCards,
 } from "lucide-react";
 import { getMarketingHomeConfig } from "@/lib/marketing/home-config";
+import { getSystemPlans } from "@/lib/saas/plans";
+
+export const dynamic = "force-dynamic";
 
 const modules = [
   {
@@ -62,47 +65,68 @@ const workflow = [
 ];
 
 
-const plans = [
-  {
-    name: "Starter",
-    price: "R$ 97",
+const planPresentation = {
+  starter: {
     badge: "Entrada",
-    description: "Para quem quer sair do caderno e ocupar melhor as primeiras cadeiras.",
-    limits: "3 barbeiros, 300 clientes e 500 agendamentos por mês.",
     differentiator: "O essencial para organizar a casa, receber agendamentos e cobrar sinal.",
+    indicatedFor: "Começar",
+    finance: "Básico",
   },
-  {
-    name: "Growth",
-    price: "R$ 197",
+  growth: {
     badge: "Mais vendido",
-    description: "Para barbearias com equipe, agenda girando e ambição de crescer.",
-    limits: "10 barbeiros, 2.000 clientes e 3.000 agendamentos por mês.",
     differentiator: "Mais controle para vender, acompanhar comissão e transformar movimento em resultado.",
-    highlight: true,
+    indicatedFor: "Crescer",
+    finance: "Completo",
   },
-  {
-    name: "Premium",
-    price: "R$ 397",
+  premium: {
     badge: "Escala",
-    description: "Para operações maiores, unidades e equipes com alto volume.",
-    limits: "50 barbeiros, 10.000 clientes e alto volume comercial.",
     differentiator: "Estrutura para múltiplas agendas, mais gestão e uma operação comercial madura.",
+    indicatedFor: "Escalar",
+    finance: "Avançado",
   },
-];
+};
 
-const comparisonRows = [
-  ["Usuários", "3", "8", "25"],
-  ["Barbeiros", "3", "10", "50"],
-  ["Clientes cadastrados", "300", "2.000", "10.000"],
-  ["Agendamentos por mês", "500", "3.000", "15.000"],
-  ["Site premium da barbearia", "Incluso", "Incluso", "Incluso"],
-  ["CRM de leads e oportunidades", "Incluso", "Incluso", "Incluso"],
-  ["Ficha do cliente, termos e fotos", "Incluso", "Incluso", "Incluso"],
-  ["Financeiro e pacotes", "Básico", "Completo", "Avançado"],
-  ["Comissões por barbeiro", "Incluso", "Incluso", "Incluso"],
-  ["Domínio próprio do site", "Incluso", "Incluso", "Incluso"],
-  ["Checkout de sinal", "Incluso", "Incluso", "Incluso"],
-  ["Indicado para", "Começar", "Crescer", "Escalar"],
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("pt-BR");
+}
+
+function formatPlanPrice(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: Number(value || 0) % 1 ? 2 : 0,
+  });
+}
+
+function marketingPlan(plan, index, total) {
+  const presentation = planPresentation[plan.slug] || {};
+  return {
+    ...plan,
+    name: plan.nome,
+    price: formatPlanPrice(plan.preco_mensal),
+    badge: presentation.badge || "Plano",
+    description: plan.descricao || "Plano preparado para acompanhar a operação da sua barbearia.",
+    limits: `${formatNumber(plan.limite_barbeiros)} barbeiros, ${formatNumber(plan.limite_clientes)} clientes e ${formatNumber(plan.limite_agendamentos_mes)} agendamentos por mês.`,
+    differentiator: presentation.differentiator || "Recursos integrados para agenda, clientes, financeiro e crescimento.",
+    indicatedFor: presentation.indicatedFor || plan.nome,
+    finance: presentation.finance || "Completo",
+    highlight: plan.slug === "growth" || (!planPresentation.growth && index === Math.floor(total / 2)),
+  };
+}
+
+const comparisonFeatures = [
+  ["Usuários", (plan) => formatNumber(plan.limite_usuarios)],
+  ["Barbeiros", (plan) => formatNumber(plan.limite_barbeiros)],
+  ["Clientes cadastrados", (plan) => formatNumber(plan.limite_clientes)],
+  ["Agendamentos por mês", (plan) => formatNumber(plan.limite_agendamentos_mes)],
+  ["Site premium da barbearia", () => "Incluso"],
+  ["CRM de leads e oportunidades", () => "Incluso"],
+  ["Ficha do cliente, termos e fotos", () => "Incluso"],
+  ["Financeiro e pacotes", (plan) => plan.finance],
+  ["Comissões por barbeiro", () => "Incluso"],
+  ["Domínio próprio do site", () => "Incluso"],
+  ["Checkout de sinal", () => "Incluso"],
+  ["Indicado para", (plan) => plan.indicatedFor],
 ];
 
 const faqs = [
@@ -166,7 +190,14 @@ export const metadata = {
 };
 
 export default async function Home() {
-  const { hero } = await getMarketingHomeConfig();
+  const [{ hero }, systemPlans] = await Promise.all([
+    getMarketingHomeConfig(),
+    getSystemPlans(),
+  ]);
+  const plans = systemPlans.map((plan, index) => marketingPlan(plan, index, systemPlans.length));
+  const comparisonGrid = {
+    gridTemplateColumns: `minmax(240px, 1.45fr) repeat(${plans.length}, minmax(160px, 1fr))`,
+  };
 
   return (
     <main className="marketing-shell min-h-screen overflow-hidden bg-[#f4f2ed] text-[#09110f]">
@@ -441,20 +472,22 @@ export default async function Home() {
           />
           <div className="mt-12 -mx-5 overflow-x-auto px-5 pb-3 sm:mx-0 sm:px-0">
             <div className="marketing-comparison min-w-[860px] overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-white shadow-[0_24px_80px_rgba(20,18,15,0.08)]">
-              <div className="grid grid-cols-[1.45fr_repeat(3,1fr)] bg-[#1c1c1c] text-sm font-black text-white">
+              <div className="grid bg-[#1c1c1c] text-sm font-black text-white" style={comparisonGrid}>
                 <div className="p-4">Recurso</div>
                 {plans.map((plan) => (
-                  <div key={plan.name} className={"p-4 " + (plan.highlight ? "bg-[#ed7009]" : "")}>
+                  <div key={plan.slug} className={"p-4 " + (plan.highlight ? "bg-[#ed7009]" : "")}>
                     {plan.name}
                   </div>
                 ))}
               </div>
-              {comparisonRows.map(([feature, starter, growth, premium], index) => (
-                <div key={feature} className={"grid grid-cols-[1.45fr_repeat(3,1fr)] border-t border-neutral-100 text-sm " + (index % 2 === 0 ? "bg-[#fbfaf7]" : "bg-white")}>
+              {comparisonFeatures.map(([feature, valueForPlan], index) => (
+                <div key={feature} className={"grid border-t border-neutral-100 text-sm " + (index % 2 === 0 ? "bg-[#fbfaf7]" : "bg-white")} style={comparisonGrid}>
                   <div className="p-4 font-bold text-neutral-800">{feature}</div>
-                  <div className="p-4 whitespace-nowrap text-neutral-600">{starter}</div>
-                  <div className="p-4 whitespace-nowrap font-bold text-[#ed7009]">{growth}</div>
-                  <div className="p-4 whitespace-nowrap text-neutral-600">{premium}</div>
+                  {plans.map((plan) => (
+                    <div key={`${feature}-${plan.slug}`} className={"whitespace-nowrap p-4 " + (plan.highlight ? "font-bold text-[#ed7009]" : "text-neutral-600")}>
+                      {valueForPlan(plan)}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -499,7 +532,7 @@ export default async function Home() {
               <Link href="/login-cliente" className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#1c1c1c]">
                 Ver o painel funcionando <ArrowRight size={17} />
               </Link>
-              <a href="https://wa.me/5577999911911" target="_blank" className="inline-flex h-13 items-center justify-center gap-2 rounded-full border border-white/16 px-6 text-sm font-black text-white">
+              <a href="https://wa.me/5577988656394" target="_blank" className="inline-flex h-13 items-center justify-center gap-2 rounded-full border border-white/16 px-6 text-sm font-black text-white">
                 Falar com um especialista <MessageCircle size={17} />
               </a>
             </div>

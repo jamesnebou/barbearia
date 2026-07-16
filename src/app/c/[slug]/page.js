@@ -263,12 +263,16 @@ export default async function PublicClinicPage({ params, searchParams }) {
       .order("nome", { ascending: true }),
   ]);
 
+  const publicProcedures = Array.isArray(procedimentos) ? procedimentos : [];
+  const publicProfessionals = Array.isArray(profissionais) ? profissionais : [];
+  const publicProducts = Array.isArray(produtos) ? produtos : [];
+
   const brandName = meta.brand_name || clinic.nome;
   const logoUrl = meta.logo_url || "";
   const whatsapp = String(clinic.telefone || "").replace(/\D/g, "");
   const schedule = meta.horario_funcionamento || {};
-  const professionalName = site.nome_profissional || profissionais[0]?.nome || brandName;
-  const professionalBio = site.bio_profissional || profissionais[0]?.observacoes || "Atendimento cuidadoso, escuta ativa e um serviço alinhado ao seu estilo.";
+  const professionalName = site.nome_profissional || publicProfessionals[0]?.nome || brandName;
+  const professionalBio = site.bio_profissional || publicProfessionals[0]?.observacoes || "Atendimento cuidadoso, escuta ativa e um serviço alinhado ao seu estilo.";
   const heroImage = site.hero_image_url || site.profissional_image_url || fallbackImage(brandName, true);
   const professionalImage = site.profissional_image_url || site.hero_image_url || fallbackImage(professionalName);
   const clinicPhotos = [site.clinica_foto_1, site.clinica_foto_2, site.clinica_foto_3].filter(Boolean);
@@ -406,12 +410,12 @@ export default async function PublicClinicPage({ params, searchParams }) {
         </div>
       </section>
 
-      <PublicServicesSection procedimentos={procedimentos} />
+      <PublicServicesSection procedimentos={publicProcedures} />
 
-      {lojinhaAtiva && produtos.length ? (
+      {lojinhaAtiva && publicProducts.length ? (
         <PublicStorefront
           slug={clinic.slug}
-          products={produtos.map((produto) => ({ ...produto, estoque_disponivel: availableProductStock(produto) }))}
+          products={publicProducts.map((produto) => ({ ...produto, estoque_disponivel: availableProductStock(produto) }))}
           recoveryToken={query?.carrinho || ""}
         />
       ) : null}
@@ -478,7 +482,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
         </div>
 
         <div className="public-card-reveal public-reveal-right">
-          <PublicBookingForm slug={clinic.slug} procedimentos={procedimentos} profissionais={profissionais} query={query} />
+          <PublicBookingForm slug={clinic.slug} procedimentos={publicProcedures} profissionais={publicProfessionals} query={query} />
         </div>
       </section>
 

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireClinic } from "@/lib/auth/session";
 import { assertSectionAccess, getCurrentMembership } from "@/lib/auth/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isDemoClinic } from "@/lib/demo/demo-account";
 import { decryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 import { refundAsaasPayment } from "@/lib/asaas/client";
 
@@ -48,7 +49,7 @@ export async function updateStoreOrderStatusAction(formData) {
 
   if (status === "cancelado") {
     if (order.pagamento_status === "pago") redirectMessage("erro", "Pedido pago precisa passar pelo estorno financeiro.");
-    const { error: cancelError } = await supabaseAdmin.rpc("cancelar_pedido_loja", { p_pedido_id: id, p_motivo: "Cancelado pela equipe no dashboard." });
+    const { error: cancelError } = await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: id, p_motivo: "Cancelado pela equipe no dashboard." });
     if (cancelError) redirectMessage("erro", cancelError.message);
   } else {
     const { error: updateError } = await supabaseAdmin.from("barbearia_pedidos").update({ status }).eq("id", id).eq("barbearia_id", clinicId);
@@ -67,7 +68,7 @@ export async function confirmPickupPaymentAction(formData) {
   if (order.pagamento_status === "pago") redirectMessage("ok", "Este pedido já está pago.");
 
   const manualId = `retirada:${id}`;
-  const { error: rpcError } = await supabaseAdmin.rpc("confirmar_pagamento_pedido_loja", {
+  const { error: rpcError } = await supabaseAdmin.rpc("barbearia_confirmar_pagamento_pedido_loja", {
     p_pedido_id: id,
     p_asaas_payment_id: null,
     p_payload: { origem: "dashboard", forma: "retirada" },
@@ -94,7 +95,8 @@ export async function confirmPickupPaymentAction(formData) {
 }
 
 export async function requestStoreOrderRefundAction(formData) {
-  const { clinicId } = await getContext(true);
+  const { clinicId, clinic } = await getContext(true);
+  if (isDemoClinic(clinic)) redirectMessage("erro", "Estornos externos estão protegidos no ambiente demonstrativo.");
   const id = text(formData, "id", 80);
   const { data: order } = await supabaseAdmin.from("barbearia_pedidos").select("id, asaas_payment_id, pagamento_status, observacoes").eq("id", id).eq("barbearia_id", clinicId).maybeSingle();
   if (!order?.asaas_payment_id || order.pagamento_status !== "pago") redirectMessage("erro", "Este pedido não possui pagamento Asaas confirmado para estorno.");
@@ -106,7 +108,7 @@ export async function requestStoreOrderRefundAction(formData) {
   try {
     const result = await refundAsaasPayment(order.asaas_payment_id, { barbearia_id: clinicId, asaas_ativo: true, baseUrl: integration.configuracao_publica?.baseUrl, apiKey: secrets.apiKey });
     if (String(result?.status || "").toUpperCase() === "REFUNDED") {
-      const { error: refundError } = await supabaseAdmin.rpc("estornar_pedido_loja", { p_pedido_id: id, p_motivo: "Estorno confirmado pelo Asaas." });
+      const { error: refundError } = await supabaseAdmin.rpc("barbearia_estornar_pedido_loja", { p_pedido_id: id, p_motivo: "Estorno confirmado pelo Asaas." });
       if (refundError) throw refundError;
     } else {
       await supabaseAdmin.from("barbearia_pedidos").update({ observacoes: [order.observacoes, "Estorno solicitado ao Asaas; aguardando confirmação."].filter(Boolean).join("\n") }).eq("id", id);

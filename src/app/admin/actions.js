@@ -211,6 +211,7 @@ export async function upsertSystemPlanAction(formData) {
   revalidatePath("/admin");
   revalidatePath("/dashboard-admin");
   revalidatePath("/dashboard-admin/planos");
+  revalidatePath("/");
 }
 
 export async function updateInternalAdminCredentialsAction(formData) {

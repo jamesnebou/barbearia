@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoClinic } from "@/lib/demo/demo-account";
 import { requireClinic } from "@/lib/auth/session";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadClientPhoto, uploadClinicLogo, uploadClinicSiteImage, uploadProcedureImage, uploadProductImage } from "@/lib/supabase/storage";
@@ -1020,6 +1021,7 @@ export async function sellClientePacoteAction(formData) {
 export async function inviteClinicUserAction(formData) {
   const { supabase, clinicaId, activeClinic, memberships } = await getScopedSupabase();
   const redirectTo = userRedirectPath(formData);
+  if (isDemoClinic(activeClinic)) redirectWithMessage(redirectTo, "demo", "A criação de usuários está protegida no ambiente demonstrativo.");
   requireClinicManager(memberships, clinicaId, redirectTo);
   await redirectLimitError({ clinic: activeClinic, resource: "usuarios", redirectTo });
 
@@ -1057,8 +1059,9 @@ export async function inviteClinicUserAction(formData) {
 }
 
 export async function updateClinicUserAction(formData) {
-  const { supabase, clinicaId, memberships } = await getScopedSupabase();
+  const { supabase, clinicaId, activeClinic, memberships } = await getScopedSupabase();
   const redirectTo = userRedirectPath(formData);
+  if (isDemoClinic(activeClinic)) redirectWithMessage(redirectTo, "demo", "A gestão de usuários está protegida no ambiente demonstrativo.");
   requireClinicManager(memberships, clinicaId, redirectTo);
 
   const id = requireValue(text(formData, "id"), "Usuario nao informado.");
@@ -1576,6 +1579,7 @@ function isPublicOrigin(origin) {
 
 export async function connectClinicAsaasAction(formData) {
   const { clinicaId, activeClinic, memberships, user } = await getScopedSupabase();
+  if (isDemoClinic(activeClinic)) redirectWithMessage("/dashboard/configuracoes", "demo", "Integrações externas estão protegidas no ambiente demonstrativo.");
   requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
 
   const { data: current, error: currentError } = await supabaseAdmin
@@ -1653,6 +1657,7 @@ export async function connectClinicAsaasAction(formData) {
 
 export async function disconnectClinicAsaasAction() {
   const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  if (isDemoClinic(activeClinic)) redirectWithMessage("/dashboard/configuracoes", "demo", "Integrações externas estão protegidas no ambiente demonstrativo.");
   requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
   const { data: current, error: currentError } = await supabaseAdmin
     .from("barbearia_integracoes")
@@ -1695,6 +1700,7 @@ export async function disconnectClinicAsaasAction() {
 
 export async function testClinicWhatsappIntegrationAction() {
   const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  if (isDemoClinic(activeClinic)) redirectWithMessage("/dashboard/configuracoes", "demo", "Testes externos estão protegidos no ambiente demonstrativo.");
   requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
 
   const { data: integration, error } = await supabaseAdmin

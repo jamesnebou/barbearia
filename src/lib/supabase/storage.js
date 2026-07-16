@@ -11,6 +11,15 @@ const MAX_PROCEDURE_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_PRODUCT_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_MARKETING_HOME_IMAGE_BYTES = 20 * 1024 * 1024;
 
+async function assertDemoUploadAllowed(clinicaId, file) {
+  if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) return;
+  const { data, error } = await supabaseAdmin.from("barbearias").select("slug").eq("id", clinicaId).maybeSingle();
+  if (error) throw error;
+  if (data?.slug === "navalha-nobre-demo") {
+    throw new Error("Uploads ficam protegidos no ambiente demonstrativo para evitar arquivos permanentes.");
+  }
+}
+
 function sanitizeFileName(name = "foto") {
   return String(name || "foto")
     .normalize("NFD")
@@ -22,6 +31,7 @@ function sanitizeFileName(name = "foto") {
 }
 
 export async function uploadClientPhoto({ clinicaId, clienteId, file }) {
+  await assertDemoUploadAllowed(clinicaId, file);
   if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) {
     throw new Error("Selecione uma imagem para upload.");
   }
@@ -56,6 +66,7 @@ export async function uploadClientPhoto({ clinicaId, clienteId, file }) {
 }
 
 export async function uploadClinicLogo({ clinicaId, file }) {
+  await assertDemoUploadAllowed(clinicaId, file);
   if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) {
     return null;
   }
@@ -93,6 +104,7 @@ export async function uploadClinicLogo({ clinicaId, file }) {
 }
 
 export async function uploadClinicSiteImage({ clinicaId, file, slot }) {
+  await assertDemoUploadAllowed(clinicaId, file);
   if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) {
     return null;
   }
@@ -168,6 +180,7 @@ export async function uploadMarketingHomeImage({ file }) {
 }
 
 export async function uploadProcedureImage({ clinicaId, procedimentoId = "novo", file }) {
+  await assertDemoUploadAllowed(clinicaId, file);
   if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) {
     return null;
   }
@@ -205,6 +218,7 @@ export async function uploadProcedureImage({ clinicaId, procedimentoId = "novo",
 }
 
 export async function uploadProductImage({ clinicaId, produtoId = "novo", file }) {
+  await assertDemoUploadAllowed(clinicaId, file);
   if (!file || typeof file.arrayBuffer !== "function" || file.size <= 0) {
     return null;
   }

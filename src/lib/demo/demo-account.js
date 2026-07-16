@@ -3,7 +3,7 @@ import { supabaseAdmin } from "../supabase/admin.js";
 export const DEMO_EMAIL = String(process.env.DEMO_EMAIL || "demo@barbearia.local").toLowerCase();
 export const DEMO_PASSWORD = String(process.env.DEMO_PASSWORD || "Demo@123456");
 
-const DEMO_SLUG = "navalha-nobre-demo";
+export const DEMO_SLUG = "navalha-nobre-demo";
 
 const DEMO_BARBERS = [
   {
@@ -86,6 +86,10 @@ export function isDemoPassword(password) {
   return String(password || "") === DEMO_PASSWORD;
 }
 
+export function isDemoClinic(clinic) {
+  return String(clinic?.slug || clinic || "").trim().toLowerCase() === DEMO_SLUG;
+}
+
 async function findAuthUserByEmail(email) {
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
@@ -144,11 +148,19 @@ async function ensureDemoBarbearia(user) {
     site_subtitulo: "Cortes precisos, barba alinhada e atendimento com hora marcada.",
   };
 
-  const query = existing?.id
-    ? supabaseAdmin.from("barbearias").update(payload).eq("id", existing.id).select("id, slug").single()
-    : supabaseAdmin.from("barbearias").insert(payload).select("id, slug").single();
-  const { data: barbearia, error } = await query;
-  if (error) throw error;
+  let barbearia = existing;
+  let demoCreated = false;
+
+  if (!barbearia?.id) {
+    const { data, error } = await supabaseAdmin
+      .from("barbearias")
+      .insert(payload)
+      .select("id, slug")
+      .single();
+    if (error) throw error;
+    barbearia = data;
+    demoCreated = true;
+  }
 
   const { error: membershipError } = await supabaseAdmin.from("barbearia_usuarios").upsert({
     barbearia_id: barbearia.id,
@@ -162,32 +174,7 @@ async function ensureDemoBarbearia(user) {
     aceito_em: new Date().toISOString(),
   }, { onConflict: "barbearia_id,email" });
   if (membershipError) throw membershipError;
-  return barbearia;
-}
-
-async function clearDemoOperationalData(barbeariaId) {
-  const tables = [
-    "barbearia_pagamentos",
-    "barbearia_comanda_itens",
-    "barbearia_comandas",
-    "barbearia_site_agendamentos_publicos",
-    "barbearia_agendamentos",
-    "barbearia_cliente_pacotes",
-    "barbearia_pacote_servicos",
-    "barbearia_pacotes",
-    "barbearia_crm_oportunidades",
-    "barbearia_cliente_fotos",
-    "barbearia_cliente_consentimentos",
-    "barbearia_clientes",
-    "barbearia_produtos",
-    "barbearia_servicos",
-    "barbearia_barbeiros",
-  ];
-
-  for (const table of tables) {
-    const { error } = await supabaseAdmin.from(table).delete().eq("barbearia_id", barbeariaId);
-    if (error) throw error;
-  }
+  return { ...barbearia, demoCreated };
 }
 
 async function seedDemoOperationalData(barbearia) {
@@ -293,11 +280,43 @@ async function seedDemoOperationalData(barbearia) {
   if (agendaError) throw agendaError;
 }
 
+function isMissingSnapshotMigration(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.code === "PGRST202" || message.includes("capture_barbearia_demo_snapshot") || message.includes("restore_barbearia_demo_snapshot");
+}
+
+async function captureDemoBaseline(barbeariaId) {
+  const { data, error } = await supabaseAdmin.rpc("capture_barbearia_demo_snapshot", {
+    p_barbearia_id: barbeariaId,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
+async function restoreDemoBaseline(barbeariaId) {
+  const { data, error } = await supabaseAdmin.rpc("restore_barbearia_demo_snapshot", {
+    p_barbearia_id: barbeariaId,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
 export async function ensureDemoAccountAndReset() {
   const user = await ensureDemoAuthUser();
-  const barbearia = await ensureDemoBarbearia(user);
-  await clearDemoOperationalData(barbearia.id);
-  await seedDemoOperationalData(barbearia);
+  const { demoCreated, ...barbearia } = await ensureDemoBarbearia(user);
+
+  if (demoCreated) {
+    await seedDemoOperationalData(barbearia);
+  }
+
+  try {
+    const captured = await captureDemoBaseline(barbearia.id);
+    if (!captured) await restoreDemoBaseline(barbearia.id);
+  } catch (error) {
+    if (!isMissingSnapshotMigration(error)) throw error;
+    throw new Error("A migration do ambiente demonstrativo ainda não foi aplicada no Supabase.");
+  }
+
   return { user, clinic: barbearia };
 }
 
@@ -305,7 +324,16 @@ export async function resetDemoClinicData() {
   const { data: barbearia, error } = await supabaseAdmin.from("barbearias").select("id, slug").eq("slug", DEMO_SLUG).maybeSingle();
   if (error) throw error;
   if (!barbearia) return null;
-  await clearDemoOperationalData(barbearia.id);
-  await seedDemoOperationalData(barbearia);
+
+  try {
+    const restored = await restoreDemoBaseline(barbearia.id);
+    if (!restored) {
+      throw new Error("A base protegida da demonstração ainda não foi congelada.");
+    }
+  } catch (restoreError) {
+    if (!isMissingSnapshotMigration(restoreError)) throw restoreError;
+    throw new Error("A migration do ambiente demonstrativo ainda não foi aplicada no Supabase.");
+  }
+
   return barbearia;
 }

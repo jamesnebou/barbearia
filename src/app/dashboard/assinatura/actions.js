@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireClinic } from "@/lib/auth/session";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isDemoClinic } from "@/lib/demo/demo-account";
 import { createAsaasCustomerForClinic, createAsaasSubscriptionForClinic, isAsaasConfigured, listAsaasSubscriptionPayments } from "@/lib/asaas/client";
 import { getSystemPlans } from "@/lib/saas/plans";
 
@@ -49,6 +50,7 @@ async function getFullClinic(clinicaId) {
 
 export async function startSubscriptionAction(formData) {
   const { activeClinic, memberships } = await requireClinic();
+  if (isDemoClinic(activeClinic)) redirectSubscriptionError(new Error("Assinaturas externas estão protegidas no ambiente demonstrativo."), "demo");
 
   try {
     ensureCanManageSubscription(memberships, activeClinic);

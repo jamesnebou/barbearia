@@ -11,7 +11,7 @@ export async function GET(request) {
     return NextResponse.json({ ok: false, error: "Não autorizado." }, { status: 401 });
   }
 
-  const { data, error } = await supabaseAdmin.rpc("expirar_pedidos_loja");
+  const { data, error } = await supabaseAdmin.rpc("barbearia_expirar_pedidos_loja");
   if (error) {
     console.error("Falha ao expirar reservas da lojinha:", error.message);
     return NextResponse.json({ ok: false, error: "Falha ao processar reservas." }, { status: 500 });
