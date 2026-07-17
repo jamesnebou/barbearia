@@ -45,6 +45,7 @@ const navItems = [
   { href: "/dashboard/configuracoes", label: "Configurações", icon: "configuracoes", section: "configuracoes" },
   { href: "/dashboard/financeiro", label: "Financeiro", icon: "financeiro", section: "financeiro" },
   { href: "/dashboard/assinatura", label: "Assinatura", icon: "assinatura", section: "assinatura" },
+  { href: "/dashboard/tutoriais", label: "Tutoriais", icon: "tutoriais", section: "tutoriais" },
 ];
 
 function safeColor(value, fallback) {

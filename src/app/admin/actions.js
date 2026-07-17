@@ -44,6 +44,28 @@ function slugify(value) {
     .slice(0, 60);
 }
 
+function httpUrl(value, message, { optional = false } = {}) {
+  const raw = String(value || "").trim();
+  if (!raw && optional) return null;
+  requireValue(raw, message);
+
+  try {
+    const parsed = new URL(raw);
+    if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("protocol");
+    return parsed.toString();
+  } catch {
+    throw new Error(message);
+  }
+}
+
+function tutorialSteps(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
 async function findAuthUserByEmail(email) {
   let page = 1;
   const perPage = 100;
@@ -212,6 +234,49 @@ export async function upsertSystemPlanAction(formData) {
   revalidatePath("/dashboard-admin");
   revalidatePath("/dashboard-admin/planos");
   revalidatePath("/");
+}
+
+export async function upsertTutorialAction(formData) {
+  await requireInternalAdmin();
+
+  const id = nullableText(formData, "id");
+  const payload = {
+    titulo: requireValue(text(formData, "titulo"), "Informe o título do tutorial."),
+    descricao_curta: nullableText(formData, "descricao_curta"),
+    descricao: nullableText(formData, "descricao"),
+    categoria: nullableText(formData, "categoria") || "Primeiros passos",
+    video_url: httpUrl(formData.get("video_url"), "Informe uma URL válida de YouTube, Vimeo, MP4 ou WebM."),
+    thumbnail_url: httpUrl(formData.get("thumbnail_url"), "Informe uma URL de capa válida.", { optional: true }),
+    duracao_minutos: intValue(formData, "duracao_minutos", 5),
+    ordem: Math.max(0, Math.round(numberValue(formData, "ordem", 0))),
+    passos: tutorialSteps(formData.get("passos")),
+    destaque: formData.get("destaque") === "on",
+    ativo: formData.get("ativo") === "on",
+    updated_at: new Date().toISOString(),
+  };
+
+  const query = id
+    ? supabaseAdmin.from("barbearia_tutoriais").update(payload).eq("id", id)
+    : supabaseAdmin.from("barbearia_tutoriais").insert(payload);
+  const { error } = await query;
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard-admin/tutoriais");
+  revalidatePath("/dashboard/tutoriais");
+  redirect(`/dashboard-admin/tutoriais?ok=${id ? "atualizado" : "criado"}`);
+}
+
+export async function deleteTutorialAction(formData) {
+  await requireInternalAdmin();
+  const id = requireValue(text(formData, "id"), "Tutorial não informado.");
+  const { error } = await supabaseAdmin.from("barbearia_tutoriais").delete().eq("id", id);
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard-admin/tutoriais");
+  revalidatePath("/dashboard/tutoriais");
+  redirect("/dashboard-admin/tutoriais?ok=excluido");
 }
 
 export async function updateInternalAdminCredentialsAction(formData) {

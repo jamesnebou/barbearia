@@ -20,16 +20,17 @@ export const ACCESS_SECTION_LABELS = [
   ["configuracoes", "Configurações"],
   ["financeiro", "Financeiro"],
   ["assinatura", "Assinatura"],
+  ["tutoriais", "Tutoriais"],
 ];
 
 export const ACCESS_SECTIONS = ACCESS_SECTION_LABELS.map(([section]) => section);
 
 export const ROLE_ACCESS = {
-  owner: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura"],
-  gerente: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura"],
-  recepcao: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos"],
-  financeiro: ["dashboard", "notificacoes", "clientes", "crm", "produtos", "pedidos", "financeiro", "assinatura"],
-  barbeiro: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "procedimentos"],
+  owner: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura", "tutoriais"],
+  gerente: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura", "tutoriais"],
+  recepcao: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "tutoriais"],
+  financeiro: ["dashboard", "notificacoes", "clientes", "crm", "produtos", "pedidos", "financeiro", "assinatura", "tutoriais"],
+  barbeiro: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "procedimentos", "tutoriais"],
 };
 
 export function getCurrentMembership(memberships, clinicaId) {

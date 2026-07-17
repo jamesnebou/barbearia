@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CalendarDays, ClipboardList, CreditCard, KanbanSquare, LayoutDashboard, Menu, ReceiptText, Scissors, Settings, ShoppingBag, UserRound, UserCog, UsersRound, X } from "lucide-react";
+import { Bell, BookOpenCheck, CalendarDays, ClipboardList, CreditCard, KanbanSquare, LayoutDashboard, Menu, ReceiptText, Scissors, Settings, ShoppingBag, UserRound, UserCog, UsersRound, X } from "lucide-react";
 import { useState } from "react";
 
 const iconMap = {
@@ -19,6 +19,7 @@ const iconMap = {
   configuracoes: Settings,
   financeiro: CreditCard,
   assinatura: ReceiptText,
+  tutoriais: BookOpenCheck,
 };
 
 export function SidebarNav({ items }) {
