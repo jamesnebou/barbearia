@@ -60,18 +60,23 @@ export function isInternalAdminEmail(email) {
 }
 
 export async function getSystemPlans() {
-  const { data, error } = await supabaseAdmin
-    .from("barbearia_planos_sistema")
-    .select("slug, nome, descricao, preco_mensal, limite_usuarios, limite_barbeiros, limite_clientes, limite_agendamentos_mes, ativo, ordem")
-    .eq("ativo", true)
-    .order("ordem", { ascending: true });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("barbearia_planos_sistema")
+      .select("slug, nome, descricao, preco_mensal, limite_usuarios, limite_barbeiros, limite_clientes, limite_agendamentos_mes, ativo, ordem")
+      .eq("ativo", true)
+      .order("ordem", { ascending: true });
 
-  if (error) {
-    console.error("Erro ao carregar planos do sistema:", error);
+    if (error) {
+      console.error("Erro ao carregar planos do sistema:", error);
+      return Object.values(FALLBACK_PLANS);
+    }
+
+    return data?.length ? data : Object.values(FALLBACK_PLANS);
+  } catch (error) {
+    console.error("Supabase indisponível ao carregar planos do sistema:", error);
     return Object.values(FALLBACK_PLANS);
   }
-
-  return data?.length ? data : Object.values(FALLBACK_PLANS);
 }
 
 export async function getClinicPlan(clinic) {
