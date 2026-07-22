@@ -301,6 +301,13 @@ async function restoreDemoBaseline(barbeariaId) {
   return data === true;
 }
 
+async function rebaseDemoTimeline(barbeariaId) {
+  const { error } = await supabaseAdmin.rpc("rebase_barbearia_demo_timeline", {
+    p_barbearia_id: barbeariaId,
+  });
+  if (error && error.code !== "PGRST202") throw error;
+}
+
 export async function ensureDemoAccountAndReset() {
   const user = await ensureDemoAuthUser();
   const { demoCreated, ...barbearia } = await ensureDemoBarbearia(user);
@@ -312,6 +319,7 @@ export async function ensureDemoAccountAndReset() {
   try {
     const captured = await captureDemoBaseline(barbearia.id);
     if (!captured) await restoreDemoBaseline(barbearia.id);
+    await rebaseDemoTimeline(barbearia.id);
   } catch (error) {
     if (!isMissingSnapshotMigration(error)) throw error;
     throw new Error("A migration do ambiente demonstrativo ainda não foi aplicada no Supabase.");
@@ -330,6 +338,7 @@ export async function resetDemoClinicData() {
     if (!restored) {
       throw new Error("A base protegida da demonstração ainda não foi congelada.");
     }
+    await rebaseDemoTimeline(barbearia.id);
   } catch (restoreError) {
     if (!isMissingSnapshotMigration(restoreError)) throw restoreError;
     throw new Error("A migration do ambiente demonstrativo ainda não foi aplicada no Supabase.");

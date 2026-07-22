@@ -208,7 +208,7 @@ export async function generateMetadata({ params }) {
   const { data } = await supabaseAdmin.from("barbearias").select("nome, metadata").eq("slug", slug).maybeSingle();
   const site = data?.metadata?.site_publico || {};
   return {
-    title: `${site.titulo_hero || data?.metadata?.brand_name || data?.nome || "Clí­nica"} | Agendamento`,
+    title: `${site.titulo_hero || data?.metadata?.brand_name || data?.nome || "Barbearia"} | Agendamento`,
     description: site.subtitulo_hero || "Conheça os serviços e agende seu horário.",
     icons: site.favicon_url ? { icon: [{ url: site.favicon_url }], shortcut: [{ url: site.favicon_url }], apple: [{ url: site.favicon_url }] } : undefined,
   };
@@ -269,7 +269,8 @@ export default async function PublicClinicPage({ params, searchParams }) {
 
   const brandName = meta.brand_name || clinic.nome;
   const logoUrl = meta.logo_url || "";
-  const whatsapp = String(clinic.telefone || "").replace(/\D/g, "");
+  const whatsappDigits = String(clinic.telefone || "").replace(/\D/g, "");
+  const whatsapp = whatsappDigits.startsWith("55") ? whatsappDigits : whatsappDigits ? `55${whatsappDigits}` : "";
   const schedule = meta.horario_funcionamento || {};
   const professionalName = site.nome_profissional || publicProfessionals[0]?.nome || brandName;
   const professionalBio = site.bio_profissional || publicProfessionals[0]?.observacoes || "Atendimento cuidadoso, escuta ativa e um serviço alinhado ao seu estilo.";
@@ -496,7 +497,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             {site.google_maps_url ? <a href={site.google_maps_url} target="_blank" className="rounded-full bg-[var(--clinic-primary)] px-5 py-3 text-sm font-bold text-white">Abrir no Google Maps</a> : null}
-            {whatsapp ? <a href={`https://wa.me/55${whatsapp}`} target="_blank" className="rounded-full border border-neutral-300 bg-white/70 px-5 py-3 text-sm font-bold text-neutral-900">Chamar no WhatsApp</a> : null}
+            {whatsapp ? <a href={`https://wa.me/${whatsapp}`} target="_blank" className="rounded-full border border-neutral-300 bg-white/70 px-5 py-3 text-sm font-bold text-neutral-900">Chamar no WhatsApp</a> : null}
           </div>
         </div>
         <div className="public-card-reveal public-reveal-right overflow-hidden rounded-[2rem] border border-white/70 bg-white/70 shadow-[0_24px_70px_rgba(23,19,15,0.12)] backdrop-blur">
@@ -537,7 +538,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
               {clinic.telefone ? <p className="flex gap-3"><MessageCircle size={18} className="mt-0.5 shrink-0" /> {clinic.telefone}</p> : null}
               <div className="flex gap-3 pt-2">
                 {site.instagram_url ? <a href={site.instagram_url} target="_blank" aria-label="Instagram" title="Instagram" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/16"><InstagramMark size={18} /></a> : null}
-                {whatsapp ? <a href={`https://wa.me/55${whatsapp}`} target="_blank" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"><MessageCircle size={18} /></a> : null}
+                {whatsapp ? <a href={`https://wa.me/${whatsapp}`} target="_blank" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"><MessageCircle size={18} /></a> : null}
               </div>
             </div>
           </div>
@@ -548,7 +549,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
       </footer>
 
       {whatsapp ? (
-        <a href={`https://wa.me/55${whatsapp}`} target="_blank" className="public-whatsapp-float whatsapp-pulse flex h-14 w-14 items-center justify-center rounded-full bg-[#20c55e] text-white shadow-[0_18px_44px_rgba(32,197,94,0.34)]">
+        <a href={`https://wa.me/${whatsapp}`} target="_blank" className="public-whatsapp-float whatsapp-pulse flex h-14 w-14 items-center justify-center rounded-full bg-[#20c55e] text-white shadow-[0_18px_44px_rgba(32,197,94,0.34)]">
           <MessageCircle size={27} />
         </a>
       ) : null}

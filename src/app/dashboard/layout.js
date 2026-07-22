@@ -8,6 +8,8 @@ import { canAccessSection, getCurrentMembership } from "@/lib/auth/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isDemoLoginEmail } from "@/lib/demo/demo-account";
 import { DemoSessionLifecycle } from "@/components/demo/demo-session-lifecycle";
+import { DemoGuidedTour } from "@/components/demo/demo-guided-tour";
+import { DemoConversionCta } from "@/components/demo/demo-conversion-cta";
 
 
 export async function generateMetadata() {
@@ -143,7 +145,7 @@ export default async function DashboardLayout({ children }) {
         "--clinic-soft": "color-mix(in srgb, var(--clinic-accent) 10%, white)",
       }}
     >
-      {isDemo ? <DemoSessionLifecycle /> : null}
+      {isDemo ? <><DemoSessionLifecycle /><DemoGuidedTour /><DemoConversionCta /></> : null}
       <MobileSidebarMenu items={allowedNavItems} brandName={brandName} logoUrl={logoUrl} />
 
       <aside className="dashboard-sidebar fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-neutral-200 bg-white/95 px-4 py-4 shadow-sm backdrop-blur-xl md:flex">
@@ -186,7 +188,7 @@ export default async function DashboardLayout({ children }) {
       <section className="dashboard-main-content min-w-0">
         {isDemo ? (
           <div className="dashboard-system-banner border-b border-sky-400/25 bg-sky-500/10 px-5 py-3 text-sm text-sky-100 shadow-sm backdrop-blur sm:px-8 lg:px-10">
-            <strong>Ambiente demonstrativo.</strong> As alterações são temporárias e a base original é restaurada ao atualizar a página, sair ou fechar a aba.
+            <strong>Ambiente demonstrativo.</strong> Explore à vontade: as alterações são temporárias e a base original é restaurada ao atualizar, sair ou fechar a aba.
           </div>
         ) : null}
         {billingState.level !== "ok" ? (

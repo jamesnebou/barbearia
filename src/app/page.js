@@ -20,6 +20,11 @@ import {
 } from "lucide-react";
 import { getMarketingHomeConfig } from "@/lib/marketing/home-config";
 import { getSystemPlans } from "@/lib/saas/plans";
+import { ConversionTracker } from "@/components/marketing/conversion-tracker";
+import { TrackedAnchor, TrackedLink } from "@/components/marketing/tracked-link";
+import { PlanCta } from "@/components/marketing/plan-cta";
+import { RoiCalculator } from "@/components/marketing/roi-calculator";
+import { LeadCaptureForm } from "@/components/marketing/lead-capture-form";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +111,7 @@ function marketingPlan(plan, index, total) {
     price: formatPlanPrice(plan.preco_mensal),
     badge: presentation.badge || "Plano",
     description: plan.descricao || "Plano preparado para acompanhar a operação da sua barbearia.",
-    limits: `${formatNumber(plan.limite_barbeiros)} barbeiros, ${formatNumber(plan.limite_clientes)} clientes e ${formatNumber(plan.limite_agendamentos_mes)} agendamentos por mês.`,
+    limits: `${formatNumber(plan.limite_barbeiros)} ${Number(plan.limite_barbeiros) === 1 ? "barbeiro" : "barbeiros"}, ${formatNumber(plan.limite_clientes)} clientes e ${formatNumber(plan.limite_agendamentos_mes)} agendamentos por mês.`,
     differentiator: presentation.differentiator || "Recursos integrados para agenda, clientes, financeiro e crescimento.",
     indicatedFor: presentation.indicatedFor || plan.nome,
     finance: presentation.finance || "Completo",
@@ -185,8 +190,24 @@ function SectionTitle({ eyebrow, title, description, align = "left" }) {
 }
 
 export const metadata = {
-  title: "NexaWi Barbearias | Cadeira ocupada, gestão no controle",
+  title: { absolute: "NexaWi Barbearias | Cadeira ocupada, gestão no controle" },
   description: "Agenda, sinal online, CRM, clientes, comissões, financeiro e site premium no mesmo fluxo para sua barbearia crescer.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "NexaWi Barbearias | Cadeira ocupada, gestão no controle",
+    description: "Agenda, sinal online, CRM, financeiro e site premium no mesmo fluxo para sua barbearia crescer.",
+    url: "/",
+    siteName: "NexaWi Barbearias",
+    locale: "pt_BR",
+    type: "website",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "NexaWi Barbearias" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NexaWi Barbearias",
+    description: "Cadeira ocupada, gestão no controle.",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default async function Home() {
@@ -201,6 +222,19 @@ export default async function Home() {
 
   return (
     <main className="marketing-shell min-h-screen overflow-hidden bg-[#f4f2ed] text-[#09110f]">
+      <ConversionTracker />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "NexaWi Barbearias",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web",
+          description: metadata.description,
+          offers: plans.map((plan) => ({ "@type": "Offer", name: plan.name, price: Number(plan.preco_mensal), priceCurrency: "BRL" })),
+        }).replace(/</g, "\\u003c") }}
+      />
       <header className="marketing-header sticky top-0 z-50 border-b border-white/10 bg-[#1c1c1c]/95 text-white shadow-[0_18px_60px_rgba(28,28,28,0.22)] backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
           <Link href="/" className="flex items-center gap-3">
@@ -212,15 +246,15 @@ export default async function Home() {
             <a href="#planos">Planos</a>
             <a href="#comparativo">Compare</a>
             <a href="#faq">Dúvidas</a>
-            <Link href="/login-cliente">Demo</Link>
+            <TrackedLink href="/demo" eventName="demo_click" eventData={{ location: "header_nav" }}>Demo</TrackedLink>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login-cliente" className="hidden rounded-full border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-bold text-white/78 shadow-sm transition hover:bg-white/14 hover:text-white sm:inline-flex">
               Entrar
             </Link>
-            <Link href="/login-cliente" className="marketing-primary-cta inline-flex items-center gap-2 rounded-full bg-[#1c1c1c] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(28,28,28,0.24)]">
+            <TrackedLink href="/demo" eventName="demo_click" eventData={{ location: "header" }} className="marketing-primary-cta inline-flex items-center gap-2 rounded-full bg-[#ed7009] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(237,112,9,0.28)]">
               Quero ver funcionando <ArrowRight size={16} />
-            </Link>
+            </TrackedLink>
           </div>
         </div>
       </header>
@@ -239,13 +273,14 @@ export default async function Home() {
               {hero.subtitle}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/login-cliente" className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-[#1c1c1c] px-6 text-sm font-black text-white shadow-[0_22px_56px_rgba(28,28,28,0.26)]">
+              <TrackedLink href="/demo" eventName="demo_click" eventData={{ location: "hero" }} className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-[#1c1c1c] px-6 text-sm font-black text-white shadow-[0_22px_56px_rgba(28,28,28,0.26)]">
                 {hero.primaryCtaLabel} <ArrowRight size={17} />
-              </Link>
+              </TrackedLink>
               <a href="#produto" className="marketing-secondary-cta inline-flex h-13 items-center justify-center rounded-full border border-black/10 bg-white/70 px-6 text-sm font-black text-neutral-800 shadow-sm backdrop-blur">
                 {hero.secondaryCtaLabel}
               </a>
             </div>
+            <p className="mt-3 text-sm font-semibold text-neutral-500">Demo em um clique, sem cadastro e sem cartão.</p>
             <div className="mt-9 grid gap-3 text-sm font-semibold text-neutral-700 sm:grid-cols-2">
               {hero.topics.map((item) => (
                 <div key={item} className="flex items-start gap-2">
@@ -457,6 +492,7 @@ export default async function Home() {
                 <Sparkles size={17} className="mb-2 text-[#ed7009]" />
                 {plan.differentiator}
               </div>
+              <PlanCta plan={plan.slug} featured={plan.highlight} />
             </article>
           ))}
         </div>
@@ -498,6 +534,10 @@ export default async function Home() {
         </div>
       </section>
 
+      <RoiCalculator />
+
+      <LeadCaptureForm />
+
       <section id="faq" className="marketing-section mx-auto max-w-5xl px-5 py-20 sm:px-8 lg:px-10">
         <SectionTitle
           eyebrow="FAQ"
@@ -529,12 +569,12 @@ export default async function Home() {
               Veja como site, agenda, sinal, cliente, comissão, CRM e financeiro se comportam juntos em uma barbearia de verdade.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/login-cliente" className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#1c1c1c]">
+              <TrackedLink href="/demo" eventName="demo_click" eventData={{ location: "final_cta" }} className="marketing-primary-cta inline-flex h-13 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-black text-[#1c1c1c]">
                 Ver o painel funcionando <ArrowRight size={17} />
-              </Link>
-              <a href="https://wa.me/5577988656394" target="_blank" className="inline-flex h-13 items-center justify-center gap-2 rounded-full border border-white/16 px-6 text-sm font-black text-white">
+              </TrackedLink>
+              <TrackedAnchor href="https://wa.me/5577988656394" target="_blank" rel="noreferrer" eventName="whatsapp_click" eventData={{ location: "final_cta" }} className="inline-flex h-13 items-center justify-center gap-2 rounded-full border border-white/16 px-6 text-sm font-black text-white">
                 Falar com um especialista <MessageCircle size={17} />
-              </a>
+              </TrackedAnchor>
             </div>
           </div>
           <div className="grid gap-3">
@@ -567,4 +607,3 @@ export default async function Home() {
     </main>
   );
 }
-
