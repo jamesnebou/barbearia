@@ -68,6 +68,28 @@ export function trackMarketingEvent(eventName, metadata = {}, options = {}) {
 
 export function ConversionTracker() {
   useEffect(() => {
+    if (window.location.hash) return undefined;
+
+    const previousScrollRestoration = window.history.scrollRestoration;
+    const resetToTop = () => {
+      if (!window.location.hash) {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }
+    };
+
+    window.history.scrollRestoration = "manual";
+    resetToTop();
+    const frame = window.requestAnimationFrame(resetToTop);
+    window.addEventListener("pageshow", resetToTop);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("pageshow", resetToTop);
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const previous = getMarketingAttribution();
     const attribution = { ...previous };
