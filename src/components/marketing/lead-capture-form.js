@@ -50,7 +50,7 @@ export function LeadCaptureForm() {
   return (
     <section id="contato" className="marketing-section px-5 py-20 sm:px-8 lg:px-10">
       <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#1c1c1c] text-white shadow-[0_34px_100px_rgba(28,28,28,0.24)] lg:grid-cols-[0.8fr_1.2fr]">
-        <div className="bg-[radial-gradient(circle_at_20%_10%,rgba(237,112,9,0.35),transparent_26rem)] p-7 lg:p-10">
+        <div className="bg-[radial-gradient(circle_at_20%_10%,var(--nexawi-primary-glow),transparent_26rem)] p-7 lg:p-10">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Próximo passo</p>
           <h2 className="mt-3 text-4xl font-black leading-tight">Veja se a NexaWi cabe na rotina da sua barbearia.</h2>
           <p className="mt-5 text-base leading-8 text-white/68">Conte rapidamente como é sua operação. A conversa é objetiva e sem compromisso.</p>
@@ -83,7 +83,7 @@ export function LeadCaptureForm() {
             <input name="consent" type="checkbox" required className="mt-1" /> Autorizo o contato da NexaWi sobre esta solicitação, conforme a Política de Privacidade.
           </label>
           {state.message ? <p role="status" className={`rounded-xl px-4 py-3 text-sm font-bold sm:col-span-2 ${state.status === "success" ? "bg-emerald-500/15 text-emerald-200" : "bg-red-500/15 text-red-200"}`}>{state.message}</p> : null}
-          <button disabled={state.status === "loading"} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#ed7009] px-6 text-sm font-black text-white disabled:opacity-60 sm:col-span-2">
+          <button disabled={state.status === "loading"} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--nexawi-primary)] px-6 text-sm font-black text-white disabled:opacity-60 sm:col-span-2">
             {state.status === "loading" ? <LoaderCircle className="animate-spin" size={17} /> : <MessageCircle size={17} />} Quero falar sobre minha barbearia
           </button>
           <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" onClick={() => trackMarketingEvent("whatsapp_click", { location: "lead_form" })} className="text-center text-xs font-bold text-white/55 underline underline-offset-4 sm:col-span-2">Prefere não preencher? Fale direto pelo WhatsApp.</a>

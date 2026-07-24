@@ -91,26 +91,26 @@ export default async function DashboardAdminTutoriaisPage({ searchParams }) {
             <article key={item.label} className="rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-4">
                 <div><p className="text-sm font-semibold text-neutral-500">{item.label}</p><strong className="mt-2 block text-3xl font-black">{item.value}</strong></div>
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#ed7009]"><Icon size={22} /></span>
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[var(--nexawi-primary)]"><Icon size={22} /></span>
               </div>
             </article>
           );
         })}
       </section>
 
-      <details open={!tutorials.length} className="group overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-white shadow-[0_24px_70px_rgba(237,112,9,0.10)]">
+      <details open={!tutorials.length} className="group overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-white shadow-[0_24px_70px_var(--nexawi-primary-glow-soft)]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 bg-[linear-gradient(135deg,#fff7ed,#ffffff)] px-5 py-5 sm:px-7">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ed7009] text-white shadow-[0_14px_35px_rgba(237,112,9,0.28)]"><Sparkles size={20} /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--nexawi-primary)] text-white shadow-[0_14px_35px_var(--nexawi-primary-glow)]"><Sparkles size={20} /></span>
             <div><h2 className="font-black text-neutral-950">Adicionar nova aula</h2><p className="mt-1 text-sm text-neutral-500">Cadastre o vídeo e transforme-o em um passo a passo simples.</p></div>
           </div>
-          <span className="text-2xl font-light text-[#ed7009] transition group-open:rotate-45">+</span>
+          <span className="text-2xl font-light text-[var(--nexawi-primary)] transition group-open:rotate-45">+</span>
         </summary>
         <div className="border-t border-orange-100 p-5 sm:p-7"><TutorialForm /></div>
       </details>
 
       <section className="space-y-4">
-        <div><p className="text-xs font-black uppercase tracking-[0.25em] text-[#ed7009]">Biblioteca publicada</p><h2 className="mt-2 text-2xl font-black tracking-tight">Gerencie cada aula</h2></div>
+        <div><p className="text-xs font-black uppercase tracking-[0.25em] text-[var(--nexawi-primary)]">Biblioteca publicada</p><h2 className="mt-2 text-2xl font-black tracking-tight">Gerencie cada aula</h2></div>
         {!tutorials.length ? (
           <div className="rounded-[1.5rem] border border-dashed border-neutral-300 bg-white p-10 text-center text-sm text-neutral-500">Nenhum tutorial cadastrado ainda.</div>
         ) : tutorials.map((tutorial, index) => (

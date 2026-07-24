@@ -43,7 +43,7 @@ export default function LoginForm({ mode = "cliente", next = "/dashboard", email
         <span className="flex items-center justify-between gap-3 text-sm font-medium text-neutral-700">
           Senha
           {mode === "gerente" ? (
-            <Link href="/login/recuperar-senha" className="text-xs font-bold text-[#ed7009] hover:text-[#cf5f07]">
+            <Link href="/login/recuperar-senha" className="text-xs font-bold text-[#1f6dee] hover:text-[#cf5f07]">
               Esqueci minha senha
             </Link>
           ) : null}

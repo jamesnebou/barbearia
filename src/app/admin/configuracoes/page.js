@@ -17,7 +17,7 @@ function AdminInput({ label, name, type = "text", defaultValue = "", placeholder
         placeholder={placeholder}
         autoComplete={autoComplete}
         readOnly={readOnly}
-        className="mt-2 h-12 w-full rounded-2xl border border-neutral-200 bg-white px-4 text-sm outline-none transition focus:border-[#ed7009] focus:ring-4 focus:ring-orange-100 read-only:bg-neutral-50 read-only:text-neutral-500"
+        className="mt-2 h-12 w-full rounded-2xl border border-neutral-200 bg-white px-4 text-sm outline-none transition focus:border-[#1f6dee] focus:ring-4 focus:ring-orange-100 read-only:bg-neutral-50 read-only:text-neutral-500"
       />
     </label>
   );
@@ -32,7 +32,7 @@ function AdminTextarea({ label, name, defaultValue = "", placeholder = "", rows 
         defaultValue={defaultValue}
         placeholder={placeholder}
         rows={rows}
-        className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-[#ed7009] focus:ring-4 focus:ring-orange-100"
+        className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-[#1f6dee] focus:ring-4 focus:ring-orange-100"
       />
     </label>
   );
@@ -74,7 +74,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
       <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
         <form action={updateInternalAdminCredentialsAction} className="rounded-[1.75rem] border border-neutral-200 bg-white p-6 shadow-sm">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#ed7009]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#1f6dee]">
               <KeyRound size={20} />
             </div>
             <div>
@@ -96,14 +96,14 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
             Ao trocar o e-mail, o sistema mantém este usuário marcado como administrador interno no Supabase Auth. Use um e-mail válido e que você controle.
           </div>
 
-          <button type="submit" className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-[#ed7009] px-6 text-sm font-black text-white shadow-[0_18px_45px_rgba(237,112,9,0.28)] transition hover:-translate-y-0.5 hover:bg-[#cf5f07]">
+          <button type="submit" className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-[#1f6dee] px-6 text-sm font-black text-white shadow-[0_18px_45px_rgba(237,112,9,0.28)] transition hover:-translate-y-0.5 hover:bg-[#cf5f07]">
             Salvar credenciais
           </button>
         </form>
 
         <aside className="space-y-4">
           <article className="rounded-[1.75rem] border border-neutral-200 bg-white p-6 shadow-sm">
-            <ShieldCheck size={22} className="text-[#ed7009]" />
+            <ShieldCheck size={22} className="text-[#1f6dee]" />
             <h2 className="mt-4 text-lg font-black">Conta atual</h2>
             <p className="mt-2 text-sm font-semibold text-neutral-500">Usuário autenticado como administrador interno.</p>
             <div className="mt-4 rounded-2xl bg-neutral-50 p-4">
@@ -113,7 +113,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
           </article>
 
           <article className="rounded-[1.75rem] border border-neutral-200 bg-white p-6 shadow-sm">
-            <Mail size={22} className="text-[#ed7009]" />
+            <Mail size={22} className="text-[#1f6dee]" />
             <h2 className="mt-4 text-lg font-black">Admins globais</h2>
             <p className="mt-2 text-sm leading-6 text-neutral-500">Lista de fallback configurada no ambiente. O admin atual também pode ser autorizado pelo próprio Supabase Auth.</p>
             <div className="mt-4 space-y-2">
@@ -133,7 +133,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
 
       <form action={updateMarketingHomeHeroAction} className="rounded-[1.75rem] border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#ed7009]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-[#1f6dee]">
             <Globe2 size={20} />
           </div>
           <div>
@@ -155,7 +155,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
                 name="hero_preview_image_file"
                 type="file"
                 accept="image/png,image/jpeg"
-                className="h-12 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:rounded-xl file:border-0 file:bg-[#ed7009] file:px-4 file:py-2 file:text-xs file:font-black file:text-white"
+                className="h-12 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none file:mr-4 file:rounded-xl file:border-0 file:bg-[#1f6dee] file:px-4 file:py-2 file:text-xs file:font-black file:text-white"
               />
               <AdminInput label="URL atual ou alternativa" name="hero_preview_image_url" defaultValue={hero.previewImageUrl} placeholder="/clinic-dashboard-preview.png ou https://..." />
             </div>
@@ -175,7 +175,7 @@ export default async function AdminConfiguracoesPage({ searchParams }) {
           <p className="mt-2 text-xs font-semibold text-neutral-500">Use uma linha para cada tópico. O site exibe até 6 tópicos.</p>
         </div>
 
-        <button type="submit" className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-[#ed7009] px-6 text-sm font-black text-white shadow-[0_18px_45px_rgba(237,112,9,0.28)] transition hover:-translate-y-0.5 hover:bg-[#cf5f07]">
+        <button type="submit" className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-[#1f6dee] px-6 text-sm font-black text-white shadow-[0_18px_45px_rgba(237,112,9,0.28)] transition hover:-translate-y-0.5 hover:bg-[#cf5f07]">
           Salvar home comercial
         </button>
       </form>

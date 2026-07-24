@@ -17,8 +17,9 @@ export const metadata = {
   },
   description: "Agenda, sinal online, CRM, clientes, comissões, financeiro e site premium no mesmo fluxo para sua barbearia crescer.",
   icons: {
-    icon: [{ url: "/favicon.ico", sizes: "256x256", type: "image/x-icon" }],
-    shortcut: [{ url: "/favicon.ico", type: "image/x-icon" }],
+    icon: [{ url: "/NEXAWI-BARBEARIAS-icon.png", type: "image/png" }],
+    shortcut: [{ url: "/NEXAWI-BARBEARIAS-icon.png", type: "image/png" }],
+    apple: [{ url: "/NEXAWI-BARBEARIAS-icon.png", type: "image/png" }],
   },
   applicationName: "NexaWi Barbearias",
   keywords: ["sistema para barbearia", "agenda para barbearia", "gestão de barbearia", "CRM para barbearia", "site para barbearia"],

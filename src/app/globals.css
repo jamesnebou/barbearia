@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 :root {
+  /* Identidade NexaWi: altere somente esta cor para atualizar landing e dashboard-admin. */
+  --nexawi-primary: #1f6dee;
+  --nexawi-primary-soft: color-mix(in srgb, var(--nexawi-primary) 48%, white);
+  --nexawi-primary-dark: color-mix(in srgb, var(--nexawi-primary) 78%, black);
+  --nexawi-primary-surface: color-mix(in srgb, var(--nexawi-primary) 10%, transparent);
+  --nexawi-primary-glow-soft: color-mix(in srgb, var(--nexawi-primary) 12%, transparent);
+  --nexawi-primary-glow: color-mix(in srgb, var(--nexawi-primary) 28%, transparent);
+  --nexawi-primary-glow-strong: color-mix(in srgb, var(--nexawi-primary) 55%, transparent);
   --background: #f5f4f0;
   --foreground: #141412;
   --surface: rgba(255, 255, 255, 0.96);
@@ -1450,15 +1458,15 @@ textarea {
   --marketing-surface-strong: rgba(22, 22, 24, 0.9);
   --marketing-line: rgba(255, 255, 255, 0.1);
   --marketing-muted: #a1a1aa;
-  --marketing-accent: #ed7009;
-  --marketing-accent-soft: #ffb25b;
+  --marketing-accent: var(--nexawi-primary);
+  --marketing-accent-soft: var(--nexawi-primary-soft);
   position: relative;
   isolation: isolate;
   color: #f7f7f8;
   color-scheme: dark;
   background:
-    radial-gradient(circle at 4% 2%, rgba(237, 112, 9, 0.2), transparent 30rem),
-    radial-gradient(circle at 98% 8%, rgba(255, 178, 91, 0.09), transparent 27rem),
+    radial-gradient(circle at 4% 2%, color-mix(in srgb, var(--nexawi-primary) 20%, transparent), transparent 30rem),
+    radial-gradient(circle at 98% 8%, color-mix(in srgb, var(--nexawi-primary-soft) 9%, transparent), transparent 27rem),
     linear-gradient(rgba(255, 255, 255, 0.017) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.017) 1px, transparent 1px),
     linear-gradient(145deg, #030303 0%, #080808 46%, #020202 100%);
@@ -1467,7 +1475,7 @@ textarea {
 }
 
 .marketing-shell ::selection {
-  background: rgba(237, 112, 9, 0.42);
+  background: color-mix(in srgb, var(--nexawi-primary) 42%, transparent);
   color: #fff;
 }
 
@@ -1508,7 +1516,7 @@ textarea {
 .marketing-header {
   border-color: rgba(255, 255, 255, 0.08) !important;
   background:
-    radial-gradient(circle at 15% 0%, rgba(237, 112, 9, 0.14), transparent 22rem),
+    radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--nexawi-primary) 14%, transparent), transparent 22rem),
     rgba(5, 5, 6, 0.84) !important;
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.38) !important;
   backdrop-filter: blur(24px) saturate(140%);
@@ -1555,11 +1563,11 @@ textarea {
   height: 2.45rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 178, 91, 0.24);
+  border: 1px solid color-mix(in srgb, var(--nexawi-primary-soft) 24%, transparent);
   border-radius: 0.9rem;
   color: #fff;
-  background: linear-gradient(145deg, #ff8b24, #c94f00);
-  box-shadow: 0 10px 30px rgba(237, 112, 9, 0.27), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: linear-gradient(145deg, var(--nexawi-primary-soft), var(--nexawi-primary-dark));
+  box-shadow: 0 10px 30px var(--nexawi-primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .marketing-brand-copy {
@@ -1589,8 +1597,8 @@ textarea {
 .marketing-hero {
   overflow: hidden;
   background:
-    radial-gradient(circle at 10% 12%, rgba(237, 112, 9, 0.15), transparent 30rem),
-    radial-gradient(circle at 88% 14%, rgba(255, 178, 91, 0.08), transparent 28rem);
+    radial-gradient(circle at 10% 12%, color-mix(in srgb, var(--nexawi-primary) 15%, transparent), transparent 30rem),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--nexawi-primary-soft) 8%, transparent), transparent 28rem);
 }
 
 .marketing-hero::before {
@@ -1606,9 +1614,9 @@ textarea {
 }
 
 .marketing-eyebrow {
-  border-color: rgba(255, 178, 91, 0.22) !important;
-  background: rgba(237, 112, 9, 0.08) !important;
-  color: #ffbd7a !important;
+  border-color: color-mix(in srgb, var(--nexawi-primary-soft) 22%, transparent) !important;
+  background: var(--nexawi-primary-surface) !important;
+  color: var(--nexawi-primary-soft) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 40px rgba(0, 0, 0, 0.24) !important;
 }
 
@@ -1619,17 +1627,17 @@ textarea {
 }
 
 .marketing-primary-cta {
-  border: 1px solid rgba(255, 178, 91, 0.28) !important;
-  background: linear-gradient(135deg, #ff8420, #d75b00) !important;
+  border: 1px solid color-mix(in srgb, var(--nexawi-primary-soft) 28%, transparent) !important;
+  background: linear-gradient(135deg, var(--nexawi-primary), var(--nexawi-primary-dark)) !important;
   color: #fff !important;
-  box-shadow: 0 20px 55px rgba(237, 112, 9, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 20px 55px var(--nexawi-primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
   transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
 }
 
 .marketing-primary-cta:hover {
   transform: translateY(-2px);
   filter: brightness(1.06);
-  box-shadow: 0 25px 70px rgba(237, 112, 9, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+  box-shadow: 0 25px 70px color-mix(in srgb, var(--nexawi-primary) 36%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
 }
 
 .marketing-secondary-cta {
@@ -1642,7 +1650,7 @@ textarea {
 }
 
 .marketing-secondary-cta:hover {
-  border-color: rgba(255, 178, 91, 0.24) !important;
+  border-color: color-mix(in srgb, var(--nexawi-primary-soft) 24%, transparent) !important;
   background: rgba(255, 255, 255, 0.075) !important;
   color: white !important;
 }
@@ -1667,7 +1675,7 @@ textarea {
 }
 
 .marketing-section-title > p:first-child {
-  color: #ffad64 !important;
+  color: var(--nexawi-primary-soft) !important;
   letter-spacing: 0.22em;
 }
 
@@ -1681,7 +1689,7 @@ textarea {
   overflow: hidden;
   border-color: var(--marketing-line) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(237, 112, 9, 0.075), transparent 18rem),
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--nexawi-primary) 7.5%, transparent), transparent 18rem),
     linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.022) 48%, rgba(255, 255, 255, 0.04)),
     var(--marketing-surface) !important;
   color: #f7f7f8;
@@ -1716,22 +1724,22 @@ textarea {
 .marketing-price-card:hover,
 .marketing-faq-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 178, 91, 0.22) !important;
-  box-shadow: 0 34px 95px rgba(0, 0, 0, 0.48), 0 0 44px rgba(237, 112, 9, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-color: color-mix(in srgb, var(--nexawi-primary-soft) 22%, transparent) !important;
+  box-shadow: 0 34px 95px rgba(0, 0, 0, 0.48), 0 0 44px var(--nexawi-primary-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
 .marketing-feature-icon {
-  border: 1px solid rgba(255, 178, 91, 0.17);
-  color: #ffad64 !important;
-  background: rgba(237, 112, 9, 0.1) !important;
-  box-shadow: 0 12px 34px rgba(237, 112, 9, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  border: 1px solid color-mix(in srgb, var(--nexawi-primary-soft) 17%, transparent);
+  color: var(--nexawi-primary-soft) !important;
+  background: var(--nexawi-primary-surface) !important;
+  box-shadow: 0 12px 34px var(--nexawi-primary-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .marketing-band {
   border-block: 1px solid rgba(255, 255, 255, 0.075);
   background:
-    radial-gradient(circle at 14% 18%, rgba(237, 112, 9, 0.18), transparent 27rem),
-    radial-gradient(circle at 86% 16%, rgba(255, 178, 91, 0.07), transparent 24rem),
+    radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--nexawi-primary) 18%, transparent), transparent 27rem),
+    radial-gradient(circle at 86% 16%, color-mix(in srgb, var(--nexawi-primary-soft) 7%, transparent), transparent 24rem),
     linear-gradient(145deg, rgba(13, 13, 15, 0.98), rgba(4, 4, 5, 0.99)) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 35px 100px rgba(0, 0, 0, 0.26);
 }
@@ -1751,10 +1759,10 @@ textarea {
   border-radius: 2rem;
   padding: 1.25rem;
   background:
-    radial-gradient(circle at 10% 0%, rgba(237, 112, 9, 0.2), transparent 22rem),
-    radial-gradient(circle at 100% 100%, rgba(255, 178, 91, 0.07), transparent 19rem),
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--nexawi-primary) 20%, transparent), transparent 22rem),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--nexawi-primary-soft) 7%, transparent), transparent 19rem),
     linear-gradient(145deg, rgba(25, 25, 28, 0.94), rgba(7, 7, 8, 0.98));
-  box-shadow: 0 42px 120px rgba(0, 0, 0, 0.56), 0 0 70px rgba(237, 112, 9, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: 0 42px 120px rgba(0, 0, 0, 0.56), 0 0 70px var(--nexawi-primary-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(25px) saturate(140%);
   -webkit-backdrop-filter: blur(25px) saturate(140%);
 }
@@ -1789,16 +1797,16 @@ textarea {
 }
 
 .marketing-preview-bar {
-  background: linear-gradient(180deg, #ffb25b, #ed7009);
-  box-shadow: 0 0 20px rgba(237, 112, 9, 0.26);
+  background: linear-gradient(180deg, var(--nexawi-primary-soft), var(--nexawi-primary));
+  box-shadow: 0 0 20px var(--nexawi-primary-glow);
 }
 
 .marketing-price-card.marketing-plan-featured {
-  border-color: rgba(255, 139, 36, 0.45) !important;
+  border-color: color-mix(in srgb, var(--nexawi-primary) 45%, transparent) !important;
   background:
-    radial-gradient(circle at 12% 0%, rgba(237, 112, 9, 0.25), transparent 22rem),
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--nexawi-primary) 25%, transparent), transparent 22rem),
     linear-gradient(145deg, rgba(29, 25, 22, 0.96), rgba(8, 8, 9, 0.99)) !important;
-  box-shadow: 0 36px 110px rgba(0, 0, 0, 0.5), 0 0 55px rgba(237, 112, 9, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 36px 110px rgba(0, 0, 0, 0.5), 0 0 55px var(--nexawi-primary-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
 .marketing-comparison {
@@ -1819,19 +1827,40 @@ textarea {
 }
 
 .marketing-faq-card[open] {
-  border-color: rgba(255, 178, 91, 0.25) !important;
+  border-color: color-mix(in srgb, var(--nexawi-primary-soft) 25%, transparent) !important;
 }
 
 .marketing-final-cta {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(255, 178, 91, 0.18);
+  border: 1px solid color-mix(in srgb, var(--nexawi-primary-soft) 18%, transparent);
   background:
-    radial-gradient(circle at 10% 0%, rgba(237, 112, 9, 0.27), transparent 28rem),
-    radial-gradient(circle at 100% 100%, rgba(255, 178, 91, 0.08), transparent 22rem),
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--nexawi-primary) 27%, transparent), transparent 28rem),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--nexawi-primary-soft) 8%, transparent), transparent 22rem),
     linear-gradient(145deg, rgba(20, 20, 22, 0.98), rgba(5, 5, 6, 0.99)) !important;
-  box-shadow: 0 38px 120px rgba(0, 0, 0, 0.52), 0 0 64px rgba(237, 112, 9, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 38px 120px rgba(0, 0, 0, 0.52), 0 0 64px var(--nexawi-primary-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Utilitários de marca usados pela landing e pelo dashboard administrativo. */
+.marketing-shell .text-orange-300,
+.dashboard-admin-shell .text-orange-300 {
+  color: var(--nexawi-primary-soft) !important;
+}
+
+.marketing-shell [class*="bg-orange-50"],
+.dashboard-admin-shell [class*="bg-orange-50"] {
+  background-color: color-mix(in srgb, var(--nexawi-primary) 10%, transparent) !important;
+}
+
+.marketing-shell [class*="border-orange-"],
+.dashboard-admin-shell [class*="border-orange-"] {
+  border-color: color-mix(in srgb, var(--nexawi-primary) 22%, transparent) !important;
+}
+
+.marketing-shell .focus\:border-orange-400:focus,
+.dashboard-admin-shell .focus\:border-orange-400:focus {
+  border-color: var(--nexawi-primary) !important;
 }
 
 .marketing-footer {

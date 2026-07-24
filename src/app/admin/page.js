@@ -64,7 +64,7 @@ function SelectField({ label, name, defaultValue = "", children }) {
       <select
         name={name}
         defaultValue={defaultValue || ""}
-        className="mt-2 h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[#ed7009]"
+        className="mt-2 h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[#1f6dee]"
       >
         {children}
       </select>
@@ -82,7 +82,7 @@ function KpiCard({ label, value, helper, icon: Icon, tone = "light" }) {
           <p className={`text-sm font-semibold ${dark ? "text-white/62" : "text-neutral-500"}`}>{label}</p>
           <strong className="mt-2 block text-3xl font-black tracking-tight">{value}</strong>
         </div>
-        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${dark ? "bg-white/10 text-orange-300" : "bg-orange-50 text-[#ed7009]"}`}>
+        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${dark ? "bg-white/10 text-orange-300" : "bg-orange-50 text-[#1f6dee]"}`}>
           <Icon size={21} />
         </div>
       </div>
@@ -97,7 +97,7 @@ function StatusPill({ children, tone = "neutral" }) {
     ok: "bg-emerald-50 text-emerald-700",
     warn: "bg-amber-50 text-amber-700",
     danger: "bg-red-50 text-red-700",
-    accent: "bg-orange-50 text-[#ed7009]",
+    accent: "bg-orange-50 text-[#1f6dee]",
   };
 
   return <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${tones[tone] || tones.neutral}`}>{children}</span>;
@@ -328,7 +328,7 @@ export default async function AdminSaasPage() {
                   const Icon = item.icon;
                   return (
                     <article key={item.label} className="rounded-[1.4rem] border border-neutral-200 bg-white p-5 shadow-sm">
-                      <Icon size={21} className="text-[#ed7009]" />
+                      <Icon size={21} className="text-[#1f6dee]" />
                       <p className="mt-4 text-sm font-semibold text-neutral-500">{item.label}</p>
                       <strong className="mt-1 block text-2xl font-black">{item.value}</strong>
                     </article>
@@ -339,7 +339,7 @@ export default async function AdminSaasPage() {
               <section id="clinicas" className="rounded-[1.75rem] border border-neutral-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-2 border-b border-neutral-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ed7009]">Operação das barbearias</p>
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1f6dee]">Operação das barbearias</p>
                     <h2 className="mt-2 text-2xl font-black">Desempenho comercial por cliente</h2>
                   </div>
                   <span className="text-sm font-semibold text-neutral-500">Dados dos últimos 30 dias</span>
@@ -454,7 +454,7 @@ export default async function AdminSaasPage() {
             <aside className="space-y-6">
               <section id="alertas" className="rounded-[1.75rem] border border-neutral-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle size={20} className="text-[#ed7009]" />
+                  <AlertTriangle size={20} className="text-[#1f6dee]" />
                   <h2 className="text-lg font-black">Alertas comerciais</h2>
                 </div>
                 <div className="mt-4 space-y-3">
@@ -478,7 +478,7 @@ export default async function AdminSaasPage() {
 
               <section className="rounded-[1.75rem] border border-neutral-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <Activity size={20} className="text-[#ed7009]" />
+                  <Activity size={20} className="text-[#1f6dee]" />
                   <h2 className="text-lg font-black">Atividade recente</h2>
                 </div>
                 <div className="mt-4 space-y-3">

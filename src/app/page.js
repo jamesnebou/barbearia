@@ -25,6 +25,7 @@ import { TrackedAnchor, TrackedLink } from "@/components/marketing/tracked-link"
 import { PlanCta } from "@/components/marketing/plan-cta";
 import { RoiCalculator } from "@/components/marketing/roi-calculator";
 import { LeadCaptureForm } from "@/components/marketing/lead-capture-form";
+import { NexawiBarbeariasLogo } from "@/components/brand/nexawi-barbearias-logo";
 
 export const dynamic = "force-dynamic";
 
@@ -168,21 +169,13 @@ const faqs = [
 ];
 
 function LogoMark() {
-  return (
-    <span className="marketing-brand" aria-label="NexaWi Barbearias">
-      <span className="marketing-brand-icon"><Scissors size={20} /></span>
-      <span className="marketing-brand-copy">
-        <span className="marketing-brand-name"><em>Nexa</em>Wi</span>
-        <small>BARBEARIAS</small>
-      </span>
-    </span>
-  );
+  return <NexawiBarbeariasLogo priority className="h-[48px] w-[150px] sm:h-[67px] sm:w-[210px]" />;
 }
 
 function SectionTitle({ eyebrow, title, description, align = "left" }) {
   return (
     <div className={(align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl") + " marketing-section-title"}>
-      <p className="text-xs font-black uppercase text-[#ed7009]">{eyebrow}</p>
+      <p className="text-xs font-black uppercase text-[var(--nexawi-primary)]">{eyebrow}</p>
       <h2 className="mt-3 text-3xl font-black leading-tight text-[#1c1c1c] sm:text-5xl">{title}</h2>
       {description ? <p className="mt-4 text-base leading-8 text-neutral-600">{description}</p> : null}
     </div>
@@ -237,7 +230,7 @@ export default async function Home() {
       />
       <header className="marketing-header sticky top-0 z-50 border-b border-white/10 bg-[#1c1c1c]/95 text-white shadow-[0_18px_60px_rgba(28,28,28,0.22)] backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex shrink-0 items-center">
             <LogoMark />
           </Link>
           <nav className="hidden items-center gap-7 text-sm font-bold text-white/72 lg:flex">
@@ -252,7 +245,7 @@ export default async function Home() {
             <Link href="/login-cliente" className="hidden rounded-full border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-bold text-white/78 shadow-sm transition hover:bg-white/14 hover:text-white sm:inline-flex">
               Entrar
             </Link>
-            <TrackedLink href="/demo" eventName="demo_click" eventData={{ location: "header" }} className="marketing-primary-cta inline-flex items-center gap-2 rounded-full bg-[#ed7009] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(237,112,9,0.28)]">
+            <TrackedLink href="/demo" eventName="demo_click" eventData={{ location: "header" }} className="marketing-primary-cta inline-flex items-center gap-2 rounded-full bg-[var(--nexawi-primary)] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_var(--nexawi-primary-glow)]">
               Quero ver funcionando <ArrowRight size={16} />
             </TrackedLink>
           </div>
@@ -260,10 +253,10 @@ export default async function Home() {
       </header>
 
       <section className="marketing-hero relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_8%_8%,rgba(237,112,9,0.22),transparent_30rem),radial-gradient(circle_at_92%_0%,rgba(255,178,91,0.08),transparent_28rem)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_8%_8%,var(--nexawi-primary-glow),transparent_30rem),radial-gradient(circle_at_92%_0%,var(--nexawi-primary-glow-soft),transparent_28rem)]" />
         <div className="relative mx-auto grid min-h-[calc(100vh-72px)] max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 lg:py-20">
           <div className="flex flex-col justify-center">
-            <div className="marketing-eyebrow inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-[#ed7009]/20 bg-white/76 px-4 py-2 text-xs font-black uppercase leading-5 text-[#ed7009] shadow-sm backdrop-blur">
+            <div className="marketing-eyebrow inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-[var(--nexawi-primary)]/20 bg-white/76 px-4 py-2 text-xs font-black uppercase leading-5 text-[var(--nexawi-primary)] shadow-sm backdrop-blur">
               <BadgeCheck size={15} /> {hero.eyebrow}
             </div>
             <h1 className="mt-7 max-w-3xl text-4xl font-black leading-[1.03] text-[#1c1c1c] sm:text-5xl lg:text-6xl">
@@ -284,7 +277,7 @@ export default async function Home() {
             <div className="mt-9 grid gap-3 text-sm font-semibold text-neutral-700 sm:grid-cols-2">
               {hero.topics.map((item) => (
                 <div key={item} className="flex items-start gap-2">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-[#ed7009]" />
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-[var(--nexawi-primary)]" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -293,7 +286,7 @@ export default async function Home() {
 
           <div className="flex items-center lg:justify-end">
             <div className="relative w-full max-w-[650px]">
-              <div className="absolute -inset-8 rounded-[3rem] bg-[radial-gradient(circle_at_76%_18%,rgba(237,112,9,0.28),transparent_20rem),radial-gradient(circle_at_8%_92%,rgba(255,178,91,0.10),transparent_18rem)] blur-3xl" />
+              <div className="absolute -inset-8 rounded-[3rem] bg-[radial-gradient(circle_at_76%_18%,var(--nexawi-primary-glow),transparent_20rem),radial-gradient(circle_at_8%_92%,var(--nexawi-primary-glow-soft),transparent_18rem)] blur-3xl" />
               <div className="marketing-dashboard-preview" aria-label="Prévia do painel NexaWi Barbearias">
                 <div className="marketing-preview-topbar flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -368,7 +361,7 @@ export default async function Home() {
               const Icon = module.icon;
               return (
                 <article key={module.title} className="marketing-feature-card group rounded-[1.5rem] border border-neutral-200 bg-[#fbfaf7] p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(28,28,28,0.12)]">
-                  <div className="marketing-feature-icon flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[#ed7009]">
+                  <div className="marketing-feature-icon flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-[var(--nexawi-primary)]">
                     <Icon size={23} />
                   </div>
                   <h3 className="mt-5 text-xl font-black">{module.title}</h3>
@@ -381,7 +374,7 @@ export default async function Home() {
       </section>
 
       <section className="marketing-band relative bg-[#1c1c1c] px-5 py-20 text-white sm:px-8 lg:px-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(237,112,9,0.22),transparent_26rem),radial-gradient(circle_at_82%_18%,rgba(255,178,91,0.07),transparent_22rem)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,var(--nexawi-primary-glow),transparent_26rem),radial-gradient(circle_at_82%_18%,var(--nexawi-primary-glow-soft),transparent_22rem)]" />
         <div className="relative mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-xs font-black uppercase text-orange-300">Fluxo comercial</p>
@@ -394,7 +387,7 @@ export default async function Home() {
             <div className="grid gap-3">
               {workflow.map((item, index) => (
                 <div key={item} className="marketing-workflow-item flex items-center gap-4 rounded-2xl bg-white/[0.06] p-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ed7009] text-sm font-black text-white">{index + 1}</span>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--nexawi-primary)] text-sm font-black text-white">{index + 1}</span>
                   <span className="font-bold text-white/86">{item}</span>
                   <ChevronRight size={18} className="ml-auto hidden text-white/30 sm:block" />
                 </div>
@@ -425,7 +418,7 @@ export default async function Home() {
           </div>
         </div>
         <div className="relative">
-          <div className="absolute -inset-6 rounded-[2.5rem] bg-[radial-gradient(circle_at_70%_20%,rgba(237,112,9,0.22),transparent_18rem)] blur-2xl" />
+          <div className="absolute -inset-6 rounded-[2.5rem] bg-[radial-gradient(circle_at_70%_20%,var(--nexawi-primary-glow),transparent_18rem)] blur-2xl" />
           <div className="relative">
             <Image
               src="/mockup-notebook.png"
@@ -464,7 +457,7 @@ export default async function Home() {
               const Icon = item.icon;
               return (
                 <article key={item.label} className="marketing-role-card rounded-[1.5rem] border border-neutral-200 bg-[#f7f5f0] p-6">
-                  <Icon size={24} className="text-[#ed7009]" />
+                  <Icon size={24} className="text-[var(--nexawi-primary)]" />
                   <p className="mt-5 text-sm font-bold text-neutral-500">{item.label}</p>
                   <h3 className="mt-2 text-2xl font-black">{item.value}</h3>
                 </article>
@@ -478,10 +471,10 @@ export default async function Home() {
         <SectionTitle eyebrow="Planos" title="Comece no tamanho certo. Suba de nível quando a agenda pedir." description="Você recebe a operação pronta e escolhe o plano pelo número de barbeiros, clientes e volume de agenda — sem pagar por complexidade que ainda não usa." align="center" />
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
           {plans.map((plan) => (
-            <article key={plan.name} className={`marketing-price-card rounded-[1.75rem] border p-6 shadow-sm ${plan.highlight ? "marketing-plan-featured border-[#ed7009]/60 bg-[#1c1c1c] text-white shadow-[0_30px_90px_rgba(237,112,9,0.20)]" : "border-neutral-200 bg-white"}`}>
+            <article key={plan.name} className={`marketing-price-card rounded-[1.75rem] border p-6 shadow-sm ${plan.highlight ? "marketing-plan-featured border-[var(--nexawi-primary)]/60 bg-[#1c1c1c] text-white shadow-[0_30px_90px_var(--nexawi-primary-glow)]" : "border-neutral-200 bg-white"}`}>
               <div className="flex items-center justify-between gap-4">
                 <h3 className="text-2xl font-black">{plan.name}</h3>
-                <span className={"rounded-full px-3 py-1 text-xs font-black " + (plan.highlight ? "bg-[#ed7009] text-white" : "bg-orange-50 text-[#ed7009]")}>
+                <span className={"rounded-full px-3 py-1 text-xs font-black " + (plan.highlight ? "bg-[var(--nexawi-primary)] text-white" : "bg-orange-50 text-[var(--nexawi-primary)]")}>
                   {plan.badge}
                 </span>
               </div>
@@ -489,7 +482,7 @@ export default async function Home() {
               <p className="mt-7 text-4xl font-black">{plan.price}<span className={"text-sm font-bold " + (plan.highlight ? "text-white/58" : "text-neutral-500")}>/mês</span></p>
               <p className={"mt-5 rounded-2xl p-4 text-sm leading-6 " + (plan.highlight ? "bg-white/8 text-white/74" : "bg-neutral-50 text-neutral-600")}>{plan.limits}</p>
               <div className={"mt-4 rounded-2xl border p-4 text-sm leading-6 " + (plan.highlight ? "border-white/10 bg-white/[0.04] text-white/80" : "border-orange-100 bg-orange-50/60 text-neutral-700")}>
-                <Sparkles size={17} className="mb-2 text-[#ed7009]" />
+                <Sparkles size={17} className="mb-2 text-[var(--nexawi-primary)]" />
                 {plan.differentiator}
               </div>
               <PlanCta plan={plan.slug} featured={plan.highlight} />
@@ -511,7 +504,7 @@ export default async function Home() {
               <div className="grid bg-[#1c1c1c] text-sm font-black text-white" style={comparisonGrid}>
                 <div className="p-4">Recurso</div>
                 {plans.map((plan) => (
-                  <div key={plan.slug} className={"p-4 " + (plan.highlight ? "bg-[#ed7009]" : "")}>
+                  <div key={plan.slug} className={"p-4 " + (plan.highlight ? "bg-[var(--nexawi-primary)]" : "")}>
                     {plan.name}
                   </div>
                 ))}
@@ -520,7 +513,7 @@ export default async function Home() {
                 <div key={feature} className={"grid border-t border-neutral-100 text-sm " + (index % 2 === 0 ? "bg-[#fbfaf7]" : "bg-white")} style={comparisonGrid}>
                   <div className="p-4 font-bold text-neutral-800">{feature}</div>
                   {plans.map((plan) => (
-                    <div key={`${feature}-${plan.slug}`} className={"whitespace-nowrap p-4 " + (plan.highlight ? "font-bold text-[#ed7009]" : "text-neutral-600")}>
+                    <div key={`${feature}-${plan.slug}`} className={"whitespace-nowrap p-4 " + (plan.highlight ? "font-bold text-[var(--nexawi-primary)]" : "text-neutral-600")}>
                       {valueForPlan(plan)}
                     </div>
                   ))}
@@ -550,7 +543,7 @@ export default async function Home() {
             <details key={item.question} className="marketing-faq-card group rounded-[1.35rem] border border-neutral-200 bg-white p-5 shadow-sm open:shadow-[0_24px_70px_rgba(28,28,28,0.10)]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-black text-neutral-950">
                 {item.question}
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[#ed7009] transition group-open:rotate-90">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[var(--nexawi-primary)] transition group-open:rotate-90">
                   <ChevronRight size={17} />
                 </span>
               </summary>

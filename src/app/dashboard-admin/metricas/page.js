@@ -9,7 +9,7 @@ function MetricRow({ label, value, detail }) {
         <p className="text-sm font-black text-neutral-800">{label}</p>
         <p className="mt-1 text-xs text-neutral-500">{detail}</p>
       </div>
-      <strong className="text-lg font-black text-[#ed7009]">{value}</strong>
+      <strong className="text-lg font-black text-[var(--nexawi-primary)]">{value}</strong>
     </div>
   );
 }
@@ -58,4 +58,3 @@ export default async function DashboardAdminMetricasPage() {
     </div>
   );
 }
-

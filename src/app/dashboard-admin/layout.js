@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/app/login/actions";
 import { AdminMobileMenu, AdminSidebarNav } from "@/app/dashboard-admin/admin-sidebar-nav";
+import { NexawiBarbeariasLogo } from "@/components/brand/nexawi-barbearias-logo";
 import { requireInternalAdmin } from "@/lib/auth/session";
 
 function DashboardAdminSidebar({ user }) {
@@ -11,7 +11,7 @@ function DashboardAdminSidebar({ user }) {
       <aside className="dashboard-sidebar dashboard-admin-sidebar fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-white/10 bg-[#1c1c1c] text-white shadow-[24px_0_90px_rgba(28,28,28,0.18)] lg:flex lg:flex-col">
         <div className="border-b border-white/10 p-6">
           <Link href="/dashboard-admin" className="block">
-            <Image src="/nexawi-clinicas.png" alt="NexaWi Barbearias" width={190} height={52} priority className="h-12 w-auto object-contain" />
+            <NexawiBarbeariasLogo priority className="h-[67px] w-[210px]" />
             <p className="mt-2 text-xs font-semibold text-white/56">Admin Barbearias</p>
           </Link>
         </div>
@@ -39,7 +39,7 @@ function DashboardAdminSidebar({ user }) {
       <header className="dashboard-mobile-header fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#1c1c1c] text-white shadow-[0_18px_60px_rgba(28,28,28,0.18)] lg:hidden">
         <div className="flex h-16 items-center justify-between gap-3 px-4">
           <Link href="/dashboard-admin" className="flex min-w-0 items-center">
-            <Image src="/nexawi-clinicas.png" alt="NexaWi Barbearias" width={156} height={42} priority className="h-9 w-auto max-w-[150px] object-contain" />
+            <NexawiBarbeariasLogo priority className="h-[48px] w-[150px]" />
           </Link>
           <AdminMobileMenu />
         </div>
@@ -52,7 +52,7 @@ export default async function DashboardAdminLayout({ children }) {
   const user = await requireInternalAdmin();
 
   return (
-    <main className="premium-shell dashboard-shell min-h-screen overflow-x-hidden text-neutral-950" style={{ "--clinic-primary": "#ed7009", "--clinic-accent": "#ffb25b" }}>
+    <main className="premium-shell dashboard-shell dashboard-admin-shell min-h-screen overflow-x-hidden text-neutral-950" style={{ "--clinic-primary": "var(--nexawi-primary)", "--clinic-accent": "var(--nexawi-primary-soft)" }}>
       <DashboardAdminSidebar user={user} />
       <section className="dashboard-main-content min-w-0 lg:pl-72">
         <div className="mx-auto w-full max-w-7xl min-w-0 px-5 pb-10 pt-24 sm:px-8 lg:px-10 lg:pt-8">{children}</div>

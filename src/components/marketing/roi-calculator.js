@@ -46,7 +46,7 @@ export function RoiCalculator() {
               <p className="mt-3 text-xs font-bold uppercase tracking-wider text-white/48">Receita potencial não realizada/mês</p>
               <strong className="mt-2 block text-3xl font-black">{money.format(result.monthlyLoss)}</strong>
             </div>
-            <div className="rounded-2xl bg-[#ed7009] p-5">
+            <div className="rounded-2xl bg-[var(--nexawi-primary)] p-5">
               <TrendingUp size={21} />
               <p className="mt-3 text-xs font-bold uppercase tracking-wider text-white/75">Espaço estimado de recuperação/mês</p>
               <strong className="mt-2 block text-3xl font-black">{money.format(result.recoverable)}</strong>

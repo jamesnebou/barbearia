@@ -46,7 +46,7 @@ export function SelectField({ label, name, defaultValue = "", children }) {
       <select
         name={name}
         defaultValue={defaultValue || ""}
-        className="mt-2 h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[#ed7009]"
+        className="mt-2 h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-[var(--nexawi-primary)]"
       >
         {children}
       </select>
@@ -60,7 +60,7 @@ export function StatusPill({ children, tone = "neutral" }) {
     ok: "bg-emerald-50 text-emerald-700",
     warn: "bg-amber-50 text-amber-700",
     danger: "bg-red-50 text-red-700",
-    accent: "bg-orange-50 text-[#ed7009]",
+    accent: "bg-orange-50 text-[var(--nexawi-primary)]",
   };
 
   return <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${tones[tone] || tones.neutral}`}>{children}</span>;
@@ -76,7 +76,7 @@ export function KpiCard({ label, value, helper, icon: Icon, tone = "light" }) {
           <p className={`text-sm font-semibold ${dark ? "text-white/62" : "text-neutral-500"}`}>{label}</p>
           <strong className="mt-2 block break-words text-3xl font-black tracking-tight">{value}</strong>
         </div>
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${dark ? "bg-white/10 text-orange-300" : "bg-orange-50 text-[#ed7009]"}`}>
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${dark ? "bg-white/10 text-orange-300" : "bg-orange-50 text-[var(--nexawi-primary)]"}`}>
           <Icon size={21} />
         </div>
       </div>
@@ -88,7 +88,7 @@ export function KpiCard({ label, value, helper, icon: Icon, tone = "light" }) {
 export function PageHero({ eyebrow, title, description }) {
   return (
     <section className="relative min-w-0 overflow-hidden rounded-[2rem] bg-[#1c1c1c] p-6 text-white shadow-[0_30px_100px_rgba(28,28,28,0.24)] sm:p-7 lg:p-9">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(237,112,9,0.34),transparent_24rem),radial-gradient(circle_at_88%_0%,rgba(255,255,255,0.12),transparent_24rem)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,var(--nexawi-primary-glow),transparent_24rem),radial-gradient(circle_at_88%_0%,rgba(255,255,255,0.12),transparent_24rem)]" />
       <div className="relative max-w-3xl">
         <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-300">{eyebrow}</p>
         <h1 className="mt-3 break-words text-3xl font-black tracking-tight sm:text-5xl">{title}</h1>
@@ -420,5 +420,4 @@ export function PlanForm({ plan }) {
     </form>
   );
 }
-
 

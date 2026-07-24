@@ -29,7 +29,7 @@ export function RequestPasswordResetForm() {
       <label className="block">
         <span className="text-sm font-medium text-neutral-700">E-mail administrativo</span>
         <input
-          className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 outline-none transition focus:border-[#ed7009]"
+          className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 outline-none transition focus:border-[#1f6dee]"
           type="email"
           name="email"
           autoComplete="email"
@@ -60,7 +60,7 @@ export function UpdateRecoveredPasswordForm() {
       <label className="block">
         <span className="text-sm font-medium text-neutral-700">Nova senha</span>
         <input
-          className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 outline-none transition focus:border-[#ed7009]"
+          className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 outline-none transition focus:border-[#1f6dee]"
           type="password"
           name="password"
           autoComplete="new-password"
@@ -71,7 +71,7 @@ export function UpdateRecoveredPasswordForm() {
       <label className="block">
         <span className="text-sm font-medium text-neutral-700">Confirmar nova senha</span>
         <input
-          className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 outline-none transition focus:border-[#ed7009]"
+          className="mt-2 h-11 w-full rounded-lg border border-neutral-200 px-3 outline-none transition focus:border-[#1f6dee]"
           type="password"
           name="password_confirm"
           autoComplete="new-password"

@@ -35,7 +35,7 @@ export default async function DashboardAdminFunilPage() {
       <section className="rounded-[1.75rem] border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-2 border-b border-neutral-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ed7009]">Aquisição NexaWi</p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--nexawi-primary)]">Aquisição NexaWi</p>
             <h2 className="mt-2 text-2xl font-black">Interessados captados no site</h2>
             <p className="mt-2 text-sm text-neutral-500">Origem, campanha, plano desejado e andamento comercial no mesmo lugar.</p>
           </div>
@@ -76,7 +76,7 @@ export default async function DashboardAdminFunilPage() {
       <section className="rounded-[1.75rem] border border-neutral-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-2 border-b border-neutral-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ed7009]">CRM dos clientes</p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--nexawi-primary)]">CRM dos clientes</p>
             <h2 className="mt-2 text-2xl font-black">Oportunidades das barbearias clientes</h2>
           </div>
           <span className="text-sm font-semibold text-neutral-500">{recentCrm.length} registros</span>

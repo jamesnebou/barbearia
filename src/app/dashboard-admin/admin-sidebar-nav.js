@@ -50,17 +50,17 @@ export function AdminSidebarNav() {
             aria-current={active ? "page" : undefined}
             className={[
               "group relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-sm font-bold transition",
-              active ? "bg-white/[0.09] text-white shadow-[0_18px_45px_rgba(237,112,9,0.18)]" : "text-white/70 hover:bg-white/10 hover:text-white",
+              active ? "bg-white/[0.09] text-white shadow-[0_18px_45px_var(--nexawi-primary-glow-soft)]" : "text-white/70 hover:bg-white/10 hover:text-white",
             ].join(" ")}
           >
             {active ? (
               <>
-                <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-[#ed7009] shadow-[0_0_22px_rgba(237,112,9,0.85)]" />
-                <span className="absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,rgba(237,112,9,0.25),transparent_13rem)]" />
-                <span className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-[#ed7009]/70 to-transparent" />
+                <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-[var(--nexawi-primary)] shadow-[0_0_22px_var(--nexawi-primary-glow-strong)]" />
+                <span className="absolute inset-0 bg-[radial-gradient(circle_at_12%_50%,var(--nexawi-primary-glow),transparent_13rem)]" />
+                <span className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-[var(--nexawi-primary)]/70 to-transparent" />
               </>
             ) : null}
-            <span className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition ${active ? "bg-[#ed7009] text-white shadow-[0_0_26px_rgba(237,112,9,0.55)]" : "bg-white/[0.06] text-orange-300 group-hover:bg-white/[0.10]"}`}>
+            <span className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition ${active ? "bg-[var(--nexawi-primary)] text-white shadow-[0_0_26px_var(--nexawi-primary-glow-strong)]" : "bg-white/[0.06] text-orange-300 group-hover:bg-white/[0.10]"}`}>
               <Icon size={17} />
             </span>
             <span className="relative">{item.label}</span>
@@ -119,7 +119,7 @@ export function AdminMobileMenu() {
                     onClick={() => setOpen(false)}
                     className={[
                       "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black transition",
-                      active ? "bg-[#ed7009] text-white shadow-[0_18px_45px_rgba(237,112,9,0.28)]" : "text-white/72 hover:bg-white/10 hover:text-white",
+                      active ? "bg-[var(--nexawi-primary)] text-white shadow-[0_18px_45px_var(--nexawi-primary-glow)]" : "text-white/72 hover:bg-white/10 hover:text-white",
                     ].join(" ")}
                   >
                     <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-white/16" : "bg-white/[0.06] text-orange-300"}`}>

@@ -9,10 +9,10 @@ function ProgressBar({ label, value, max, helper }) {
     <div className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
       <div className="flex min-w-0 items-center justify-between gap-3">
         <p className="text-sm font-black text-neutral-800">{label}</p>
-        <span className="text-sm font-black text-[#ed7009]">{percent}%</span>
+        <span className="text-sm font-black text-[var(--nexawi-primary)]">{percent}%</span>
       </div>
       <div className="mt-4 h-3 overflow-hidden rounded-full bg-neutral-100">
-        <div className="h-full rounded-full bg-[#ed7009]" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-[var(--nexawi-primary)]" style={{ width: `${percent}%` }} />
       </div>
       <p className="mt-3 text-xs leading-5 text-neutral-500">{helper}</p>
     </div>
@@ -53,4 +53,3 @@ export default async function DashboardAdminOverviewPage() {
     </div>
   );
 }
-

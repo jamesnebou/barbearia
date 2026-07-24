@@ -41,11 +41,11 @@ export default async function LoginPage({ searchParams }) {
       <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center justify-between lg:hidden">
-            <Link href="/" className="flex items-center gap-2 text-[#ed7009]"><Sparkles size={19} /><span className="text-sm font-black uppercase tracking-[0.18em]">NexaWi Barbearias</span></Link>
+            <Link href="/" className="flex items-center gap-2 text-[#1f6dee]"><Sparkles size={19} /><span className="text-sm font-black uppercase tracking-[0.18em]">NexaWi Barbearias</span></Link>
           </div>
           <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm sm:p-7">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#1c1c1c] text-white"><LockKeyhole size={21} /></div>
-            <p className="mt-5 text-xs font-black uppercase tracking-[0.22em] text-[#ed7009]">Admin interno</p>
+            <p className="mt-5 text-xs font-black uppercase tracking-[0.22em] text-[#1f6dee]">Admin interno</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight">Entrar no painel admin</h2>
             <p className="mt-3 text-sm leading-6 text-neutral-600">Use seu e-mail administrativo para acessar a visão geral.</p>
             {params?.erro === "gerente" ? <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">Acesso administrativo restrito. Entre com um e-mail liberado.</p> : null}
