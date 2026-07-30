@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { publicImageSrcSet, publicImageUrl } from "@/lib/public-image";
 
 function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -31,11 +32,10 @@ export function PublicServicesSection({ procedimentos = [] }) {
   const [selected, setSelected] = useState(null);
   const viewportRef = useRef(null);
   const trackRef = useRef(null);
-  const animationRef = useRef(null);
   const pointerRef = useRef({ active: false, captured: false, pointerId: null, startX: 0, startScrollLeft: 0 });
   const draggedRef = useRef(false);
   const hoverRef = useRef(false);
-  const repeatCount = procedimentos.length <= 2 ? 12 : procedimentos.length <= 4 ? 9 : 6;
+  const repeatCount = 3;
   const servicesLoop = useMemo(
     () => Array.from({ length: repeatCount }).flatMap(() => procedimentos),
     [procedimentos, repeatCount]
@@ -64,49 +64,49 @@ export function PublicServicesSection({ procedimentos = [] }) {
     if (!viewport || !track || procedimentos.length === 0) return;
 
     const segmentWidth = () => track.scrollWidth / repeatCount;
-    const startOffset = () => segmentWidth() * Math.floor(repeatCount / 2);
-
+    const setInitialPosition = () => {
+      const segment = segmentWidth();
+      if (segment) viewport.scrollLeft = segment;
+    };
     const normalizeScroll = () => {
       const segment = segmentWidth();
       if (!segment) return;
-
-      const min = segment * 2;
-      const max = segment * (repeatCount - 2);
-
-      if (viewport.scrollLeft < min) {
-        viewport.scrollLeft += segment;
-      } else if (viewport.scrollLeft > max) {
-        viewport.scrollLeft -= segment;
-      }
+      if (viewport.scrollLeft < segment * 0.5) viewport.scrollLeft += segment;
+      if (viewport.scrollLeft > segment * 1.5) viewport.scrollLeft -= segment;
     };
 
-    const setInitialPosition = () => {
-      viewport.scrollLeft = startOffset();
-    };
+    let isVisible = true;
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = Boolean(entry?.isIntersecting);
+    }, { rootMargin: "160px 0px" });
+    observer.observe(viewport);
 
     setInitialPosition();
-
-
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const lowPower = Number(navigator.hardwareConcurrency || 8) <= 4 || Number(navigator.deviceMemory || 8) <= 4;
+    const speed = lowPower ? 30 : 46;
+    const frameInterval = lowPower ? 32 : 16;
+    let animationFrame = null;
     let lastTime = performance.now();
-    const speed = 58;
 
     const animate = (time) => {
       const delta = Math.min(64, time - lastTime);
-      lastTime = time;
-
-      if (!pointerRef.current.active && !hoverRef.current && !selected) {
-        viewport.scrollLeft += (speed * delta) / 1000;
-        normalizeScroll();
+      if (delta >= frameInterval) {
+        lastTime = time;
+        if (isVisible && !document.hidden && !reducedMotion && !pointerRef.current.active && !hoverRef.current && !selected) {
+          viewport.scrollLeft += (speed * delta) / 1000;
+          normalizeScroll();
+        }
       }
-
-      animationRef.current = requestAnimationFrame(animate);
+      animationFrame = requestAnimationFrame(animate);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    animationFrame = requestAnimationFrame(animate);
     window.addEventListener("resize", setInitialPosition);
 
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      observer.disconnect();
+      if (animationFrame) cancelAnimationFrame(animationFrame);
       window.removeEventListener("resize", setInitialPosition);
     };
   }, [procedimentos, repeatCount, selected]);
@@ -149,11 +149,8 @@ export function PublicServicesSection({ procedimentos = [] }) {
     const segment = track.scrollWidth / repeatCount;
     if (!segment) return;
 
-    const min = segment * 2;
-    const max = segment * (repeatCount - 2);
-
-    if (viewport.scrollLeft < min) viewport.scrollLeft += segment;
-    if (viewport.scrollLeft > max) viewport.scrollLeft -= segment;
+    if (viewport.scrollLeft < segment * 0.5) viewport.scrollLeft += segment;
+    if (viewport.scrollLeft > segment * 1.5) viewport.scrollLeft -= segment;
   }
 
   function handlePointerUp(event) {
@@ -223,7 +220,16 @@ export function PublicServicesSection({ procedimentos = [] }) {
               <div className="relative aspect-square w-full overflow-hidden border-b border-white/10 bg-black/20">
                 {item.imagem_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.imagem_url} alt={item.nome} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]" />
+                  <img
+                    src={publicImageUrl(item.imagem_url, { width: 520, height: 520, quality: 68 })}
+                    srcSet={publicImageSrcSet(item.imagem_url, [360, 520, 780], { aspectRatio: 1, quality: 68 })}
+                    sizes="(max-width: 640px) 330px, 390px"
+                    alt={item.nome}
+                    loading="lazy"
+                    decoding="async"
+                    draggable="false"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                  />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center bg-[radial-gradient(circle_at_30%_20%,color-mix(in_srgb,var(--clinic-accent)_20%,transparent),transparent_45%),linear-gradient(145deg,#17130f,#24201c)] px-10 text-center">
                     <span className="text-xs font-black uppercase tracking-[0.28em] text-[var(--clinic-accent)]">{item.categoria || "Serviço"}</span>
@@ -279,7 +285,14 @@ export function PublicServicesSection({ procedimentos = [] }) {
             <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
               <div className="flex w-full items-start justify-center self-start">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selected.imagem_url || fallbackImage(selected.nome, true)} alt={selected.nome} className="aspect-[3/4] h-auto w-full max-w-[420px] rounded-[1.5rem] object-cover" />
+                <img
+                  src={publicImageUrl(selected.imagem_url || fallbackImage(selected.nome, true), { width: 720, height: 960, quality: 74 })}
+                  srcSet={publicImageSrcSet(selected.imagem_url, [420, 720], { aspectRatio: 0.75, quality: 74 })}
+                  sizes="(max-width: 1024px) 90vw, 420px"
+                  alt={selected.nome}
+                  decoding="async"
+                  className="aspect-[3/4] h-auto w-full max-w-[420px] rounded-[1.5rem] object-cover"
+                />
               </div>
               <div className="pr-0 lg:pr-6">
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--clinic-accent)]">{selected.categoria || "Serviço"}</p>

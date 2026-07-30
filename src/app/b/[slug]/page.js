@@ -14,6 +14,7 @@ import {
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createBarbershopPublicBooking } from "./actions";
+import { publicImageSrcSet, publicImageUrl } from "@/lib/public-image";
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +72,11 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const barbershop = await loadBarbershop(slug);
   const brand = barbershop?.nome_fantasia || barbershop?.nome || "Barbearia";
+  const faviconUrl = publicImageUrl(barbershop?.site_logo_url, { width: 128, height: 128, quality: 80, resize: "contain" });
   return {
     title: `${brand} | Cortes e barba`,
     description: barbershop?.site_subtitulo || `Agende seu horario na ${brand}.`,
-    icons: barbershop?.site_logo_url ? { icon: barbershop.site_logo_url } : undefined,
+    icons: faviconUrl ? { icon: faviconUrl } : undefined,
   };
 }
 
@@ -166,7 +168,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
           <a href="#inicio" className="flex min-w-0 items-center gap-3">
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logo} alt={`Logo ${brand}`} className="h-11 w-11 rounded-full border border-white/15 object-cover" />
+              <img src={publicImageUrl(logo, { width: 96, height: 96, quality: 76, resize: "contain" })} alt={`Logo ${brand}`} width="44" height="44" decoding="async" className="h-11 w-11 rounded-full border border-white/15 object-cover" />
             ) : (
               <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--barber-accent)]/40 bg-[var(--barber-accent)]/10 text-[var(--barber-accent)]">
                 <Scissors size={20} />
@@ -191,7 +193,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
         {cover ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cover} alt={brand} className="absolute inset-0 h-full w-full object-cover opacity-55" />
+            <img src={publicImageUrl(cover, { width: 1280, quality: 70 })} srcSet={publicImageSrcSet(cover, [640, 960, 1280, 1600], { quality: 70 })} sizes="100vw" alt={brand} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-55" />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/20" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0b] via-transparent to-black/30" />
           </>
@@ -249,7 +251,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
               <article key={service.id} className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-[var(--barber-accent)]/40">
                 {service.imagem_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={service.imagem_url} alt={service.nome} className="mb-6 aspect-[16/10] w-full rounded-2xl object-cover opacity-85 transition duration-500 group-hover:scale-[1.02]" />
+                  <img src={publicImageUrl(service.imagem_url, { width: 720, height: 450, quality: 68 })} srcSet={publicImageSrcSet(service.imagem_url, [420, 560, 720], { aspectRatio: 1.6, quality: 68 })} sizes="(max-width: 768px) 100vw, 390px" alt={service.nome} loading="lazy" decoding="async" className="mb-6 aspect-[16/10] w-full rounded-2xl object-cover opacity-85 transition duration-500 group-hover:scale-[1.02]" />
                 ) : null}
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -321,7 +323,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
               <article key={product.id} className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.045] transition duration-300 hover:-translate-y-1 hover:border-[var(--barber-accent)]/45">
                 {product.imagem_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={product.imagem_url} alt={product.nome} className="aspect-[4/3] w-full object-cover opacity-90 transition duration-500 group-hover:scale-[1.03]" />
+                  <img src={publicImageUrl(product.imagem_url, { width: 560, height: 420, quality: 68 })} srcSet={publicImageSrcSet(product.imagem_url, [320, 420, 560], { aspectRatio: 4 / 3, quality: 68 })} sizes="(max-width: 640px) 100vw, 280px" alt={product.nome} loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover opacity-90 transition duration-500 group-hover:scale-[1.03]" />
                 ) : (
                   <div className="flex aspect-[4/3] items-center justify-center bg-[radial-gradient(circle,color-mix(in_srgb,var(--barber-accent)_22%,transparent),transparent_68%)]">
                     <ShoppingBag size={44} className="text-[var(--barber-accent)]" />
@@ -358,7 +360,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
                 <article key={barber.id} className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#111]">
                   {barber.foto_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={barber.foto_url} alt={barber.nome} className="aspect-[4/3] w-full object-cover grayscale-[.15]" />
+                    <img src={publicImageUrl(barber.foto_url, { width: 720, height: 540, quality: 70 })} srcSet={publicImageSrcSet(barber.foto_url, [420, 560, 720], { aspectRatio: 4 / 3, quality: 70 })} sizes="(max-width: 768px) 100vw, 390px" alt={barber.nome} loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover grayscale-[.15]" />
                   ) : (
                     <div className="flex aspect-[4/3] items-center justify-center bg-[radial-gradient(circle,color-mix(in_srgb,var(--barber-accent)_24%,transparent),transparent_68%)]">
                       <Scissors size={48} className="text-[var(--barber-accent)]" />
