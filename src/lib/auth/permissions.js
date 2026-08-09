@@ -16,6 +16,7 @@ export const ACCESS_SECTION_LABELS = [
   ["procedimentos", "Serviços"],
   ["produtos", "Lojinha"],
   ["pedidos", "Pedidos da lojinha"],
+  ["comandas", "Comandas"],
   ["usuarios", "Usuários"],
   ["configuracoes", "Configurações"],
   ["financeiro", "Financeiro"],
@@ -26,11 +27,11 @@ export const ACCESS_SECTION_LABELS = [
 export const ACCESS_SECTIONS = ACCESS_SECTION_LABELS.map(([section]) => section);
 
 export const ROLE_ACCESS = {
-  owner: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura", "tutoriais"],
-  gerente: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "usuarios", "configuracoes", "financeiro", "assinatura", "tutoriais"],
-  recepcao: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "tutoriais"],
-  financeiro: ["dashboard", "notificacoes", "clientes", "crm", "produtos", "pedidos", "financeiro", "assinatura", "tutoriais"],
-  barbeiro: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "procedimentos", "tutoriais"],
+  owner: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "comandas", "usuarios", "configuracoes", "financeiro", "assinatura", "tutoriais"],
+  gerente: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "comandas", "usuarios", "configuracoes", "financeiro", "assinatura", "tutoriais"],
+  recepcao: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "profissionais", "procedimentos", "produtos", "pedidos", "comandas", "tutoriais"],
+  financeiro: ["dashboard", "notificacoes", "clientes", "crm", "produtos", "pedidos", "comandas", "financeiro", "assinatura", "tutoriais"],
+  barbeiro: ["dashboard", "agenda", "notificacoes", "clientes", "crm", "procedimentos", "comandas", "tutoriais"],
 };
 
 export function getCurrentMembership(memberships, clinicaId) {
@@ -38,22 +39,11 @@ export function getCurrentMembership(memberships, clinicaId) {
 }
 
 export function getCustomAccessSections(membership) {
-  const sections = membership?.permissoes?.secoes;
-  if (!Array.isArray(sections)) return null;
-
-  const validSections = sections.filter((section) => ACCESS_SECTIONS.includes(section));
-  return validSections.length ? validSections : null;
+  return customSectionsFromMembership(membership, ACCESS_SECTIONS);
 }
 
 export function canAccessSection(role, section, membership = null) {
-  if (role === "owner") return true;
-
-  const customSections = getCustomAccessSections(membership);
-  if (customSections) {
-    return customSections.includes(section);
-  }
-
-  return Boolean(ROLE_ACCESS[role]?.includes(section));
+  return canAccessByPolicy({ role, section, membership, validSections: ACCESS_SECTIONS, roleAccess: ROLE_ACCESS });
 }
 
 export function assertSectionAccess(role, section, membership = null) {
@@ -62,3 +52,4 @@ export function assertSectionAccess(role, section, membership = null) {
     throw new Error(`${label} não tem permissão para acessar esta área.`);
   }
 }
+import { canAccessByPolicy, customSectionsFromMembership } from "@/lib/domain/permission-core.mjs";

@@ -11,6 +11,7 @@ import { PublicServicesSection } from "./services-section";
 import { PublicStorefront } from "./store-cart";
 import { availableProductStock } from "@/lib/store/config";
 import { publicImageSrcSet, publicImageUrl } from "@/lib/public-image";
+import { clinicTimeZone } from "@/lib/clinic/schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -243,7 +244,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
   const [{ data: procedimentos = [] }, { data: profissionais = [] }, { data: produtos = [] }] = await Promise.all([
     supabaseAdmin
       .from("barbearia_servicos")
-      .select("id, nome, categoria, descricao, duracao_minutos, preco, instrucoes_pre_atendimento, instrucoes_pos_atendimento, sinal_percentual, sinal_valor, destaque_site, ordem_site, imagem_url")
+      .select("id, nome, categoria, descricao, duracao_minutos, intervalo_minutos, preco, preco_promocional, instrucoes_pre_atendimento, instrucoes_pos_atendimento, sinal_percentual, sinal_valor, destaque_site, ordem_site, imagem_url")
       .eq("barbearia_id", clinic.id)
       .eq("ativo", true)
       .eq("publicado_site", true)
@@ -279,6 +280,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
   const professionalName = site.nome_profissional || publicProfessionals[0]?.nome || brandName;
   const professionalBio = site.bio_profissional || publicProfessionals[0]?.observacoes || "Atendimento cuidadoso, escuta ativa e um serviço alinhado ao seu estilo.";
   const heroImage = site.hero_image_url || site.profissional_image_url || fallbackImage(brandName, true);
+  const mobileHeroImage = site.hero_mobile_image_url || heroImage;
   const professionalImage = site.profissional_image_url || site.hero_image_url || fallbackImage(professionalName);
   const clinicPhotos = [site.clinica_foto_1, site.clinica_foto_2, site.clinica_foto_3].filter(Boolean);
   const gallery = clinicPhotos.length ? clinicPhotos : [heroImage, professionalImage, fallbackImage("Barbearia")];
@@ -341,9 +343,11 @@ export default async function PublicClinicPage({ params, searchParams }) {
         </div>
       </header>
 
-      <section id="topo" className="relative flex min-h-screen items-center justify-center px-5 py-28 text-center text-white sm:px-8">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={publicImageUrl(heroImage, { width: 1280, quality: 70 })} srcSet={publicImageSrcSet(heroImage, [640, 960, 1280, 1600], { quality: 70 })} sizes="100vw" alt={brandName} fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+      <section id="topo" className="relative flex min-h-[calc(100svh-4.5rem)] items-start justify-center px-5 pb-16 pt-10 text-center text-white sm:min-h-screen sm:items-center sm:px-8 sm:py-28">
+        <picture className="absolute inset-0">
+          <source media="(max-width: 639px)" srcSet={publicImageSrcSet(mobileHeroImage, [480, 640, 828], { quality: 70 }) || publicImageUrl(mobileHeroImage, { width: 828, quality: 70 })} sizes="100vw" />
+          <img src={publicImageUrl(heroImage, { width: 1280, quality: 70 })} srcSet={publicImageSrcSet(heroImage, [640, 960, 1280, 1600], { quality: 70 })} sizes="100vw" alt={brandName} fetchPriority="high" decoding="async" className="h-full w-full object-cover" />
+        </picture>
         <div className="absolute inset-0 bg-[#17130f]/55" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_0%,rgba(0,0,0,0.48)_72%)]" />
         <div className="relative z-10 mx-auto max-w-5xl">
@@ -487,7 +491,7 @@ export default async function PublicClinicPage({ params, searchParams }) {
         </div>
 
         <div className="public-card-reveal public-reveal-right">
-          <PublicBookingForm slug={clinic.slug} procedimentos={publicProcedures} profissionais={publicProfessionals} query={query} />
+          <PublicBookingForm slug={clinic.slug} procedimentos={publicProcedures} profissionais={publicProfessionals} query={query} timeZone={clinicTimeZone(clinic)} />
         </div>
       </section>
 

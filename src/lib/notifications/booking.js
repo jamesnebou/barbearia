@@ -74,7 +74,7 @@ async function sendEmailNotification({ clinic, booking, procedimento, invoiceUrl
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message || payload?.error || "Nao foi possivel enviar e-mail de notificacao.");
+    throw new Error(payload?.message || payload?.error || "Não foi possível enviar e-mail de notificação.");
   }
 
   return response.json().catch(() => ({ ok: true }));
@@ -109,7 +109,7 @@ async function sendWhatsAppNotification({ clinic, booking, procedimento, invoice
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message || payload?.error || payload?.errorMessage || "Nao foi possivel enviar WhatsApp de notificacao.");
+    throw new Error(payload?.message || payload?.error || payload?.errorMessage || "Não foi possível enviar WhatsApp de notificação.");
   }
 
   return response.json().catch(() => ({ ok: true }));

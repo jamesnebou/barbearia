@@ -15,6 +15,7 @@ const iconMap = {
   procedimentos: Scissors,
   produtos: ShoppingBag,
   pedidos: ClipboardList,
+  comandas: ReceiptText,
   usuarios: UserCog,
   configuracoes: Settings,
   financeiro: CreditCard,

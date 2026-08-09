@@ -15,7 +15,7 @@ export default async function ProcedimentosPage() {
   const supabase = await createClient();
   const { data: procedimentos = [] } = await supabase
     .from("barbearia_servicos")
-    .select("id, nome, categoria, descricao, duracao_minutos, preco, ativo, publicado_site, destaque_site, sinal_percentual, sinal_valor, ordem_site, instrucoes_pre_atendimento, instrucoes_pos_atendimento, imagem_url, imagem_storage_path")
+    .select("id, nome, categoria, descricao, duracao_minutos, intervalo_minutos, preco, preco_promocional, ativo, publicado_site, destaque_site, sinal_percentual, sinal_valor, ordem_site, instrucoes_pre_atendimento, instrucoes_pos_atendimento, imagem_url, imagem_storage_path")
     .eq("barbearia_id", activeClinic.id)
     .order("created_at", { ascending: false });
 
@@ -32,7 +32,9 @@ export default async function ProcedimentosPage() {
               <Field label="Categoria" name="categoria" placeholder="Facial, corporal, injetável..." />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Duração (min)" name="duracao_minutos" type="number" defaultValue="60" />
-                <Field label="Preço" name="preco" type="number" defaultValue="0" />
+                <Field label="Intervalo após o serviço (min)" name="intervalo_minutos" type="number" defaultValue="0" />
+                <Field label="Preço normal" name="preco" type="number" defaultValue="0" />
+                <Field label="Preço promocional" name="preco_promocional" type="number" placeholder="Opcional" />
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Sinal fixo" name="sinal_valor" type="number" defaultValue="0" />
@@ -76,8 +78,10 @@ export default async function ProcedimentosPage() {
                   <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                     <div>
                       <h3 className="font-semibold">{item.nome}</h3>
-                      <p className="mt-1 text-sm text-neutral-600">{item.categoria || "Sem categoria"} · {item.duracao_minutos} min</p>
-                      <p className="mt-1 text-xs text-neutral-500">R$ {Number(item.preco || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                      <p className="mt-1 text-sm text-neutral-600">{item.categoria || "Sem categoria"} · {item.duracao_minutos} min · intervalo de {item.intervalo_minutos || 0} min</p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        {item.preco_promocional != null ? <><span className="mr-2 line-through">R$ {Number(item.preco || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>R$ {Number(item.preco_promocional).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</> : <>R$ {Number(item.preco || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</>}
+                      </p>
                       <p className="mt-1 text-xs text-neutral-500">
                         Site: {item.publicado_site ? "publicado" : "oculto"} · Sinal: {Number(item.sinal_valor || 0) > 0 ? `R$ ${Number(item.sinal_valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : `${Number(item.sinal_percentual || 0)}%`}
                       </p>
@@ -107,12 +111,14 @@ export default async function ProcedimentosPage() {
                         <Field label="Nome" name="nome" defaultValue={item.nome || ""} required />
                         <Field label="Categoria" name="categoria" defaultValue={item.categoria || ""} placeholder="Facial, corporal, injetável..." />
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <Field label="Duração (min)" name="duracao_minutos" type="number" defaultValue={String(item.duracao_minutos || 60)} />
-                        <Field label="Preço" name="preco" type="number" defaultValue={String(item.preco || 0)} />
-                        <Field label="Ordem no site" name="ordem_site" type="number" defaultValue={String(item.ordem_site || 0)} />
+                        <Field label="Intervalo após o serviço (min)" name="intervalo_minutos" type="number" defaultValue={String(item.intervalo_minutos || 0)} />
+                        <Field label="Preço normal" name="preco" type="number" defaultValue={String(item.preco || 0)} />
+                        <Field label="Preço promocional" name="preco_promocional" type="number" defaultValue={item.preco_promocional == null ? "" : String(item.preco_promocional)} />
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <Field label="Ordem no site" name="ordem_site" type="number" defaultValue={String(item.ordem_site || 0)} />
                         <Field label="Sinal fixo" name="sinal_valor" type="number" defaultValue={String(item.sinal_valor || 0)} />
                         <Field label="Sinal (%)" name="sinal_percentual" type="number" defaultValue={String(item.sinal_percentual || 0)} />
                       </div>

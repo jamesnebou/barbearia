@@ -145,7 +145,7 @@ export function getClinicBillingState(clinic) {
 
 export function getLimitRows({ plan, usage }) {
   return [
-    { label: "Usuarios", used: usage.usuarios, limit: plan.limite_usuarios },
+    { label: "Usuários", used: usage.usuarios, limit: plan.limite_usuarios },
     { label: "Barbeiros", used: usage.profissionais, limit: plan.limite_barbeiros },
     { label: "Clientes", used: usage.clientes, limit: plan.limite_clientes },
     { label: "Agendamentos no mes", used: usage.agendamentos_mes, limit: plan.limite_agendamentos_mes },

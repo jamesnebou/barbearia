@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { publicImageSrcSet, publicImageUrl } from "@/lib/public-image";
@@ -8,8 +9,12 @@ function money(value) {
   return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function activePrice(procedimento) {
+  return Number(procedimento?.preco_promocional ?? procedimento?.preco ?? 0);
+}
+
 function depositValue(procedimento) {
-  const price = Number(procedimento?.preco || 0);
+  const price = activePrice(procedimento);
   const fixed = Number(procedimento?.sinal_valor || 0);
   const percent = Number(procedimento?.sinal_percentual || 0);
   const value = fixed > 0 ? fixed : percent > 0 ? price * (percent / 100) : 0;
@@ -35,6 +40,8 @@ export function PublicServicesSection({ procedimentos = [] }) {
   const pointerRef = useRef({ active: false, captured: false, pointerId: null, startX: 0, startScrollLeft: 0 });
   const draggedRef = useRef(false);
   const hoverRef = useRef(false);
+  const navigationPauseRef = useRef(false);
+  const navigationTimerRef = useRef(null);
   const repeatCount = 3;
   const servicesLoop = useMemo(
     () => Array.from({ length: repeatCount }).flatMap(() => procedimentos),
@@ -93,7 +100,7 @@ export function PublicServicesSection({ procedimentos = [] }) {
       const delta = Math.min(64, time - lastTime);
       if (delta >= frameInterval) {
         lastTime = time;
-        if (isVisible && !document.hidden && !reducedMotion && !pointerRef.current.active && !hoverRef.current && !selected) {
+        if (isVisible && !document.hidden && !reducedMotion && !pointerRef.current.active && !hoverRef.current && !navigationPauseRef.current && !selected) {
           viewport.scrollLeft += (speed * delta) / 1000;
           normalizeScroll();
         }
@@ -110,6 +117,10 @@ export function PublicServicesSection({ procedimentos = [] }) {
       window.removeEventListener("resize", setInitialPosition);
     };
   }, [procedimentos, repeatCount, selected]);
+
+  useEffect(() => () => {
+    if (navigationTimerRef.current) window.clearTimeout(navigationTimerRef.current);
+  }, []);
 
   function handlePointerDown(event) {
     const viewport = viewportRef.current;
@@ -166,6 +177,36 @@ export function PublicServicesSection({ procedimentos = [] }) {
     }, 120);
   }
 
+  function navigateServices(direction) {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    const firstCard = track?.querySelector(".public-service-card");
+    if (!viewport || !track || !firstCard) return;
+
+    const trackStyles = window.getComputedStyle(track);
+    const gap = Number.parseFloat(trackStyles.columnGap || trackStyles.gap || "0") || 0;
+    const step = firstCard.getBoundingClientRect().width + gap;
+    const segment = track.scrollWidth / repeatCount;
+
+    if (direction < 0 && viewport.scrollLeft < step) {
+      viewport.scrollLeft += segment;
+    } else if (direction > 0 && viewport.scrollLeft >= segment * (repeatCount - 1)) {
+      viewport.scrollLeft -= segment;
+    }
+
+    navigationPauseRef.current = true;
+    viewport.classList.add("is-navigating");
+    viewport.scrollBy({ left: direction * step, behavior: "smooth" });
+
+    if (navigationTimerRef.current) window.clearTimeout(navigationTimerRef.current);
+    navigationTimerRef.current = window.setTimeout(() => {
+      normalizeViewportPosition();
+      navigationPauseRef.current = false;
+      viewport.classList.remove("is-navigating");
+      navigationTimerRef.current = null;
+    }, 650);
+  }
+
   function handleBookingClick(event) {
     event.preventDefault();
     setSelected(null);
@@ -189,22 +230,23 @@ export function PublicServicesSection({ procedimentos = [] }) {
         </div>
       </div>
 
-      <div
-        ref={viewportRef}
-        className="public-services-viewport relative z-10 mt-6 overflow-x-auto py-23"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onMouseEnter={() => { hoverRef.current = true; }}
-        onMouseLeave={(event) => {
-          hoverRef.current = false;
-          if (pointerRef.current.active) handlePointerUp(event);
-        }}
-        onFocusCapture={() => { hoverRef.current = true; }}
-        onBlurCapture={() => { hoverRef.current = false; }}
-      >
-        <div ref={trackRef} className="public-services-track flex w-max items-start gap-5 px-16 sm:px-24">
+      <div className="public-services-carousel relative z-10 mt-6">
+        <div
+          ref={viewportRef}
+          className="public-services-viewport relative overflow-x-auto py-23"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onMouseEnter={() => { hoverRef.current = true; }}
+          onMouseLeave={(event) => {
+            hoverRef.current = false;
+            if (pointerRef.current.active) handlePointerUp(event);
+          }}
+          onFocusCapture={() => { hoverRef.current = true; }}
+          onBlurCapture={() => { hoverRef.current = false; }}
+        >
+          <div ref={trackRef} className="public-services-track flex w-max items-start gap-5 px-16 sm:px-24">
           {servicesLoop.map((item, index) => (
             <button
               key={`${item.id}-${index}`}
@@ -260,14 +302,36 @@ export function PublicServicesSection({ procedimentos = [] }) {
                 <div className="mt-auto flex items-end justify-between gap-4 border-t border-white/10 pt-5">
                   <div>
                     <p className="text-xs text-white/42">Valor</p>
-                    <strong className="text-2xl text-white">{money(item.preco)}</strong>
+                    <strong className="text-2xl text-white">{money(activePrice(item))}</strong>
                   </div>
                   <p className="max-w-36 text-right text-xs font-semibold text-white/50">{serviceLabel(item)}</p>
                 </div>
               </div>
             </button>
-          ))}
+            ))}
+          </div>
         </div>
+
+        {procedimentos.length > 1 ? (
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 z-30 flex -translate-y-1/2 items-center justify-between px-2 sm:px-5">
+            <button
+              type="button"
+              onClick={() => navigateServices(-1)}
+              className="public-services-arrow pointer-events-auto grid size-12 place-items-center rounded-full border border-white/15 bg-black/72 text-white shadow-[0_16px_42px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:size-14"
+              aria-label="Ver serviço anterior"
+            >
+              <ChevronLeft className="size-6" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateServices(1)}
+              className="public-services-arrow pointer-events-auto grid size-12 place-items-center rounded-full border border-white/15 bg-black/72 text-white shadow-[0_16px_42px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:size-14"
+              aria-label="Ver próximo serviço"
+            >
+              <ChevronRight className="size-6" aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {selected && canUsePortal ? createPortal(
@@ -312,7 +376,7 @@ export function PublicServicesSection({ procedimentos = [] }) {
                   </div>
                 </div>
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
-                  <strong className="text-2xl">{money(selected.preco)}</strong>
+                  <strong className="text-2xl">{money(activePrice(selected))}</strong>
                   <a href="#agendar" onClick={handleBookingClick} className="public-modal-booking-cta relative z-20 inline-flex items-center justify-center rounded-full border border-white/15 bg-[var(--clinic-accent)] px-6 py-3 text-sm font-black text-white shadow-[0_18px_42px_color-mix(in_srgb,var(--clinic-accent)_38%,transparent)] transition duration-300">Agendar este serviço</a>
                 </div>
               </div>

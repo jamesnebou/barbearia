@@ -43,6 +43,7 @@ const navItems = [
   { href: "/dashboard/procedimentos", label: "Serviços", icon: "procedimentos", section: "procedimentos" },
   { href: "/dashboard/produtos", label: "Lojinha", icon: "produtos", section: "produtos" },
   { href: "/dashboard/pedidos", label: "Pedidos", icon: "pedidos", section: "pedidos" },
+  { href: "/dashboard/comandas", label: "Comandas", icon: "comandas", section: "comandas" },
   { href: "/dashboard/usuarios", label: "Usuários", icon: "usuarios", section: "usuarios" },
   { href: "/dashboard/configuracoes", label: "Configurações", icon: "configuracoes", section: "configuracoes" },
   { href: "/dashboard/financeiro", label: "Financeiro", icon: "financeiro", section: "financeiro" },
@@ -116,7 +117,7 @@ export default async function DashboardLayout({ children }) {
   const { user, activeClinic } = context;
 
   if (!activeClinic) {
-    redirect("/login-cliente");
+    redirect("/onboarding");
   }
 
   const metadata = activeClinic.metadata || {};
@@ -198,7 +199,7 @@ export default async function DashboardLayout({ children }) {
         ) : null}
         {openCharge ? (
           <div className="dashboard-system-banner border-b border-amber-200 bg-amber-50/90 px-5 py-3 text-sm text-amber-900 shadow-sm backdrop-blur sm:px-8 lg:px-10">
-            <strong>Pagamento pendente.</strong> Existe uma cobranca com vencimento em {formatDate(openCharge.vencimento)}. Se nao for regularizada, o sistema pode ser bloqueado automaticamente.
+            <strong>Pagamento pendente.</strong> Existe uma cobrança com vencimento em {formatDate(openCharge.vencimento)}. Se não for regularizada, o sistema pode ser bloqueado automaticamente.
             {openCharge.invoice_url ? <a href={openCharge.invoice_url} target="_blank" className="ml-2 font-bold underline">Abrir fatura</a> : null}
           </div>
         ) : null}

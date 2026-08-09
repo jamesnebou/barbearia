@@ -104,7 +104,7 @@ export async function createBarbershopPublicBooking(formData) {
   }
 
   if (!consentimento) {
-    publicRedirect(slug, { erro: "lgpd", mensagem: "Aceite a Politica de Privacidade para solicitar o horario." });
+    publicRedirect(slug, { erro: "lgpd", mensagem: "Aceite a Política de Privacidade para solicitar o horário." });
   }
 
   if (nome.length > 120 || telefoneNormalizado.length < 10 || telefoneNormalizado.length > 15) {
@@ -168,7 +168,7 @@ export async function createBarbershopPublicBooking(formData) {
     .limit(1);
 
   if (clienteBuscaError) {
-    publicRedirect(slug, { erro: "sistema", mensagem: "Nao foi possivel validar seu cadastro. Tente novamente." });
+    publicRedirect(slug, { erro: "sistema", mensagem: "Não foi possível validar seu cadastro. Tente novamente." });
   }
 
   let clienteId = clientes?.[0]?.id || null;
@@ -193,7 +193,7 @@ export async function createBarbershopPublicBooking(formData) {
       .single();
 
     if (clienteError || !novoCliente) {
-      publicRedirect(slug, { erro: "cadastro", mensagem: "Nao foi possivel concluir seu cadastro. Tente novamente." });
+      publicRedirect(slug, { erro: "cadastro", mensagem: "Não foi possível concluir seu cadastro. Tente novamente." });
     }
     clienteId = novoCliente.id;
   }
@@ -223,7 +223,7 @@ export async function createBarbershopPublicBooking(formData) {
   }
 
   if (agendamentoError || !agendamento) {
-    publicRedirect(slug, { erro: "agenda", mensagem: "Nao foi possivel solicitar o horario. Tente novamente." });
+    publicRedirect(slug, { erro: "agenda", mensagem: "Não foi possível solicitar o horário. Tente novamente." });
   }
 
   await supabaseAdmin.from("barbearia_crm_oportunidades").insert({
@@ -241,5 +241,5 @@ export async function createBarbershopPublicBooking(formData) {
   });
 
   revalidatePath(`/b/${slug}`);
-  publicRedirect(slug, { ok: "agendamento", mensagem: "Horario solicitado. A barbearia vai confirmar pelo WhatsApp." });
+  publicRedirect(slug, { ok: "agendamento", mensagem: "Horário solicitado. A barbearia vai confirmar pelo WhatsApp." });
 }

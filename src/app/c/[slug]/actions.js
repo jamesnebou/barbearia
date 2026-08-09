@@ -1,11 +1,15 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createAsaasCustomerForPatient, createAsaasPaymentForBooking, isAsaasConfigured } from "@/lib/asaas/client";
+import { createInfinitePayCheckout } from "@/lib/infinitepay/client";
+import { resolveBarbershopPaymentProvider } from "@/lib/payments/provider";
 import { notifyClinicPublicBooking } from "@/lib/notifications/booking";
-import { isWithinWorkingPeriods } from "@/lib/clinic/schedule";
+import { clinicTimeZone, dateFromClinicLocal, isWithinWorkingPeriods } from "@/lib/clinic/schedule";
+import { totalAppointmentMinutes } from "@/lib/domain/schedule-core.mjs";
 import { decryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 
 function text(formData, key) {
@@ -15,6 +19,18 @@ function text(formData, key) {
 function nullableText(formData, key) {
   const value = text(formData, key);
   return value || null;
+}
+
+function uniqueTexts(formData, key) {
+  return Array.from(new Set(formData.getAll(key).map((value) => String(value || "").trim()).filter(Boolean)));
+}
+
+function serviceSummary(services) {
+  return services.map((item) => item.nome).join(", ");
+}
+
+function calculateTotalDeposit(services) {
+  return Number(services.reduce((total, item) => total + calculateDeposit(item), 0).toFixed(2));
 }
 
 function normalizePhone(value) {
@@ -31,20 +47,33 @@ function publicLeadRedirect(slug, params) {
   redirect(`/c/${slug}${query ? `?${query}` : ""}#form`);
 }
 
+function activePrice(procedimento) {
+  return Number(procedimento?.preco_promocional ?? procedimento?.preco ?? 0);
+}
+
 function calculateDeposit(procedimento) {
-  const price = Number(procedimento?.preco || 0);
+  const price = activePrice(procedimento);
   const fixed = Number(procedimento?.sinal_valor || 0);
   const percent = Number(procedimento?.sinal_percentual || 0);
   const value = fixed > 0 ? fixed : percent > 0 ? price * (percent / 100) : 0;
   return Math.max(0, Math.min(price, Number(value.toFixed(2))));
 }
 
-function assertWorkingHours({ clinic, start, end, slug }) {
+function assertWorkingHours({ clinic, start, end, slug, timeZone }) {
   const schedule = clinic?.metadata?.horario_funcionamento || {};
 
-  if (!isWithinWorkingPeriods({ schedule, startDate: start, endDate: end })) {
-    publicRedirect(slug, { erro: "agenda", mensagem: "Este horário esta fora do expediente da barbearia." });
+  if (!isWithinWorkingPeriods({ schedule, startDate: start, endDate: end, timeZone })) {
+    publicRedirect(slug, { erro: "agenda", mensagem: "Este horário está fora do expediente da barbearia." });
   }
+}
+
+async function publicAppOrigin() {
+  const configured = String(process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "").trim().replace(/\/$/, "");
+  if (configured) return configured;
+  const requestHeaders = await headers();
+  const protocol = requestHeaders.get("x-forwarded-proto") || (process.env.NODE_ENV === "production" ? "https" : "http");
+  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "localhost:3000";
+  return `${protocol}://${host}`;
 }
 
 async function assertSlotAvailable({ clinicId, profissionalId, startISO, endISO, slug }) {
@@ -68,7 +97,9 @@ async function assertSlotAvailable({ clinicId, profissionalId, startISO, endISO,
 
 export async function createPublicBookingAction(formData) {
   const slug = text(formData, "slug");
-  const procedimentoId = text(formData, "servico_id");
+  const serviceIds = uniqueTexts(formData, "servico_ids");
+  const legacyServiceId = text(formData, "servico_id");
+  if (legacyServiceId && !serviceIds.includes(legacyServiceId)) serviceIds.push(legacyServiceId);
   const profissionalId = nullableText(formData, "barbeiro_id") || nullableText(formData, "barbeiro_disponivel_id");
   const nome = text(formData, "nome");
   const telefone = nullableText(formData, "telefone");
@@ -77,7 +108,7 @@ export async function createPublicBookingAction(formData) {
   const dataHora = text(formData, "data_hora");
   const consentimento = formData.get("consentimento_lgpd") === "on";
 
-  if (!slug || !procedimentoId || !nome || !dataHora) {
+  if (!slug || !serviceIds.length || !nome || !dataHora) {
     publicRedirect(slug || "", { erro: "dados", mensagem: "Preencha os dados obrigatórios para agendar." });
   }
 
@@ -105,36 +136,60 @@ export async function createPublicBookingAction(formData) {
   const clinicIntegration = (integrations || []).reduce((result, integration) => {
     const config = integration.configuracao_publica || {};
     const secrets = decryptBarbeariaSecrets(integration.segredos_criptografados);
-    if (integration.provedor === "asaas") return { ...result, asaas_ativo: integration.ativo, baseUrl: config.baseUrl, apiKey: secrets.apiKey };
+    if (integration.provedor === "asaas") return {
+      ...result,
+      asaas_ativo: integration.ativo,
+      baseUrl: config.baseUrl,
+      apiKey: secrets.apiKey,
+      pagamento_gateway: config.principal === true ? "asaas" : result.pagamento_gateway,
+    };
+    if (integration.provedor === "infinitepay") return {
+      ...result,
+      infinitepay_ativo: integration.ativo,
+      infinitepay_handle: config.handle,
+      pagamento_gateway: config.principal === true ? "infinitepay" : result.pagamento_gateway,
+    };
     if (integration.provedor === "resend") return { ...result, email_ativo: integration.ativo, email_destino: config.email_destino, email_remetente: config.email_remetente };
     if (integration.provedor === "whatsapp") return { ...result, whatsapp_ativo: integration.ativo, whatsapp_provider: config.provider || integration.nome, whatsapp_numero_destino: config.numero_destino, whatsapp_webhook_url: integration.webhook_url, whatsapp_token: secrets.token };
     return result;
   }, { barbearia_id: clinic.id });
+  if (!clinicIntegration.pagamento_gateway && clinicIntegration.asaas_ativo) {
+    clinicIntegration.pagamento_gateway = "asaas";
+  }
+  const paymentProvider = resolveBarbershopPaymentProvider(clinicIntegration);
 
   const siteConfig = clinic.metadata?.site_publico || {};
   if (siteConfig.publicado === false) {
-    publicRedirect(slug, { erro: "site", mensagem: "O agendamento online desta barbearia ainda nao esta publicado." });
+    publicRedirect(slug, { erro: "site", mensagem: "O agendamento online desta barbearia ainda não está publicado." });
   }
 
-  const { data: procedimento, error: procedimentoError } = await supabaseAdmin
+  const { data: selectedServices = [], error: procedimentoError } = await supabaseAdmin
     .from("barbearia_servicos")
-    .select("id, nome, descricao, duracao_minutos, preco, sinal_percentual, sinal_valor, publicado_site, ativo")
+    .select("id, nome, descricao, duracao_minutos, intervalo_minutos, preco, preco_promocional, sinal_percentual, sinal_valor, publicado_site, ativo")
     .eq("barbearia_id", clinic.id)
-    .eq("id", procedimentoId)
+    .in("id", serviceIds)
     .eq("ativo", true)
-    .eq("publicado_site", true)
-    .maybeSingle();
+    .eq("publicado_site", true);
 
   if (procedimentoError) throw procedimentoError;
-  if (!procedimento) publicRedirect(slug, { erro: "procedimento", mensagem: "Serviço indisponível para agendamento online." });
-
-  const start = new Date(dataHora);
-  if (Number.isNaN(start.getTime()) || start < new Date()) {
-    publicRedirect(slug, { erro: "agenda", mensagem: "Escolha uma data futura valida." });
+  if (selectedServices.length !== serviceIds.length) {
+    publicRedirect(slug, { erro: "procedimento", mensagem: "Um ou mais serviços estão indisponíveis para agendamento online." });
   }
 
-  const end = new Date(start.getTime() + Number(procedimento.duracao_minutos || 60) * 60000);
-  assertWorkingHours({ clinic, start, end, slug });
+  const servicesById = new Map(selectedServices.map((item) => [item.id, item]));
+  const services = serviceIds.map((id) => servicesById.get(id)).filter(Boolean);
+  const procedimento = services[0];
+  const procedimentosTexto = serviceSummary(services);
+
+  const timeZone = clinicTimeZone(clinic);
+  const start = dateFromClinicLocal(dataHora, timeZone);
+  if (!start || start < new Date()) {
+    publicRedirect(slug, { erro: "agenda", mensagem: "Escolha uma data futura válida." });
+  }
+
+  const duracaoTotal = totalAppointmentMinutes(services, { defaultDuration: 60, includeIntervals: true });
+  const end = new Date(start.getTime() + duracaoTotal * 60000);
+  assertWorkingHours({ clinic, start, end, slug, timeZone });
 
   if (!profissionalId) {
     publicRedirect(slug, { erro: "agenda", mensagem: "Escolha um horário disponível para concluir o agendamento." });
@@ -182,12 +237,12 @@ export async function createPublicBookingAction(formData) {
     clienteId = cliente.id;
   }
 
-  const valorTotal = Number(procedimento.preco || 0);
-  const valorSinal = calculateDeposit(procedimento);
+  const valorTotal = Number(services.reduce((total, item) => total + activePrice(item), 0).toFixed(2));
+  const valorSinal = calculateTotalDeposit(services);
   const pagamentoStatus = valorSinal > 0 ? "pendente" : "sem_sinal";
 
-  if (valorSinal > 0 && !isAsaasConfigured(clinicIntegration)) {
-    publicRedirect(slug, { erro: "pagamento", mensagem: "Checkout online indisponível no momento. A barbearia precisa configurar o Asaas para receber o sinal pelo site." });
+  if (valorSinal > 0 && !paymentProvider) {
+    publicRedirect(slug, { erro: "pagamento", mensagem: "Checkout online indisponível no momento. A barbearia precisa conectar Asaas ou InfinitePay para receber o sinal pelo site." });
   }
 
   const { data: agendamento, error: agendaError } = await supabaseAdmin
@@ -202,8 +257,8 @@ export async function createPublicBookingAction(formData) {
       status: "agendado",
       valor_tabela: valorTotal,
       valor_final: valorTotal,
-      pagamento_status: "pendente",
-      observacoes: "Agendamento criado pelo site público.",
+      pagamento_status: pagamentoStatus === "sem_sinal" ? "pendente" : "parcial",
+      observacoes: `Agendamento criado pelo site público. Serviços: ${procedimentosTexto}. Duração total: ${duracaoTotal} min.`,
     })
     .select("id")
     .single();
@@ -212,25 +267,47 @@ export async function createPublicBookingAction(formData) {
 
   let invoiceUrl = null;
   let asaasPaymentId = null;
+  let paymentExternalId = null;
   let paymentPayload = {};
 
-  if (valorSinal > 0 && isAsaasConfigured(clinicIntegration)) {
+  if (valorSinal > 0 && paymentProvider) {
     try {
-      const customer = await createAsaasCustomerForPatient({ clinicId: clinic.id, nome, email, telefone, cpf, integration: clinicIntegration });
-      const payment = await createAsaasPaymentForBooking({
-        customerId: customer.id,
-        value: valorSinal,
-        description: `Sinal ${procedimento.nome} - ${clinic.nome}`,
-        externalReference: agendamento.id,
-        billingType: "UNDEFINED",
-        integration: clinicIntegration,
-      });
-      invoiceUrl = payment.invoiceUrl || payment.bankSlipUrl || null;
-      asaasPaymentId = payment.id || null;
-      paymentPayload = payment || {};
+      if (paymentProvider === "asaas" && isAsaasConfigured(clinicIntegration)) {
+        const customer = await createAsaasCustomerForPatient({ clinicId: clinic.id, nome, email, telefone, cpf, integration: clinicIntegration });
+        const payment = await createAsaasPaymentForBooking({
+          customerId: customer.id,
+          value: valorSinal,
+          description: `Sinal ${procedimentosTexto} - ${clinic.nome}`,
+          externalReference: agendamento.id,
+          billingType: "UNDEFINED",
+          integration: clinicIntegration,
+        });
+        invoiceUrl = payment.invoiceUrl || payment.bankSlipUrl || null;
+        asaasPaymentId = payment.id || null;
+        paymentExternalId = asaasPaymentId;
+        paymentPayload = payment || {};
+      } else if (paymentProvider === "infinitepay") {
+        const origin = await publicAppOrigin();
+        const orderNsu = `agendamento:${agendamento.id}`;
+        const checkout = await createInfinitePayCheckout({
+          handle: clinicIntegration.infinitepay_handle,
+          orderNsu,
+          redirectUrl: `${origin}/c/${slug}?pagamento=retorno#agendar`,
+          webhookUrl: `${origin}/api/webhooks/infinitepay`,
+          items: [{
+            quantity: 1,
+            price: Math.round(valorSinal * 100),
+            description: `Sinal ${procedimentosTexto} - ${clinic.nome}`,
+          }],
+          customer: { name: nome, email, phone: telefone },
+        });
+        invoiceUrl = checkout.url;
+        paymentExternalId = orderNsu;
+        paymentPayload = checkout;
+      }
     } catch (error) {
       await supabaseAdmin.from("barbearia_agendamentos").delete().eq("id", agendamento.id).eq("barbearia_id", clinic.id);
-      publicRedirect(slug, { erro: "pagamento", mensagem: error.message || "Nao foi possivel gerar o checkout do sinal. Tente novamente." });
+      publicRedirect(slug, { erro: "pagamento", mensagem: error.message || "Não foi possível gerar o checkout do sinal. Tente novamente." });
     }
   }
 
@@ -246,10 +323,24 @@ export async function createPublicBookingAction(formData) {
     data_hora: start.toISOString(),
     valor_total: valorTotal,
     valor_sinal: valorSinal,
-    pagamento_status: asaasPaymentId ? "pendente" : pagamentoStatus,
+    pagamento_status: invoiceUrl ? "pendente" : pagamentoStatus,
+    pagamento_gateway: paymentProvider,
+    pagamento_external_id: paymentExternalId,
     asaas_payment_id: asaasPaymentId,
     invoice_url: invoiceUrl,
-    payload: paymentPayload,
+    payload: {
+      pagamento: paymentPayload,
+      pagamento_gateway: paymentProvider,
+      servicos: services.map((item) => ({
+        id: item.id,
+        nome: item.nome,
+        preco: activePrice(item),
+        duracao_minutos: Number(item.duracao_minutos || 60),
+        intervalo_minutos: Number(item.intervalo_minutos || 0),
+        sinal: calculateDeposit(item),
+      })),
+      duracao_total_minutos: duracaoTotal,
+    },
   }).select("id, nome, telefone, email, data_hora, valor_total, valor_sinal").single();
 
   if (publicError) throw publicError;
@@ -264,8 +355,10 @@ export async function createPublicBookingAction(formData) {
     status: "agendamento_marcado",
     valor_estimado: valorTotal,
     proxima_acao_em: start.toISOString(),
-    proxima_acao: `Atendimento agendado: ${procedimento.nome}`,
-    observacoes: asaasPaymentId ? "Criado automaticamente pelo site publico com checkout de sinal." : "Criado automaticamente pelo site publico.",
+    proxima_acao: `Atendimento agendado: ${procedimentosTexto}`,
+    observacoes: invoiceUrl
+      ? `Criado automaticamente pelo site público com checkout de sinal via ${paymentProvider === "infinitepay" ? "InfinitePay" : "Asaas"}. Serviços: ${procedimentosTexto}.`
+      : `Criado automaticamente pelo site público. Serviços: ${procedimentosTexto}.`,
   });
 
   revalidatePath(`/c/${slug}`);

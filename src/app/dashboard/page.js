@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { paidAmount } from "@/lib/barbearia/finance";
+import { isBillableRecord, paidAmount } from "@/lib/domain/finance-core.mjs";
 import { CalendarDays, CreditCard, Scissors, ShieldCheck, TrendingUp, UsersRound, Wallet } from "lucide-react";
 import { requireClinic } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -93,7 +93,7 @@ export default async function DashboardPage({ searchParams }) {
   const proximos = proximosResult.data || [];
   const siteBookings = siteBookingsResult.data || [];
   const pendingSiteBookings = siteBookings.filter((item) => ["pendente", "erro"].includes(item.pagamento_status));
-  const isFaturavel = (item) => !["cancelado", "faltou"].includes(item.status) && item.pagamento_status !== "cancelado";
+  const isFaturavel = isBillableRecord;
   const hojeFaturavel = hoje.filter(isFaturavel);
   const periodoFaturavel = periodo.filter(isFaturavel);
 
@@ -143,7 +143,7 @@ export default async function DashboardPage({ searchParams }) {
         <PageHeader eyebrow="Dashboard" title="Operação da barbearia" description={`Visão executiva de ${brandName}: faturamento, agenda, clientes, equipe e status comercial.`} />
         {params?.erro === "permissao" ? (
           <div className="mt-6">
-            <Notice type="warning" title="Acesso restrito">Seu papel atual nao tem permissao para abrir essa area. O menu mostra apenas os modulos liberados para o seu acesso.</Notice>
+            <Notice type="warning" title="Acesso restrito">Seu papel atual não tem permissão para abrir esta área. O menu mostra apenas os módulos liberados para o seu acesso.</Notice>
           </div>
         ) : null}
 

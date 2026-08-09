@@ -12,14 +12,14 @@ const company = {
 };
 
 const sections = [
-  ["Controlador e operador", `${company.productName} atua como plataforma de apoio operacional para barbearias. A barbearia contratante normalmente atua como controladora dos dados dos seus clientes, enquanto a plataforma pode atuar como operadora, conforme contrato e configuracao do servico.`],
-  ["Dados tratados", "Podemos tratar dados cadastrais da barbearia, usuarios autorizados, clientes, agendamentos, preferencias, consentimentos e fotos de referencia, pagamentos, logs operacionais e registros de consentimento."],
-  ["Dados sensiveis", "Preferencias de atendimento, consentimentos, fotos de referencia e historico de servicos devem ser acessados apenas por usuarios autorizados pela barbearia e usados exclusivamente para atendimento, acompanhamento, obrigacoes legais e defesa de direitos."],
-  ["Finalidade", "Os dados sao utilizados para operar agenda, atendimento, relacionamento com clientes, controle financeiro, cumprimento de obrigacoes legais, suporte tecnico, seguranca e melhoria do servico."],
-  ["Base legal", "O tratamento pode ocorrer por execucao de contrato, legitimo interesse, obrigacao legal e consentimento, especialmente para dados pessoais, fotos e termos de autorizacao."],
-  ["Seguranca", "O sistema usa autenticacao, segregacao por barbearia, controles de acesso por papel e armazenamento privado para fotos dos clientes. Usuarios da barbearia devem manter senhas protegidas e conceder acesso apenas a pessoas autorizadas."],
-  ["Direitos dos titulares", "Clientes podem solicitar confirmacao de tratamento, acesso, correcao, exclusao, portabilidade, informacao sobre compartilhamento e revisao de consentimento diretamente a barbearia responsavel pelos dados."],
-  ["Retencao", "Os dados sao mantidos enquanto necessarios para a prestacao do servico, obrigacoes legais, defesa de direitos ou conforme orientacao da barbearia controladora."],
+  ["Controlador e operador", `${company.productName} atua como plataforma de apoio operacional para barbearias. A barbearia contratante normalmente atua como controladora dos dados dos seus clientes, enquanto a plataforma pode atuar como operadora, conforme contrato e configuração do serviço.`],
+  ["Dados tratados", "Podemos tratar dados cadastrais da barbearia, usuários autorizados, clientes, agendamentos, preferências, consentimentos, fotos de referência, pagamentos, logs operacionais e registros de consentimento."],
+  ["Dados sensíveis", "Preferências de atendimento, consentimentos, fotos de referência e histórico de serviços devem ser acessados apenas por usuários autorizados pela barbearia e usados exclusivamente para atendimento, acompanhamento, obrigações legais e defesa de direitos."],
+  ["Finalidade", "Os dados são utilizados para operar agenda, atendimento, relacionamento com clientes, controle financeiro, cumprimento de obrigações legais, suporte técnico, segurança e melhoria do serviço."],
+  ["Base legal", "O tratamento pode ocorrer por execução de contrato, legítimo interesse, obrigação legal e consentimento, especialmente para dados pessoais, fotos e termos de autorização."],
+  ["Segurança", "O sistema usa autenticação, segregação por barbearia, controles de acesso por papel e armazenamento privado para fotos dos clientes. Usuários da barbearia devem manter senhas protegidas e conceder acesso apenas a pessoas autorizadas."],
+  ["Direitos dos titulares", "Clientes podem solicitar confirmação de tratamento, acesso, correção, exclusão, portabilidade, informação sobre compartilhamento e revisão de consentimento diretamente à barbearia responsável pelos dados."],
+  ["Retenção", "Os dados são mantidos enquanto necessários para a prestação do serviço, obrigações legais, defesa de direitos ou conforme orientação da barbearia controladora."],
 ];
 
 export default function PrivacidadePage() {

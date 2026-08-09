@@ -398,7 +398,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
             <input name="empresa" tabIndex={-1} autoComplete="off" />
           </label>
 
-          {query?.erro ? <div className="mb-6 rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-100">{query.mensagem || "Nao foi possivel solicitar o horario."}</div> : null}
+          {query?.erro ? <div className="mb-6 rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-100">{query.mensagem || "Não foi possível solicitar o horário."}</div> : null}
           {query?.ok ? <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{query.mensagem || "Solicitacao enviada."}</div> : null}
 
           {canBook ? (
@@ -441,7 +441,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
               </div>
               <label className="mt-6 flex items-start gap-3 text-sm leading-6 text-white/58">
                 <input type="checkbox" name="consentimento_lgpd" required className="mt-1 accent-[var(--barber-accent)]" />
-                <span>Concordo com o uso dos meus dados para contato e agendamento, conforme a <a href="/privacidade" className="font-bold text-[var(--barber-accent)] underline">Politica de Privacidade</a>.</span>
+                <span>Concordo com o uso dos meus dados para contato e agendamento, conforme a <a href="/privacidade" className="font-bold text-[var(--barber-accent)] underline">Política de Privacidade</a>.</span>
               </label>
               <button type="submit" className="mt-7 w-full rounded-full bg-[var(--barber-accent)] px-7 py-4 text-sm font-black text-[#111] transition hover:-translate-y-0.5 hover:brightness-110">
                 Solicitar horario
@@ -463,7 +463,7 @@ export default async function PublicBarbershopPage({ params, searchParams }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
               <MapPin className="text-[var(--barber-accent)]" size={21} />
-              <p className="mt-4 text-sm font-black">Endereco</p>
+              <p className="mt-4 text-sm font-black">Endereço</p>
               <p className="mt-2 text-sm leading-6 text-white/48">{address || "Consulte pelo WhatsApp"}</p>
               {maps ? <a href={maps} target="_blank" rel="noreferrer" className="mt-4 inline-block text-sm font-bold text-[var(--barber-accent)]">Abrir no mapa</a> : null}
             </div>

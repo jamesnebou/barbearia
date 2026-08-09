@@ -11,13 +11,13 @@ const company = {
 };
 
 const sections = [
-  ["Uso do sistema", `${company.productName} e uma plataforma SaaS para gestao de barbearias, incluindo agenda, clientes, preferencias, consentimentos e fotos de referencia, financeiro, pacotes, usuarios e indicadores operacionais.`],
-  ["Responsabilidade da barbearia", "A barbearia contratante e responsavel pela veracidade dos dados inseridos, pela autorizacao dos seus usuarios, pela definicao dos papeis de acesso e pela obtencao dos consentimentos necessarios dos clientes."],
-  ["Ficha do cliente, fotos e consentimentos", "Preferencias, fotos de referencia e resultado e termos de consentimento devem ser coletados e armazenados pela barbearia conforme a legislacao aplicavel. O sistema fornece controles tecnicos, mas a prestacao dos servicos e o atendimento sao responsabilidade da barbearia."],
-  ["Acesso e seguranca", "Cada usuario deve usar credenciais proprias. E proibido compartilhar senha, acessar dados sem autorizacao, exportar informacoes indevidamente ou utilizar o sistema para finalidade ilicita."],
-  ["Planos e cobranca", "O uso pode estar sujeito a planos, limites, periodo de teste, cobranca recorrente, bloqueio por inadimplencia e cancelamento conforme condicoes comerciais acordadas."],
-  ["Disponibilidade", "A plataforma busca operar com estabilidade, mas pode passar por manutencoes, indisponibilidades de terceiros, instabilidades de internet, falhas de provedores ou ajustes tecnicos necessarios a evolucao do produto."],
-  ["Suporte e contato", `Canais oficiais: ${company.contactEmail} e ${company.whatsapp}. Substitua estes dados antes da publicacao comercial.`],
+  ["Uso do sistema", `${company.productName} é uma plataforma SaaS para gestão de barbearias, incluindo agenda, clientes, preferências, consentimentos, fotos de referência, financeiro, pacotes, usuários e indicadores operacionais.`],
+  ["Responsabilidade da barbearia", "A barbearia contratante é responsável pela veracidade dos dados inseridos, pela autorização dos seus usuários, pela definição dos papéis de acesso e pela obtenção dos consentimentos necessários dos clientes."],
+  ["Ficha do cliente, fotos e consentimentos", "Preferências, fotos de referência e resultado e termos de consentimento devem ser coletados e armazenados pela barbearia conforme a legislação aplicável. O sistema fornece controles técnicos, mas a prestação dos serviços e o atendimento são responsabilidade da barbearia."],
+  ["Acesso e segurança", "Cada usuário deve usar credenciais próprias. É proibido compartilhar senha, acessar dados sem autorização, exportar informações indevidamente ou utilizar o sistema para finalidade ilícita."],
+  ["Planos e cobrança", "O uso pode estar sujeito a planos, limites, período de teste, cobrança recorrente, bloqueio por inadimplência e cancelamento conforme condições comerciais acordadas."],
+  ["Disponibilidade", "A plataforma busca operar com estabilidade, mas pode passar por manutenções, indisponibilidades de terceiros, instabilidades de internet, falhas de provedores ou ajustes técnicos necessários à evolução do produto."],
+  ["Suporte e contato", `Canais oficiais: ${company.contactEmail} e ${company.whatsapp}. Substitua estes dados antes da publicação comercial.`],
 ];
 
 export default function TermosPage() {

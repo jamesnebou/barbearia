@@ -1,7 +1,7 @@
 import { Clock, CreditCard, Mail, MessageCircle, Palette, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import { requireClinicSection } from "@/lib/auth/session";
 import { EmptyClinicState, Field, PageHeader, SubmitButton, TextArea } from "@/components/app-shell/ui";
-import { connectClinicAsaasAction, disconnectClinicAsaasAction, removeClinicDomainAction, syncClinicDomainAction, testClinicWhatsappIntegrationAction, updateClinicAccountAction, updateClinicSettingsAction, updateClinicUserAction } from "../actions";
+import { connectClinicAsaasAction, connectClinicInfinitePayAction, disconnectClinicAsaasAction, disconnectClinicInfinitePayAction, removeClinicDomainAction, syncClinicDomainAction, testClinicWhatsappIntegrationAction, updateClinicAccountAction, updateClinicSettingsAction, updateClinicUserAction } from "../actions";
 import { ConfigTabs } from "./config-tabs";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeSchedule } from "@/lib/clinic/schedule";
@@ -131,6 +131,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
   const meta = activeClinic.metadata || {};
   const site = meta.site_publico || {};
   const schedule = normalizeSchedule(meta.horario_funcionamento || {});
+  const inactiveDates = [...(schedule.datas_inativas || []), ...Array.from({ length: 5 }, () => ({ data: "", motivo: "" }))].slice(0, 12);
   const { data: domains = [] } = await supabaseAdmin
     .from("barbearia_dominios")
     .select("dominio, status, observacoes")
@@ -143,11 +144,19 @@ export default async function ConfiguracoesPage({ searchParams }) {
   const integration = integrationRows.reduce((result, item) => {
     const config = item.configuracao_publica || {};
     const secrets = decryptBarbeariaSecrets(item.segredos_criptografados);
-    if (item.provedor === "asaas") return { ...result, asaas_ativo: item.ativo, asaas_ambiente: item.ambiente, asaas_configurada: Boolean(secrets.apiKey), asaas_key_last_four: config.key_last_four, asaas_webhook_status: config.webhook_status, asaas_connected_at: config.connected_at, asaas_webhook_url: item.webhook_url };
+    if (item.provedor === "asaas") return { ...result, asaas_principal: config.principal === true, asaas_ativo: item.ativo, asaas_ambiente: item.ambiente, asaas_configurada: Boolean(secrets.apiKey), asaas_key_last_four: config.key_last_four, asaas_webhook_status: config.webhook_status, asaas_connected_at: config.connected_at, asaas_webhook_url: item.webhook_url };
+    if (item.provedor === "infinitepay") return { ...result, infinitepay_principal: config.principal === true, infinitepay_ativo: item.ativo, infinitepay_handle: config.handle };
     if (item.provedor === "resend") return { ...result, email_ativo: item.ativo, email_destino: config.email_destino, email_remetente: config.email_remetente };
     if (item.provedor === "whatsapp") return { ...result, whatsapp_ativo: item.ativo, whatsapp_provider: config.provider || item.nome, whatsapp_numero_destino: config.numero_destino, whatsapp_webhook_url: item.webhook_url, whatsapp_token: secrets.token };
     return result;
   }, {});
+  integration.pagamento_gateway = integration.infinitepay_ativo && integration.infinitepay_principal
+    ? "infinitepay"
+    : integration.asaas_ativo
+      ? "asaas"
+      : integration.infinitepay_ativo
+        ? "infinitepay"
+        : null;
   const { data: usuarios = [] } = await supabaseAdmin
     .from("barbearia_usuarios")
     .select("id, nome, email, papel, ativo, permissoes, aceito_em, created_at")
@@ -162,6 +171,8 @@ export default async function ConfiguracoesPage({ searchParams }) {
         {params?.ok === "configuracoes" ? <Notice>Configurações atualizadas com sucesso.</Notice> : null}
         {params?.ok === "asaas" ? <Notice>Conta Asaas validada e conectada com sucesso.</Notice> : null}
         {params?.ok === "asaas_desconectado" ? <Notice>Conta Asaas desconectada desta barbearia.</Notice> : null}
+        {params?.ok === "infinitepay" ? <Notice>InfinitePay conectada e definida como gateway principal da barbearia.</Notice> : null}
+        {params?.ok === "infinitepay_desconectado" ? <Notice>InfinitePay desconectada desta barbearia.</Notice> : null}
         {params?.ok === "whatsapp" ? <Notice>Mensagem de teste enviada pelo WhatsApp.</Notice> : null}
         {params?.ok === "conta" ? <Notice>Dados de acesso atualizados com sucesso.</Notice> : null}
         {params?.erro ? <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{params?.mensagem || "Não foi possível atualizar as configurações."}</div> : null}
@@ -200,6 +211,7 @@ export default async function ConfiguracoesPage({ searchParams }) {
                 </button>
               </div>
             </div>
+
           </section>
 
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -261,8 +273,14 @@ export default async function ConfiguracoesPage({ searchParams }) {
               <label className="block">
                 <span className="text-sm font-medium text-neutral-700">Foto principal do site</span>
                 <input name="site_hero_image_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
-                <span className="mt-2 block text-xs leading-5 text-neutral-500">Hero/capa. Recomendado: 1920x1200 px ou maior, horizontal. Limite 50 MB.</span>
+                <span className="mt-2 block text-xs leading-5 text-neutral-500">Hero/capa para computador. Recomendado: 1920x1200 px ou maior, horizontal. Limite 50 MB.</span>
                 {site.hero_image_url ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem salva.</span> : null}
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-neutral-700">Foto principal do site (mobile)</span>
+                <input name="site_hero_mobile_image_file" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="mt-2 block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-[var(--clinic-primary)] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white" />
+                <span className="mt-2 block text-xs leading-5 text-neutral-500">Hero/capa para celular. Recomendado: 1080x1600 px ou 1080x1920 px, vertical. Limite 50 MB.</span>
+                {site.hero_mobile_image_url ? <span className="mt-2 block text-xs font-semibold text-[var(--clinic-primary)]">Imagem mobile salva.</span> : null}
               </label>
               <label className="block">
                 <span className="text-sm font-medium text-neutral-700">Foto do barbeiro ou da equipe</span>
@@ -376,6 +394,19 @@ export default async function ConfiguracoesPage({ searchParams }) {
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2"><Clock size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Horário de funcionamento</h2></div>
             <p className="mt-2 text-sm leading-6 text-neutral-600">Configure cada dia separadamente. Use o segundo período apenas quando a barbearia realmente fechar no meio do dia.</p>
+            <label className="mt-5 block max-w-md">
+              <span className="text-sm font-medium text-neutral-700">Fuso horário da barbearia</span>
+              <select name="fuso_horario" defaultValue={meta.fuso_horario || meta.timezone || "America/Bahia"} className="mt-2 h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-950 outline-none focus:border-[var(--clinic-primary)]">
+                <option value="America/Bahia">Bahia</option>
+                <option value="America/Sao_Paulo">Brasília, São Paulo, Rio de Janeiro e Sul</option>
+                <option value="America/Fortaleza">Ceará e parte do Nordeste</option>
+                <option value="America/Recife">Pernambuco</option>
+                <option value="America/Belem">Pará</option>
+                <option value="America/Cuiaba">Mato Grosso</option>
+                <option value="America/Manaus">Amazonas</option>
+              </select>
+              <span className="mt-2 block text-xs leading-5 text-neutral-500">Usado para exibir horários e salvar agendamentos sem deslocamento de hora.</span>
+            </label>
             <div className="mt-5 grid gap-3">
               {weekDays.map(([value, label]) => {
                 const day = schedule.dias_config?.[value] || { ativo: false, periodos: [] };
@@ -399,6 +430,20 @@ export default async function ConfiguracoesPage({ searchParams }) {
                 );
               })}
             </div>
+            <div className="mt-6 rounded-lg border border-[color-mix(in_srgb,var(--clinic-primary)_18%,#e5e5e5)] bg-neutral-50 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><h3 className="text-base font-black text-neutral-950">Datas sem atendimento</h3><p className="mt-1 text-sm leading-6 text-neutral-600">Bloqueie feriados, folgas, eventos ou qualquer data sem expediente. Apague a data e salve para removê-la.</p></div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-neutral-500 shadow-sm">Até 12 datas</span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {inactiveDates.map((item, index) => (
+                  <div key={`inactive-date-${index}`} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-3 md:grid-cols-[180px_1fr]">
+                    <Field label="Data inativa" name={`inactive_date_${index}`} type="date" defaultValue={item.data || ""} />
+                    <Field label="Motivo opcional" name={`inactive_reason_${index}`} defaultValue={item.motivo || ""} placeholder="Ex.: feriado, evento, manutenção ou folga da equipe" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
 
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -413,6 +458,21 @@ export default async function ConfiguracoesPage({ searchParams }) {
             <div className="flex items-center gap-2"><CreditCard size={20} className="text-[var(--clinic-primary)]" /><h2 className="text-lg font-semibold">Integrações da barbearia</h2></div>
             <p className="mt-2 text-sm text-neutral-600">Estas credenciais pertencem somente a esta barbearia. Deixe campos sensíveis em branco para manter o valor já salvo.</p>
             <div className="mt-5 grid gap-5">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div><div className="flex items-center gap-2"><CreditCard size={18} className="text-[var(--clinic-primary)]" /><strong>Recebimentos com InfinitePay</strong></div><p className="mt-2 text-sm leading-6 text-neutral-600">Informe a InfiniteTag da barbearia. O cliente paga por Pix ou cartão no checkout hospedado.</p></div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${integration?.infinitepay_ativo ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-600"}`}>{integration?.pagamento_gateway === "infinitepay" ? "Principal" : integration?.infinitepay_ativo ? "Conectado" : "Desconectado"}</span>
+                </div>
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <Field label="InfiniteTag da barbearia" name="infinitepay_handle" defaultValue={integration?.infinitepay_handle || ""} placeholder="Ex.: minha_barbearia" />
+                  <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-xs leading-5 text-neutral-600">Ative o Checkout Integrado no aplicativo InfinitePay. O sistema valida o pagamento antes de confirmar o sinal.</div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button type="submit" formAction={connectClinicInfinitePayAction} formNoValidate className="h-10 rounded-lg bg-[var(--clinic-primary)] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-105">{integration?.infinitepay_ativo ? "Usar InfinitePay como principal" : "Conectar InfinitePay"}</button>
+                  {integration?.infinitepay_ativo ? <button type="submit" formAction={disconnectClinicInfinitePayAction} formNoValidate className="h-10 rounded-lg border border-red-200 bg-white px-4 text-sm font-bold text-red-700 hover:bg-red-50">Desconectar</button> : null}
+                </div>
+              </div>
+
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -597,11 +657,6 @@ export default async function ConfiguracoesPage({ searchParams }) {
     </main>
   );
 }
-
-
-
-
-
 
 
 

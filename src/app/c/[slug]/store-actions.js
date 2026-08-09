@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createAsaasCheckoutForOrder, isAsaasConfigured } from "@/lib/asaas/client";
+import { createInfinitePayCheckout } from "@/lib/infinitepay/client";
+import { resolveBarbershopPaymentProvider } from "@/lib/payments/provider";
 import { decryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 import { getStoreConfig } from "@/lib/store/config";
 
@@ -43,18 +45,28 @@ async function getClinicIntegration(clinicId) {
     .from("barbearia_integracoes")
     .select("barbearia_id, provedor, ativo, configuracao_publica, segredos_criptografados")
     .eq("barbearia_id", clinicId)
-    .eq("provedor", "asaas")
-    .eq("ativo", true)
-    .maybeSingle();
+    .in("provedor", ["asaas", "infinitepay"])
+    .eq("ativo", true);
   if (error) throw error;
-  if (!data) return { barbearia_id: clinicId, asaas_ativo: false };
-  const secrets = decryptBarbeariaSecrets(data.segredos_criptografados);
-  return {
-    barbearia_id: clinicId,
-    asaas_ativo: data.ativo,
-    baseUrl: data.configuracao_publica?.baseUrl,
-    apiKey: secrets.apiKey,
-  };
+  const integration = (data || []).reduce((result, item) => {
+    const config = item.configuracao_publica || {};
+    if (item.provedor === "asaas") {
+      const secrets = decryptBarbeariaSecrets(item.segredos_criptografados);
+      return { ...result, asaas_ativo: item.ativo, baseUrl: config.baseUrl, apiKey: secrets.apiKey, asaas_principal: config.principal === true };
+    }
+    if (item.provedor === "infinitepay") {
+      return { ...result, infinitepay_ativo: item.ativo, infinitepay_handle: config.handle, infinitepay_principal: config.principal === true };
+    }
+    return result;
+  }, { barbearia_id: clinicId });
+  integration.pagamento_gateway = integration.infinitepay_ativo && integration.infinitepay_principal
+    ? "infinitepay"
+    : integration.asaas_ativo
+      ? "asaas"
+      : integration.infinitepay_ativo
+        ? "infinitepay"
+        : null;
+  return integration;
 }
 
 async function findOrCreateClient({ clinicId, nome, telefone, email, cpf }) {
@@ -238,8 +250,9 @@ export async function createPublicStoreOrderAction(formData) {
   }
 
   const integration = await getClinicIntegration(clinic.id);
-  if (!config.checkoutAsaasAtivo || !isAsaasConfigured(integration)) {
-    await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Checkout Asaas indisponível." });
+  const paymentProvider = resolveBarbershopPaymentProvider(integration);
+  if (!config.checkoutAsaasAtivo || !paymentProvider) {
+    await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Checkout online indisponível." });
     redirectCheckout(slug, "pagamento", "O pagamento online está indisponível. Escolha pagar na retirada ou fale com a barbearia.");
   }
 
@@ -247,27 +260,50 @@ export async function createPublicStoreOrderAction(formData) {
   try {
     const origin = await getOrigin();
     const callbackUrl = `${origin}${orderUrl}`;
-    const checkout = await createAsaasCheckoutForOrder({
-      value: order.total,
-      description: `Pedido #${order.numero} - ${clinic.nome}`,
-      externalReference: `loja:${order.pedido_id}`,
-      billingTypes: [formaPagamento],
-      minutesToExpire: config.reservaMinutos,
-      callback: {
-        successUrl: callbackUrl,
-        cancelUrl: callbackUrl,
-        expiredUrl: callbackUrl,
-      },
-      customerData: { name: nome, email, phone: telefone, cpfCnpj: cpf },
-      integration,
-    });
-    const checkoutUrl = checkout.link || null;
-    if (!checkoutUrl) throw new Error("O Asaas não retornou o link do checkout.");
+    let checkout;
+    let checkoutUrl;
+    let paymentExternalId = null;
+    if (paymentProvider === "asaas" && isAsaasConfigured(integration)) {
+      checkout = await createAsaasCheckoutForOrder({
+        value: order.total,
+        description: `Pedido #${order.numero} - ${clinic.nome}`,
+        externalReference: `loja:${order.pedido_id}`,
+        billingTypes: [formaPagamento],
+        minutesToExpire: config.reservaMinutos,
+        callback: {
+          successUrl: callbackUrl,
+          cancelUrl: callbackUrl,
+          expiredUrl: callbackUrl,
+        },
+        customerData: { name: nome, email, phone: telefone, cpfCnpj: cpf },
+        integration,
+      });
+      checkoutUrl = checkout.link || null;
+    } else {
+      const orderNsu = `loja:${order.pedido_id}`;
+      checkout = await createInfinitePayCheckout({
+        handle: integration.infinitepay_handle,
+        orderNsu,
+        redirectUrl: callbackUrl,
+        webhookUrl: `${origin}/api/webhooks/infinitepay`,
+        items: [{
+          quantity: 1,
+          price: Math.round(Number(order.total || 0) * 100),
+          description: `Pedido #${order.numero} - ${clinic.nome}`,
+        }],
+        customer: { name: nome, email, phone: telefone },
+      });
+      checkoutUrl = checkout.url || null;
+      paymentExternalId = orderNsu;
+    }
+    if (!checkoutUrl) throw new Error("O gateway não retornou o link do checkout.");
 
     const { error: orderUpdateError } = await supabaseAdmin.from("barbearia_pedidos").update({
       asaas_payment_id: null,
       invoice_url: checkoutUrl,
-      payload_pagamento: { checkout },
+      pagamento_gateway: paymentProvider,
+      pagamento_external_id: paymentExternalId,
+      payload_pagamento: { checkout, pagamento_gateway: paymentProvider },
     }).eq("id", order.pedido_id).eq("barbearia_id", clinic.id);
     if (orderUpdateError) throw orderUpdateError;
 
@@ -276,7 +312,7 @@ export async function createPublicStoreOrderAction(formData) {
     revalidatePath("/dashboard/pedidos");
     paymentRedirectUrl = checkoutUrl;
   } catch (error) {
-    await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Falha ao gerar checkout Asaas." });
+    await supabaseAdmin.rpc("barbearia_cancelar_pedido_loja", { p_pedido_id: order.pedido_id, p_motivo: "Falha ao gerar checkout online." });
     redirectCheckout(slug, "pagamento", error.message || "Não foi possível gerar o pagamento. Tente novamente.");
   }
 

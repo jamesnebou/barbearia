@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../supabase/admin.js";
+import { matchesDemoEmail, normalizeDemoEmail } from "../domain/demo-core.mjs";
 
 export const DEMO_EMAIL = String(process.env.DEMO_EMAIL || "demo@barbearia.local").toLowerCase();
 export const DEMO_PASSWORD = String(process.env.DEMO_PASSWORD || "Demo@123456");
@@ -79,7 +80,7 @@ const DEMO_PRODUCTS = [
 ];
 
 export function isDemoLoginEmail(email) {
-  return String(email || "").trim().toLowerCase() === DEMO_EMAIL;
+  return matchesDemoEmail(email, DEMO_EMAIL);
 }
 
 export function isDemoPassword(password) {
@@ -94,7 +95,7 @@ async function findAuthUserByEmail(email) {
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
     if (error) throw error;
-    const user = data?.users?.find((item) => String(item.email || "").toLowerCase() === email);
+    const user = data?.users?.find((item) => normalizeDemoEmail(item.email) === normalizeDemoEmail(email));
     if (user) return user;
     if (!data?.users?.length || data.users.length < 100) return null;
   }

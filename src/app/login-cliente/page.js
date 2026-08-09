@@ -16,6 +16,10 @@ export default async function LoginClientePage() {
     redirect("/dashboard");
   }
 
+  if (user && !activeClinic) {
+    redirect("/onboarding");
+  }
+
   return (
     <main className="grid min-h-screen bg-[#f7f7f4] text-neutral-950 lg:grid-cols-[1fr_520px]">
       <section className="hidden min-h-screen flex-col justify-between border-r border-neutral-200 bg-white p-10 lg:flex">

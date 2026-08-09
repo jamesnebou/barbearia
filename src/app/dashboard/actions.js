@@ -12,10 +12,18 @@ import { uploadClientPhoto, uploadClinicLogo, uploadClinicSiteImage, uploadProce
 import { assertClinicLimit, assertClinicOperational } from "@/lib/saas/plans";
 import { ensureVercelProjectDomain, getVercelProjectDomain, normalizeCustomDomain, removeVercelProjectDomain } from "@/lib/vercel/domains";
 import { sendWhatsAppIntegrationTest } from "@/lib/notifications/booking";
-import { buildScheduleFromForm, isWithinWorkingPeriods } from "@/lib/clinic/schedule";
+import {
+  buildScheduleFromForm,
+  clinicDateTimeValue,
+  clinicTimeZone,
+  dateKeyInTimeZone,
+  dateFromClinicLocal,
+  isWithinWorkingPeriods,
+} from "@/lib/clinic/schedule";
 import { ACCESS_SECTIONS } from "@/lib/auth/permissions";
 import { decryptBarbeariaSecrets, encryptBarbeariaSecrets } from "@/lib/security/barbearia-secrets";
 import { getAsaasBaseUrl, removeAsaasWebhook, upsertAsaasWebhook, validateAsaasConnection } from "@/lib/asaas/client";
+import { normalizeInfinitePayHandle } from "@/lib/infinitepay/client";
 
 async function getScopedSupabase() {
   const context = await requireClinic();
@@ -44,6 +52,13 @@ function nullableText(formData, key) {
 function numberValue(formData, key, fallback = 0) {
   const value = Number(String(formData.get(key) || "").replace(",", "."));
   return Number.isFinite(value) ? value : fallback;
+}
+
+function nullableNumberValue(formData, key) {
+  const raw = text(formData, key);
+  if (!raw) return null;
+  const value = Number(raw.replace(",", "."));
+  return Number.isFinite(value) ? value : null;
 }
 
 function requireValue(value, message) {
@@ -104,7 +119,7 @@ function vercelDomainObservacoes(vercelDomain) {
 function requireClinicManager(memberships, clinicaId, redirectTo) {
   const membership = currentMembership(memberships, clinicaId);
   if (!["owner", "gerente"].includes(membership?.papel)) {
-    redirectWithMessage(redirectTo, "permissao", "Seu usuario nao tem permissao para administrar esta area.");
+    redirectWithMessage(redirectTo, "permissao", "Seu usuário não tem permissão para administrar esta área.");
   }
 }
 
@@ -177,10 +192,10 @@ function safeHexColor(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
 }
 
-function assertWithinWorkingHours({ clinic, inicioRaw, fimRaw, inicio, fim, formData }) {
+function assertWithinWorkingHours({ clinic, inicioRaw, fimRaw, inicio, fim, formData, timeZone }) {
   const schedule = clinic?.metadata?.horario_funcionamento || {};
 
-  if (!isWithinWorkingPeriods({ schedule, startDate: inicio, endDate: fim }) || fimRaw.slice(0, 10) !== inicioRaw.slice(0, 10)) {
+  if (!isWithinWorkingPeriods({ schedule, startDate: inicio, endDate: fim, timeZone }) || fimRaw.slice(0, 10) !== inicioRaw.slice(0, 10)) {
     redirectAgendaError(formData, "Este horário está fora do expediente configurado da barbearia.", inicioRaw.slice(0, 10));
   }
 }
@@ -190,13 +205,13 @@ async function resolveFimByProcedimento({ supabase, clinicaId, procedimentoId, i
 
   const { data, error } = await supabase
     .from("barbearia_servicos")
-    .select("duracao_minutos")
+    .select("duracao_minutos, intervalo_minutos")
     .eq("barbearia_id", clinicaId)
     .eq("id", procedimentoId)
     .maybeSingle();
 
   if (error) throw error;
-  const duration = Math.max(1, Number(data?.duracao_minutos || 60));
+  const duration = Math.max(1, Number(data?.duracao_minutos || 60) + Math.max(0, Number(data?.intervalo_minutos || 0)));
   return new Date(inicio.getTime() + duration * 60000);
 }
 export async function createClienteAction(formData) {
@@ -264,7 +279,7 @@ export async function createProfissionalAction(formData) {
 
 export async function toggleProfissionalAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Barbeiro nao informado.");
+  const id = requireValue(text(formData, "id"), "Barbeiro não informado.");
   const ativo = text(formData, "ativo") === "true";
 
   const { error } = await supabase.from("barbearia_barbeiros").update({ ativo }).eq("id", id).eq("barbearia_id", clinicaId);
@@ -274,7 +289,7 @@ export async function toggleProfissionalAction(formData) {
 
 export async function deleteProfissionalAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Barbeiro nao informado.");
+  const id = requireValue(text(formData, "id"), "Barbeiro não informado.");
 
   const { error } = await supabase.from("barbearia_barbeiros").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
@@ -291,7 +306,9 @@ export async function createProcedimentoAction(formData) {
     categoria: nullableText(formData, "categoria"),
     descricao: nullableText(formData, "descricao"),
     duracao_minutos: Math.max(1, numberValue(formData, "duracao_minutos", 60)),
+    intervalo_minutos: Math.max(0, numberValue(formData, "intervalo_minutos", 0)),
     preco: numberValue(formData, "preco", 0),
+    preco_promocional: nullableNumberValue(formData, "preco_promocional"),
     sinal_percentual: Math.min(100, Math.max(0, numberValue(formData, "sinal_percentual", 0))),
     sinal_valor: Math.max(0, numberValue(formData, "sinal_valor", 0)),
     publicado_site: formData.get("publicado_site") === "on",
@@ -328,7 +345,9 @@ export async function updateProcedimentoAction(formData) {
       categoria: nullableText(formData, "categoria"),
       descricao: nullableText(formData, "descricao"),
       duracao_minutos: Math.max(1, numberValue(formData, "duracao_minutos", 60)),
+      intervalo_minutos: Math.max(0, numberValue(formData, "intervalo_minutos", 0)),
       preco: numberValue(formData, "preco", 0),
+      preco_promocional: nullableNumberValue(formData, "preco_promocional"),
       sinal_percentual: Math.min(100, Math.max(0, numberValue(formData, "sinal_percentual", 0))),
       sinal_valor: Math.max(0, numberValue(formData, "sinal_valor", 0)),
       publicado_site: formData.get("publicado_site") === "on",
@@ -537,7 +556,7 @@ function agendaRedirectUrl(formData, fallbackDate = "") {
   const profissionalId = text(formData, "profissional_filtro");
   const params = new URLSearchParams({ date });
 
-  if (profissionalId) params.set("barbeiro", profissionalId);
+  if (profissionalId) params.set("profissional", profissionalId);
   return `/dashboard/agenda?${params.toString()}`;
 }
 
@@ -547,12 +566,11 @@ function redirectAgendaError(formData, message, fallbackDate = "") {
   redirect(`${url}${separator}error=${encodeURIComponent(message)}`);
 }
 
-function parseDateTime(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+function parseDateTime(value, timeZone) {
+  return dateFromClinicLocal(value, timeZone);
 }
 
-async function assertHorarioDisponivel({ supabase, clinicaId, profissionalId, inicioISO, fimISO, ignoreId = "", formData }) {
+async function assertHorarioDisponivel({ supabase, clinicaId, profissionalId, inicioISO, fimISO, ignoreId = "", formData, timeZone }) {
   if (!profissionalId) return;
 
   let query = supabase
@@ -574,36 +592,36 @@ async function assertHorarioDisponivel({ supabase, clinicaId, profissionalId, in
   if (error) throw error;
 
   if (data?.length) {
-    redirectAgendaError(formData, "Este barbeiro já possui atendimento nesse horário.", inicioISO.slice(0, 10));
+    redirectAgendaError(formData, "Este barbeiro já possui atendimento nesse horário.", dateKeyInTimeZone(new Date(inicioISO), timeZone));
   }
 }
 
 async function buildAgendaPayload({ supabase, formData, clinicaId, activeClinic, userId }) {
   const inicioRaw = requireValue(text(formData, "inicio"), "Informe o inicio do agendamento.");
   const procedimentoId = nullableText(formData, "servico_id");
-  const inicio = parseDateTime(inicioRaw);
+  const timeZone = clinicTimeZone(activeClinic);
+  const inicio = parseDateTime(inicioRaw, timeZone);
 
   if (!inicio) {
     redirectAgendaError(formData, "Informe uma data válida para o agendamento.");
   }
 
   let fimRaw = text(formData, "fim");
-  let fim = fimRaw ? parseDateTime(fimRaw) : await resolveFimByProcedimento({ supabase, clinicaId, procedimentoId, inicio });
+  let fim = fimRaw ? parseDateTime(fimRaw, timeZone) : await resolveFimByProcedimento({ supabase, clinicaId, procedimentoId, inicio });
 
   if (!fim) {
     redirectAgendaError(formData, "Informe o fim do agendamento ou selecione um serviço com duração cadastrada.", inicioRaw.slice(0, 10));
   }
 
   if (!fimRaw) {
-    const local = new Date(fim.getTime() - fim.getTimezoneOffset() * 60000);
-    fimRaw = local.toISOString().slice(0, 16);
+    fimRaw = clinicDateTimeValue(fim, timeZone);
   }
 
   if (fim <= inicio) {
-    redirectAgendaError(formData, "O horário final precisa ser maior que o horário inicial.", inicio.toISOString().slice(0, 10));
+    redirectAgendaError(formData, "O horário final precisa ser maior que o horário inicial.", dateKeyInTimeZone(inicio, timeZone));
   }
 
-  assertWithinWorkingHours({ clinic: activeClinic, inicioRaw, fimRaw, inicio, fim, formData });
+  assertWithinWorkingHours({ clinic: activeClinic, inicioRaw, fimRaw, inicio, fim, formData, timeZone });
 
   return {
     barbearia_id: clinicaId,
@@ -632,6 +650,7 @@ export async function createAgendamentoAction(formData) {
     inicioISO: payload.inicio,
     fimISO: payload.fim,
     formData,
+    timeZone: clinicTimeZone(activeClinic),
   });
 
   const { error } = await supabase.from("barbearia_agendamentos").insert({
@@ -642,14 +661,14 @@ export async function createAgendamentoAction(formData) {
   if (error) throw error;
   revalidatePath("/dashboard/agenda");
   revalidatePath("/dashboard");
-  redirect(agendaRedirectUrl(formData, payload.inicio.slice(0, 10)));
+  redirect(agendaRedirectUrl(formData, dateKeyInTimeZone(new Date(payload.inicio), clinicTimeZone(activeClinic))));
 }
 
 export async function updateAgendamentoAction(formData) {
   const { supabase, clinicaId, activeClinic } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Agendamento nao informado.");
+  const id = requireValue(text(formData, "id"), "Agendamento não informado.");
   const payload = await buildAgendaPayload({ supabase, formData, clinicaId, activeClinic, userId: null });
-  const status = requireValue(text(formData, "status"), "Status nao informado.");
+  const status = requireValue(text(formData, "status"), "Status não informado.");
 
   await assertHorarioDisponivel({
     supabase,
@@ -659,6 +678,7 @@ export async function updateAgendamentoAction(formData) {
     fimISO: payload.fim,
     ignoreId: id,
     formData,
+    timeZone: clinicTimeZone(activeClinic),
   });
 
   const { error } = await supabase
@@ -680,13 +700,13 @@ export async function updateAgendamentoAction(formData) {
   if (error) throw error;
   revalidatePath("/dashboard/agenda");
   revalidatePath("/dashboard");
-  redirect(agendaRedirectUrl(formData, payload.inicio.slice(0, 10)));
+  redirect(agendaRedirectUrl(formData, dateKeyInTimeZone(new Date(payload.inicio), clinicTimeZone(activeClinic))));
 }
 
 export async function updateAgendamentoStatusAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Agendamento nao informado.");
-  const status = requireValue(text(formData, "status"), "Status nao informado.");
+  const id = requireValue(text(formData, "id"), "Agendamento não informado.");
+  const status = requireValue(text(formData, "status"), "Status não informado.");
 
   const { error } = await supabase.from("barbearia_agendamentos").update({ status }).eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
@@ -697,7 +717,7 @@ export async function updateAgendamentoStatusAction(formData) {
 
 export async function deleteAgendamentoAction(formData) {
   const { supabase, clinicaId } = await getScopedSupabase();
-  const id = requireValue(text(formData, "id"), "Agendamento nao informado.");
+  const id = requireValue(text(formData, "id"), "Agendamento não informado.");
 
   const { error } = await supabase.from("barbearia_agendamentos").delete().eq("id", id).eq("barbearia_id", clinicaId);
   if (error) throw error;
@@ -1064,7 +1084,7 @@ export async function updateClinicUserAction(formData) {
   if (isDemoClinic(activeClinic)) redirectWithMessage(redirectTo, "demo", "A gestão de usuários está protegida no ambiente demonstrativo.");
   requireClinicManager(memberships, clinicaId, redirectTo);
 
-  const id = requireValue(text(formData, "id"), "Usuario nao informado.");
+  const id = requireValue(text(formData, "id"), "Usuário não informado.");
   const papel = requireValue(text(formData, "papel"), "Informe o papel do usuario.");
   const ativo = text(formData, "ativo") === "true";
 
@@ -1080,7 +1100,7 @@ export async function updateClinicUserAction(formData) {
     .maybeSingle();
 
   if (existingError) throw existingError;
-  if (!existing) redirectWithMessage("/dashboard/usuarios", "usuario", "Usuario nao encontrado nesta barbearia.");
+  if (!existing) redirectWithMessage("/dashboard/usuarios", "usuario", "Usuário não encontrado nesta barbearia.");
 
   if (existing.papel === "owner" && (!ativo || papel !== "owner")) {
     const { count, error } = await supabase
@@ -1248,7 +1268,7 @@ export async function updateClinicAccountAction(formData) {
   const currentMembershipRow = currentMembership(memberships, clinicaId);
 
   if (!user?.id) {
-    redirectWithMessage("/dashboard/configuracoes", "conta", "Usuario autenticado nao encontrado.");
+    redirectWithMessage("/dashboard/configuracoes", "conta", "Usuário autenticado não encontrado.");
   }
 
   if (!email) {
@@ -1261,7 +1281,7 @@ export async function updateClinicAccountAction(formData) {
     }
 
     if (password !== passwordConfirmation) {
-      redirectWithMessage("/dashboard/configuracoes", "conta", "A confirmacao da senha nao confere.");
+      redirectWithMessage("/dashboard/configuracoes", "conta", "A confirmação da senha não confere.");
     }
   }
 
@@ -1280,7 +1300,7 @@ export async function updateClinicAccountAction(formData) {
 
   const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(user.id, authPayload);
   if (authError) {
-    redirectWithMessage("/dashboard/configuracoes", "conta", authError.message || "Nao foi possivel atualizar o acesso.");
+    redirectWithMessage("/dashboard/configuracoes", "conta", authError.message || "Não foi possível atualizar o acesso.");
   }
 
   const { error: membershipError } = await supabaseAdmin
@@ -1292,7 +1312,7 @@ export async function updateClinicAccountAction(formData) {
     .eq("user_id", user.id);
 
   if (membershipError) {
-    redirectWithMessage("/dashboard/configuracoes", "conta", membershipError.message || "Nao foi possivel atualizar o usuario da barbearia.");
+    redirectWithMessage("/dashboard/configuracoes", "conta", membershipError.message || "Não foi possível atualizar o usuário da barbearia.");
   }
 
   revalidatePath("/dashboard");
@@ -1304,7 +1324,7 @@ export async function updateClinicAccountAction(formData) {
 export async function syncClinicDomainAction(formData) {
   const { clinicaId, memberships } = await getScopedSupabase();
   requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
-  const domain = normalizeCustomDomain(requireValue(text(formData, "dominio"), "Dominio nao informado."));
+  const domain = normalizeCustomDomain(requireValue(text(formData, "dominio"), "Domínio não informado."));
 
   const { data: existingDomain, error: existingDomainError } = await supabaseAdmin
     .from("barbearia_dominios")
@@ -1315,7 +1335,7 @@ export async function syncClinicDomainAction(formData) {
   if (existingDomainError) throw existingDomainError;
 
   if (!existingDomain || existingDomain.barbearia_id !== clinicaId) {
-    redirectWithMessage("/dashboard/configuracoes", "dominio", "Dominio nao encontrado nesta barbearia.");
+    redirectWithMessage("/dashboard/configuracoes", "dominio", "Domínio não encontrado nesta barbearia.");
   }
 
   const vercelDomain = await getVercelProjectDomain(domain);
@@ -1338,7 +1358,7 @@ export async function syncClinicDomainAction(formData) {
 export async function removeClinicDomainAction(formData) {
   const { clinicaId, memberships } = await getScopedSupabase();
   requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
-  const domain = normalizeCustomDomain(requireValue(text(formData, "dominio"), "Dominio nao informado."));
+  const domain = normalizeCustomDomain(requireValue(text(formData, "dominio"), "Domínio não informado."));
 
   await removeVercelProjectDomain(domain);
 
@@ -1366,6 +1386,7 @@ export async function updateClinicSettingsAction(formData) {
     uploadedLogo = await uploadClinicLogo({ clinicaId, file: logoFile });
     for (const [field, slot] of [
       ["site_hero_image_file", "hero"],
+      ["site_hero_mobile_image_file", "hero-mobile"],
       ["site_profissional_image_file", "barbeiro"],
       ["site_clinica_foto_1_file", "barbearia-1"],
       ["site_clinica_foto_2_file", "barbearia-2"],
@@ -1377,7 +1398,7 @@ export async function updateClinicSettingsAction(formData) {
       if (uploaded?.publicUrl) siteUploads[field] = uploaded;
     }
   } catch (error) {
-    redirectWithMessage("/dashboard/configuracoes", "upload", error.message || "Nao foi possivel enviar a imagem.");
+    redirectWithMessage("/dashboard/configuracoes", "upload", error.message || "Não foi possível enviar a imagem.");
   }
 
   const { data: currentIntegrations, error: currentIntegrationError } = await supabaseAdmin
@@ -1406,6 +1427,7 @@ export async function updateClinicSettingsAction(formData) {
     logo_tamanho_bytes: uploadedLogo?.size || metadata.logo_tamanho_bytes || null,
     primary_color: safeHexColor(text(formData, "primary_color"), metadata.primary_color || "#047857"),
     accent_color: safeHexColor(text(formData, "accent_color"), metadata.accent_color || "#10b981"),
+    fuso_horario: nullableText(formData, "fuso_horario") || metadata.fuso_horario || metadata.timezone || "America/Bahia",
     horario_funcionamento: buildScheduleFromForm(formData),
     politica_cancelamento: nullableText(formData, "politica_cancelamento"),
     whatsapp_mensagem_padrao: nullableText(formData, "whatsapp_mensagem_padrao"),
@@ -1422,6 +1444,8 @@ export async function updateClinicSettingsAction(formData) {
       credencial_3: nullableText(formData, "site_credencial_3"),
       hero_image_url: siteUploads.site_hero_image_file?.publicUrl || metadata.site_publico?.hero_image_url || "",
       hero_image_storage_path: siteUploads.site_hero_image_file?.path || metadata.site_publico?.hero_image_storage_path || null,
+      hero_mobile_image_url: siteUploads.site_hero_mobile_image_file?.publicUrl || metadata.site_publico?.hero_mobile_image_url || "",
+      hero_mobile_image_storage_path: siteUploads.site_hero_mobile_image_file?.path || metadata.site_publico?.hero_mobile_image_storage_path || null,
       profissional_image_url: siteUploads.site_profissional_image_file?.publicUrl || metadata.site_publico?.profissional_image_url || "",
       profissional_image_storage_path: siteUploads.site_profissional_image_file?.path || metadata.site_publico?.profissional_image_storage_path || null,
       clinica_foto_1: siteUploads.site_clinica_foto_1_file?.publicUrl || metadata.site_publico?.clinica_foto_1 || "",
@@ -1476,7 +1500,7 @@ export async function updateClinicSettingsAction(formData) {
 
   if (error) throw error;
   if (!updatedClinic?.id) {
-    redirectWithMessage("/dashboard/configuracoes", "salvar", "As configuracoes nao foram gravadas. Tente novamente.");
+    redirectWithMessage("/dashboard/configuracoes", "salvar", "As configurações não foram gravadas. Tente novamente.");
   }
 
   const secretPayload = (next, current = {}) => {
@@ -1526,7 +1550,7 @@ export async function updateClinicSettingsAction(formData) {
     if (existingDomainError) throw existingDomainError;
 
     if (existingDomain?.barbearia_id && existingDomain.barbearia_id !== clinicaId) {
-      redirectWithMessage("/dashboard/configuracoes", "dominio", "Este dominio ja esta vinculado a outra barbearia.");
+      redirectWithMessage("/dashboard/configuracoes", "dominio", "Este domínio já está vinculado a outra barbearia.");
     }
 
     let vercelDomain;
@@ -1538,7 +1562,7 @@ export async function updateClinicSettingsAction(formData) {
         ok: false,
         status: "erro",
         verified: false,
-        message: error.message || "Nao foi possivel conectar na Vercel para adicionar o dominio.",
+        message: error.message || "Não foi possível conectar à Vercel para adicionar o domínio.",
       };
     }
     const now = new Date().toISOString();
@@ -1636,6 +1660,7 @@ export async function connectClinicAsaasAction(formData) {
     ambiente,
     configuracao_publica: {
       baseUrl,
+      principal: true,
       connection_status: "connected",
       connected_at: now,
       key_last_four: apiKey.slice(-4),
@@ -1648,6 +1673,14 @@ export async function connectClinicAsaasAction(formData) {
     ultimo_erro: null,
   }, { onConflict: "barbearia_id,provedor,nome" });
   if (error) throw error;
+
+  const { data: infiniteRow } = await supabaseAdmin.from("barbearia_integracoes")
+    .select("configuracao_publica").eq("barbearia_id", clinicaId).eq("provedor", "infinitepay").maybeSingle();
+  if (infiniteRow) {
+    await supabaseAdmin.from("barbearia_integracoes").update({
+      configuracao_publica: { ...(infiniteRow.configuracao_publica || {}), principal: false },
+    }).eq("barbearia_id", clinicaId).eq("provedor", "infinitepay");
+  }
 
   revalidatePath("/dashboard/configuracoes");
   revalidatePath("/dashboard/produtos");
@@ -1698,6 +1731,75 @@ export async function disconnectClinicAsaasAction() {
   redirect("/dashboard/configuracoes?ok=asaas_desconectado");
 }
 
+export async function connectClinicInfinitePayAction(formData) {
+  const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  if (isDemoClinic(activeClinic)) redirectWithMessage("/dashboard/configuracoes", "demo", "Integrações externas estão protegidas no ambiente demonstrativo.");
+  requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
+
+  const handle = normalizeInfinitePayHandle(text(formData, "infinitepay_handle"));
+  if (!handle || !/^[a-zA-Z0-9._-]{3,80}$/.test(handle)) {
+    redirectWithMessage("/dashboard/configuracoes", "infinitepay", "Informe uma InfiniteTag válida, sem espaços.");
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin.from("barbearia_integracoes").upsert({
+    barbearia_id: clinicaId,
+    provedor: "infinitepay",
+    nome: "InfinitePay",
+    ativo: true,
+    ambiente: "producao",
+    configuracao_publica: {
+      handle,
+      principal: true,
+      connection_status: "connected",
+      connected_at: now,
+    },
+    ultimo_sync_em: now,
+    ultimo_erro: null,
+  }, { onConflict: "barbearia_id,provedor,nome" });
+  if (error) throw error;
+
+  const { data: asaasRow } = await supabaseAdmin.from("barbearia_integracoes")
+    .select("configuracao_publica").eq("barbearia_id", clinicaId).eq("provedor", "asaas").maybeSingle();
+  if (asaasRow) {
+    await supabaseAdmin.from("barbearia_integracoes").update({
+      configuracao_publica: { ...(asaasRow.configuracao_publica || {}), principal: false },
+    }).eq("barbearia_id", clinicaId).eq("provedor", "asaas");
+  }
+
+  revalidatePath("/dashboard/configuracoes");
+  revalidatePath(`/c/${activeClinic.slug}`);
+  redirect("/dashboard/configuracoes?ok=infinitepay");
+}
+
+export async function disconnectClinicInfinitePayAction() {
+  const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
+  if (isDemoClinic(activeClinic)) redirectWithMessage("/dashboard/configuracoes", "demo", "Integrações externas estão protegidas no ambiente demonstrativo.");
+  requireClinicManager(memberships, clinicaId, "/dashboard/configuracoes");
+
+  const { error } = await supabaseAdmin.from("barbearia_integracoes").update({
+    ativo: false,
+    configuracao_publica: {
+      principal: false,
+      connection_status: "disconnected",
+      disconnected_at: new Date().toISOString(),
+    },
+  }).eq("barbearia_id", clinicaId).eq("provedor", "infinitepay");
+  if (error) throw error;
+
+  const { data: asaasRow } = await supabaseAdmin.from("barbearia_integracoes")
+    .select("ativo, configuracao_publica").eq("barbearia_id", clinicaId).eq("provedor", "asaas").maybeSingle();
+  if (asaasRow?.ativo) {
+    await supabaseAdmin.from("barbearia_integracoes").update({
+      configuracao_publica: { ...(asaasRow.configuracao_publica || {}), principal: true },
+    }).eq("barbearia_id", clinicaId).eq("provedor", "asaas");
+  }
+
+  revalidatePath("/dashboard/configuracoes");
+  revalidatePath(`/c/${activeClinic.slug}`);
+  redirect("/dashboard/configuracoes?ok=infinitepay_desconectado");
+}
+
 export async function testClinicWhatsappIntegrationAction() {
   const { clinicaId, activeClinic, memberships } = await getScopedSupabase();
   if (isDemoClinic(activeClinic)) redirectWithMessage("/dashboard/configuracoes", "demo", "Testes externos estão protegidos no ambiente demonstrativo.");
@@ -1722,7 +1824,7 @@ export async function testClinicWhatsappIntegrationAction() {
   } : null;
 
   if (!whatsappIntegration?.whatsapp_ativo) {
-    redirectWithMessage("/dashboard/configuracoes", "whatsapp", "Ative a notificacao por WhatsApp e salve as configuracoes antes do teste.");
+    redirectWithMessage("/dashboard/configuracoes", "whatsapp", "Ative a notificação por WhatsApp e salve as configurações antes do teste.");
   }
 
   if (!whatsappIntegration?.whatsapp_webhook_url || !whatsappIntegration?.whatsapp_token || !whatsappIntegration?.whatsapp_numero_destino) {
@@ -1732,12 +1834,8 @@ export async function testClinicWhatsappIntegrationAction() {
   try {
     await sendWhatsAppIntegrationTest({ clinic: activeClinic, integration: whatsappIntegration });
   } catch (error) {
-    redirectWithMessage("/dashboard/configuracoes", "whatsapp", error.message || "Nao foi possivel enviar o teste de WhatsApp.");
+    redirectWithMessage("/dashboard/configuracoes", "whatsapp", error.message || "Não foi possível enviar o teste de WhatsApp.");
   }
 
   redirect("/dashboard/configuracoes?ok=whatsapp");
 }
-
-
-
-

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|auth|dashboard|admin|login|login-cliente|privacidade|termos).*)"],
+  matcher: ["/((?!_next/static|_next/image|api|auth|dashboard|admin|login|login-cliente|onboarding|privacidade|termos).*)"],
 };
 
 function isPlatformHost(host) {
@@ -93,6 +93,11 @@ export async function proxy(request) {
 
   const url = request.nextUrl.clone();
   const publicBasePath = `/c/${site.slug}`;
+
+  if (url.pathname === "/favicon.ico") {
+    url.pathname = `${publicBasePath}/favicon`;
+    return NextResponse.rewrite(url);
+  }
 
   // Links internos do site já usam a rota canônica com o slug.
   // Não os reescreva para a página inicial novamente.

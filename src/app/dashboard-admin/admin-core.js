@@ -1,5 +1,5 @@
 ﻿import { Activity, AlertTriangle, Banknote, CheckCircle2, CreditCard, Globe2, LineChart, MessageCircle, MousePointerClick, ShieldAlert, TrendingUp, UserCheck, UsersRound } from "lucide-react";
-import { paidAmount } from "@/lib/barbearia/finance";
+import { expectedAmount, paidAmount, summarizeFinancialRecords } from "@/lib/domain/finance-core.mjs";
 import { Field, SubmitButton, TextArea } from "@/components/app-shell/ui";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getClinicUsage, getSystemPlans } from "@/lib/saas/plans";
@@ -185,9 +185,8 @@ export function buildClinicInsights({ clinics, plans, analytics }) {
   for (const item of analytics.appointments) {
     const row = byClinic.get(item.barbearia_id);
     if (!row) continue;
-    const faturavel = !["cancelado", "faltou"].includes(item.status) && item.pagamento_status !== "cancelado";
-    if (faturavel) row.monthExpected += Number(item.valor || 0);
-    if (item.pagamento_status === "pago" || paidAmount(item) > 0) row.monthPaid += paidAmount(item);
+    row.monthExpected += expectedAmount(item);
+    row.monthPaid += paidAmount(item);
     row.appointments += 1;
   }
 
@@ -227,10 +226,9 @@ export function getOverviewStats({ clinics, plans, analytics }) {
   const mrrCobravel = clinics
     .filter((clinic) => clinic.assinatura_status !== "isenta" && clinic.status !== "cancelada")
     .reduce((acc, clinic) => acc + Number(planMap.get(clinic.plano)?.preco_mensal || 0), 0);
-  const monthExpected = analytics.appointments
-    .filter((item) => !["cancelado", "faltou"].includes(item.status) && item.pagamento_status !== "cancelado")
-    .reduce((acc, item) => acc + Number(item.valor || 0), 0);
-  const monthReceived = analytics.appointments.reduce((acc, item) => acc + paidAmount(item), 0);
+  const financialSummary = summarizeFinancialRecords(analytics.appointments);
+  const monthExpected = financialSummary.expected;
+  const monthReceived = financialSummary.received;
   const openCharges = analytics.asaasCharges.filter((item) => !["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH", "pago"].includes(String(item.status || "")));
   const usersWithAccess = analytics.users.filter((item) => item.ativo && item.aceito_em).length;
   const usersPendingAccess = analytics.users.filter((item) => item.ativo && !item.aceito_em).length;
@@ -420,4 +418,3 @@ export function PlanForm({ plan }) {
     </form>
   );
 }
-
